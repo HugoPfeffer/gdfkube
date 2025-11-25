@@ -26,7 +26,9 @@ stop:
 clean:
 	@echo "Cleaning up artifacts..."
 	docker compose down --volumes --remove-orphans
-	-docker rmi $(APP_NAME):latest
+	-docker rmi $(APP_NAME):latest 2>/dev/null || true
+	-docker rmi $(BUILDER_IMAGE) 2>/dev/null || true
+	-docker rmi mongo:latest 2>/dev/null || true
 
 # Show this help message
 help:
