@@ -14,6 +14,13 @@
         button:hover { background-color: #218838; }
         .btn-cancel { background-color: #6c757d; text-decoration: none; display: inline-block; }
         .btn-cancel:hover { background-color: #5a6268; }
+        
+        /* PVC Styles */
+        .pvc-section { border: 1px solid #e0e0e0; padding: 1rem; margin-bottom: 1rem; border-radius: 5px; background-color: #fafafa; }
+        .new-pvc-form { margin-top: 1rem; border-top: 1px dashed #ccc; padding-top: 1rem; }
+        .toggle-pvc-btn { background-color: #6c757d; font-size: 0.9rem; padding: 0.5rem 1rem; margin-bottom: 1rem; color: white; border: none; cursor: pointer; border-radius: 3px; }
+        .toggle-pvc-btn:hover { background-color: #5a6268; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -45,10 +52,97 @@
                 <small>Between 1 and 500 GB</small>
             </div>
 
+            <!-- PVC Section -->
+            <div class="pvc-section">
+                <label>Persistent Volume Claim (PVC)</label>
+                
+                <div id="existing-pvc-container">
+                    <select name="pvcId" id="pvcId">
+                        <option value="">-- Select Existing PVC --</option>
+                        <% if (pvcs && pvcs.length > 0) { %>
+                            <% pvcs.forEach(pvc => { %>
+                                <% const isSelected = request.pvc && String(request.pvc._id) === String(pvc._id); %>
+                                <option value="<%= pvc._id %>" <%= isSelected ? 'selected' : '' %>><%= pvc.name %> (<%= pvc.size %>, <%= pvc.accessMode %>)</option>
+                            <% }) %>
+                        <% } else { %>
+                            <option value="" disabled>No PVCs available</option>
+                        <% } %>
+                    </select>
+                </div>
+
+                <div style="margin-top: 0.5rem;">
+                    <button type="button" id="togglePvcBtn" class="toggle-pvc-btn">Create New PVC</button>
+                </div>
+
+                <!-- Hidden input to track if we are creating a new PVC -->
+                <input type="hidden" name="createNewPvc" id="createNewPvc" value="false">
+
+                <div id="new-pvc-form" class="new-pvc-form hidden">
+                    <h4>New PVC Details</h4>
+                    <div class="form-group">
+                        <label for="pvcName">PVC Name</label>
+                        <input type="text" name="pvcName" id="pvcName">
+                    </div>
+                    <div class="form-group">
+                        <label for="pvcSize">Size (e.g., 10Gi)</label>
+                        <input type="text" name="pvcSize" id="pvcSize" placeholder="10Gi">
+                    </div>
+                    <div class="form-group">
+                        <label for="pvcAccessMode">Access Mode</label>
+                        <select name="pvcAccessMode" id="pvcAccessMode">
+                            <option value="ReadWriteOnce">ReadWriteOnce</option>
+                            <option value="ReadOnlyMany">ReadOnlyMany</option>
+                            <option value="ReadWriteMany">ReadWriteMany</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <button type="submit">Update Request</button>
             <a href="/" class="button btn-cancel" style="padding: 0.7rem 1.5rem; color: white; text-decoration: none;">Cancel</a>
         </form>
     </div>
+
+    <script>
+        const toggleBtn = document.getElementById('togglePvcBtn');
+        const newPvcForm = document.getElementById('new-pvc-form');
+        const existingPvcContainer = document.getElementById('existing-pvc-container');
+        const pvcIdSelect = document.getElementById('pvcId');
+        const createNewPvcInput = document.getElementById('createNewPvc');
+        
+        // New PVC Inputs
+        const pvcNameInput = document.getElementById('pvcName');
+        const pvcSizeInput = document.getElementById('pvcSize');
+
+        toggleBtn.addEventListener('click', () => {
+            const isHidden = newPvcForm.classList.contains('hidden');
+            
+            if (isHidden) {
+                // Switch to "Create New" mode
+                newPvcForm.classList.remove('hidden');
+                existingPvcContainer.classList.add('hidden');
+                toggleBtn.textContent = 'Cancel & Select Existing PVC';
+                createNewPvcInput.value = 'true';
+                
+                // Require new fields
+                pvcNameInput.setAttribute('required', 'required');
+                pvcSizeInput.setAttribute('required', 'required');
+                
+                // Un-require existing select
+                pvcIdSelect.removeAttribute('required');
+                // We don't clear the value here in case they cancel, but backend prioritizes createNewPvc=true
+            } else {
+                // Switch to "Select Existing" mode
+                newPvcForm.classList.add('hidden');
+                existingPvcContainer.classList.remove('hidden');
+                toggleBtn.textContent = 'Create New PVC';
+                createNewPvcInput.value = 'false';
+                
+                // Un-require new fields
+                pvcNameInput.removeAttribute('required');
+                pvcSizeInput.removeAttribute('required');
+            }
+        });
+    </script>
 </body>
 </html>
-

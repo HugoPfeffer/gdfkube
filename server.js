@@ -36,15 +36,26 @@ mongoose.connect(mongoURI)
 .catch(err => console.error('MongoDB Connection Error:', err));
 
 // Schema
+const pvcSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    size: { type: String, required: true },
+    accessMode: { type: String, required: true, enum: ['ReadWriteOnce', 'ReadOnlyMany', 'ReadWriteMany'] },
+    owner: { type: String, required: true },
+    group: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+});
+
 const requestSchema = new mongoose.Schema({
     vcpu: { type: Number, required: true, min: 1, max: 32 },
     memory: { type: Number, required: true, min: 1, max: 64 },
     storage: { type: Number, required: true, min: 1, max: 500 },
+    pvc: { type: mongoose.Schema.Types.ObjectId, ref: 'PVC' },
     requester: { type: String, required: true },
     group: { type: String, required: true },
     createdAt: { type: Date, default: Date.now }
 });
 
+const PVC = mongoose.model('PVC', pvcSchema);
 const ResourceRequest = mongoose.model('ResourceRequest', requestSchema);
 
 // Routes
@@ -79,8 +90,9 @@ app.get('/logout', (req, res) => {
 // GET / - Render form (Protected)
 app.get('/', isAuthenticated, async (req, res) => {
     try {
-        const requests = await ResourceRequest.find().sort({ createdAt: -1 });
-        res.render('index', { requests, user: req.session.user });
+        const requests = await ResourceRequest.find().populate('pvc').sort({ createdAt: -1 });
+        const pvcs = await PVC.find();
+        res.render('index', { requests, pvcs, user: req.session.user });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -89,14 +101,34 @@ app.get('/', isAuthenticated, async (req, res) => {
 
 // POST /requests - Handle form submission (Protected)
 app.post('/requests', isAuthenticated, async (req, res) => {
-    const { vcpu, memory, storage } = req.body;
+    const { vcpu, memory, storage, createNewPvc, pvcId, pvcName, pvcSize, pvcAccessMode } = req.body;
     const { username, group } = req.session.user;
     
     try {
+        let pvcObjectId = null;
+
+        // Handle PVC
+        if (createNewPvc === 'true') {
+            // Create new PVC
+            const newPvc = new PVC({
+                name: pvcName,
+                size: pvcSize,
+                accessMode: pvcAccessMode,
+                owner: username,
+                group: group
+            });
+            const savedPvc = await newPvc.save();
+            pvcObjectId = savedPvc._id;
+        } else if (pvcId) {
+            // Use existing PVC
+            pvcObjectId = pvcId;
+        }
+
         const newRequest = new ResourceRequest({
             vcpu,
             memory,
             storage,
+            pvc: pvcObjectId,
             requester: username,
             group: group
         });
@@ -111,9 +143,10 @@ app.post('/requests', isAuthenticated, async (req, res) => {
 // GET /requests/:id/edit - Render edit form (Protected)
 app.get('/requests/:id/edit', isAuthenticated, async (req, res) => {
     try {
-        const request = await ResourceRequest.findById(req.params.id);
+        const request = await ResourceRequest.findById(req.params.id).populate('pvc');
         if (!request) return res.status(404).send('Request not found');
-        res.render('edit', { request, user: req.session.user });
+        const pvcs = await PVC.find();
+        res.render('edit', { request, pvcs, user: req.session.user });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -122,14 +155,45 @@ app.get('/requests/:id/edit', isAuthenticated, async (req, res) => {
 
 // POST /requests/:id/update - Handle update (Protected)
 app.post('/requests/:id/update', isAuthenticated, async (req, res) => {
-    const { vcpu, memory, storage } = req.body;
+    const { vcpu, memory, storage, createNewPvc, pvcId, pvcName, pvcSize, pvcAccessMode } = req.body;
+    const { username, group } = req.session.user;
     
     try {
-        await ResourceRequest.findByIdAndUpdate(req.params.id, {
+        let pvcObjectId = null;
+
+        // Handle PVC (similar to create)
+        if (createNewPvc === 'true') {
+            // Create new PVC
+            const newPvc = new PVC({
+                name: pvcName,
+                size: pvcSize,
+                accessMode: pvcAccessMode,
+                owner: username,
+                group: group
+            });
+            const savedPvc = await newPvc.save();
+            pvcObjectId = savedPvc._id;
+        } else if (pvcId) {
+            // Use existing PVC
+            pvcObjectId = pvcId;
+        }
+
+        const updateData = {
             vcpu,
             memory,
             storage
-        });
+        };
+
+        // Only update PVC if a new one was created or an existing one selected (and not explicitly empty if optional)
+        // Assuming PVC is optional or required, if optional:
+        if (pvcObjectId) {
+            updateData.pvc = pvcObjectId;
+        } else if (pvcId === "") {
+             // Explicitly removed (if allowed)
+             updateData.pvc = null;
+        }
+
+        await ResourceRequest.findByIdAndUpdate(req.params.id, updateData);
         res.redirect('/');
     } catch (err) {
         console.error(err);
