@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Request Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        input, select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+        button { padding: 0.7rem 1.5rem; background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .request-list { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1rem; }
+        .request-item { background: #f9f9f9; padding: 1rem; margin-bottom: 0.5rem; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create Resource Request</h1>
+        
+        <form action="/submit" method="POST">
+            <div class="form-group">
+                <label for="vcpu">vCPU Amount</label>
+                <select name="vcpu" id="vcpu" required>
+                    <% for(let i=1; i<=32; i++) { %>
+                        <option value="<%= i %>"><%= i %> vCPU</option>
+                    <% } %>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="memory">Memory Amount (GB)</label>
+                <select name="memory" id="memory" required>
+                    <% for(let i=1; i<=64; i++) { %>
+                        <option value="<%= i %>"><%= i %> GB</option>
+                    <% } %>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="storage">Storage Size (GB)</label>
+                <input type="number" name="storage" id="storage" min="1" max="500" required>
+                <small>Between 1 and 500 GB</small>
+            </div>
+
+            <div class="form-group">
+                <label for="requester">Requester Username</label>
+                <input type="text" name="requester" id="requester" required>
+            </div>
+
+            <button type="submit">Submit Request</button>
+        </form>
+
+        <div class="request-list">
+            <h2>Recent Requests</h2>
+            <% if (requests && requests.length > 0) { %>
+                <% requests.forEach(req => { %>
+                    <div class="request-item">
+                        <strong><%= req.requester %></strong> requested:
+                        <%= req.vcpu %> vCPU, <%= req.memory %> GB RAM, <%= req.storage %> GB Storage
+                        <br>
+                        <small style="color: #666;">On <%= new Date(req.createdAt).toLocaleString() %></small>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p>No requests yet.</p>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html>
+
