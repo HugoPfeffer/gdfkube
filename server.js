@@ -5,7 +5,7 @@ const path = require('path');
 const session = require('express-session');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -29,7 +29,7 @@ const isAuthenticated = (req, res, next) => {
 };
 
 // MongoDB Connection
-const mongoURI = 'mongodb://root:root@localhost:27017/crm-mock?authSource=admin';
+const mongoURI = process.env.MONGODB_URI || 'mongodb://root:root@localhost:27017/crm-mock?authSource=admin';
 
 mongoose.connect(mongoURI)
 .then(() => console.log('MongoDB Connected'))
