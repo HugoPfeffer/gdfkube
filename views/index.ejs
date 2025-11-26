@@ -21,6 +21,12 @@
         .btn-edit { background-color: #28a745; padding: 0.4rem 0.8rem; text-decoration: none; color: white; font-size: 0.9rem; border-radius: 3px; }
         .btn-delete { background-color: #dc3545; padding: 0.4rem 0.8rem; color: white; border: none; cursor: pointer; font-size: 0.9rem; border-radius: 3px; }
         .logout { color: #dc3545; text-decoration: none; margin-left: 1rem; }
+        .log-box { margin-top: 2rem; padding: 1rem; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; color: #155724; font-family: monospace; overflow-x: auto; }
+        .log-box h3 { margin-top: 0; margin-bottom: 0.5rem; }
+        .admin-btn { background-color: #6c757d; padding: 0.4rem 0.8rem; font-size: 0.9rem; }
+        .admin-btn:hover { background-color: #5a6268; }
+        .admin-dump { display: none; margin-top: 2rem; padding: 1rem; background-color: #2d2d2d; color: #f8f9fa; border-radius: 5px; font-family: monospace; overflow-x: auto; border: 1px solid #444; }
+        .admin-dump pre { margin: 0; }
     </style>
 </head>
 <body>
@@ -59,7 +65,10 @@
         </form>
 
         <div class="request-list">
-            <h2>Recent Requests</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Recent Requests</h2>
+                <button type="button" class="admin-btn" onclick="toggleAdminDump()">Admin: DB Dump</button>
+            </div>
             <% if (requests && requests.length > 0) { %>
                 <% requests.forEach(req => { %>
                     <div class="request-item">
@@ -84,6 +93,28 @@
                 <p>No requests yet.</p>
             <% } %>
         </div>
+
+        <% if (typeof lastRequest !== 'undefined' && lastRequest) { %>
+            <div class="log-box">
+                <h3>Latest Request Log</h3>
+                <pre><%= JSON.stringify(lastRequest, null, 2) %></pre>
+            </div>
+        <% } %>
+
+        <div id="adminDump" class="admin-dump">
+            <h3>Database Dump (All Requests)</h3>
+            <pre><%= JSON.stringify(requests, null, 2) %></pre>
+        </div>
     </div>
+    <script>
+        function toggleAdminDump() {
+            const dump = document.getElementById('adminDump');
+            if (dump.style.display === 'none' || dump.style.display === '') {
+                dump.style.display = 'block';
+            } else {
+                dump.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>

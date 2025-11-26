@@ -80,7 +80,11 @@ app.get('/logout', (req, res) => {
 app.get('/', isAuthenticated, async (req, res) => {
     try {
         const requests = await ResourceRequest.find().sort({ createdAt: -1 });
-        res.render('index', { requests, user: req.session.user });
+        const lastRequest = req.session.lastRequest;
+        if (req.session.lastRequest) {
+            delete req.session.lastRequest;
+        }
+        res.render('index', { requests, user: req.session.user, lastRequest });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -101,6 +105,7 @@ app.post('/requests', isAuthenticated, async (req, res) => {
             group: group
         });
         await newRequest.save();
+        req.session.lastRequest = newRequest;
         res.redirect('/');
     } catch (err) {
         console.error(err);
