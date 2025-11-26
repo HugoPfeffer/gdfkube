@@ -21,13 +21,6 @@
         .btn-edit { background-color: #28a745; padding: 0.4rem 0.8rem; text-decoration: none; color: white; font-size: 0.9rem; border-radius: 3px; }
         .btn-delete { background-color: #dc3545; padding: 0.4rem 0.8rem; color: white; border: none; cursor: pointer; font-size: 0.9rem; border-radius: 3px; }
         .logout { color: #dc3545; text-decoration: none; margin-left: 1rem; }
-        
-        /* PVC Styles */
-        .pvc-section { border: 1px solid #e0e0e0; padding: 1rem; margin-bottom: 1rem; border-radius: 5px; background-color: #fafafa; }
-        .new-pvc-form { margin-top: 1rem; border-top: 1px dashed #ccc; padding-top: 1rem; }
-        .toggle-pvc-btn { background-color: #6c757d; font-size: 0.9rem; padding: 0.5rem 1rem; margin-bottom: 1rem; }
-        .toggle-pvc-btn:hover { background-color: #5a6268; }
-        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -42,72 +35,24 @@
         
         <form action="/requests" method="POST">
             <div class="form-group">
-                <label for="vcpu">vCPU Amount</label>
-                <select name="vcpu" id="vcpu" required>
-                    <% for(let i=1; i<=32; i++) { %>
-                        <option value="<%= i %>"><%= i %> vCPU</option>
-                    <% } %>
+                <label for="machineName">Machine Name</label>
+                <input type="text" name="machineName" id="machineName" maxlength="50" required>
+            </div>
+
+            <div class="form-group">
+                <label for="instanceType">Instance Type</label>
+                <select name="instanceType" id="instanceType" required>
+                    <option value="u1.large">u1.large (2 vCPUs, 8GB RAM)</option>
+                    <option value="u1.xlarge">u1.xlarge (4 vCPUs, 16GB RAM)</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label for="memory">Memory Amount (GB)</label>
-                <select name="memory" id="memory" required>
-                    <% for(let i=1; i<=64; i++) { %>
-                        <option value="<%= i %>"><%= i %> GB</option>
-                    <% } %>
+                <label for="dataVolume">Data Volume</label>
+                <select name="dataVolume" id="dataVolume" required>
+                    <option value="datavolume-1">datavolume-1</option>
+                    <option value="datavolume-2">datavolume-2</option>
                 </select>
-            </div>
-
-            <div class="form-group">
-                <label for="storage">Storage Size (GB)</label>
-                <input type="number" name="storage" id="storage" min="1" max="500" required>
-                <small>Between 1 and 500 GB</small>
-            </div>
-
-            <!-- PVC Section -->
-            <div class="pvc-section">
-                <label>Persistent Volume Claim (PVC)</label>
-                
-                <div id="existing-pvc-container">
-                    <select name="pvcId" id="pvcId">
-                        <option value="">-- Select Existing PVC --</option>
-                        <% if (pvcs && pvcs.length > 0) { %>
-                            <% pvcs.forEach(pvc => { %>
-                                <option value="<%= pvc._id %>"><%= pvc.name %> (<%= pvc.size %>, <%= pvc.accessMode %>)</option>
-                            <% }) %>
-                        <% } else { %>
-                            <option value="" disabled>No PVCs available</option>
-                        <% } %>
-                    </select>
-                </div>
-
-                <div style="margin-top: 0.5rem;">
-                    <button type="button" id="togglePvcBtn" class="toggle-pvc-btn">Create New PVC</button>
-                </div>
-
-                <!-- Hidden input to track if we are creating a new PVC -->
-                <input type="hidden" name="createNewPvc" id="createNewPvc" value="false">
-
-                <div id="new-pvc-form" class="new-pvc-form hidden">
-                    <h4>New PVC Details</h4>
-                    <div class="form-group">
-                        <label for="pvcName">PVC Name</label>
-                        <input type="text" name="pvcName" id="pvcName">
-                    </div>
-                    <div class="form-group">
-                        <label for="pvcSize">Size (e.g., 10Gi)</label>
-                        <input type="text" name="pvcSize" id="pvcSize" placeholder="10Gi">
-                    </div>
-                    <div class="form-group">
-                        <label for="pvcAccessMode">Access Mode</label>
-                        <select name="pvcAccessMode" id="pvcAccessMode">
-                            <option value="ReadWriteOnce">ReadWriteOnce</option>
-                            <option value="ReadOnlyMany">ReadOnlyMany</option>
-                            <option value="ReadWriteMany">ReadWriteMany</option>
-                        </select>
-                    </div>
-                </div>
             </div>
 
             <button type="submit">Submit Request</button>
@@ -120,11 +65,10 @@
                     <div class="request-item">
                         <div class="request-details">
                             <strong><%= req.requester %></strong> (Group: <%= req.group || 'N/A' %>) requested:
-                            <%= req.vcpu %> vCPU, <%= req.memory %> GB RAM, <%= req.storage %> GB Storage
-                            <% if (req.pvc) { %>
-                                <br>
-                                <span style="color: #007bff;">PVC: <%= req.pvc.name %> (<%= req.pvc.size %>)</span>
-                            <% } %>
+                            <br>
+                            Machine: <strong><%= req.machineName %></strong>
+                            <br>
+                            Type: <%= req.instanceType %>, Volume: <%= req.dataVolume %>
                             <br>
                             <small style="color: #666;">On <%= new Date(req.createdAt).toLocaleString() %></small>
                         </div>
@@ -141,47 +85,5 @@
             <% } %>
         </div>
     </div>
-
-    <script>
-        const toggleBtn = document.getElementById('togglePvcBtn');
-        const newPvcForm = document.getElementById('new-pvc-form');
-        const existingPvcContainer = document.getElementById('existing-pvc-container');
-        const pvcIdSelect = document.getElementById('pvcId');
-        const createNewPvcInput = document.getElementById('createNewPvc');
-        
-        // New PVC Inputs
-        const pvcNameInput = document.getElementById('pvcName');
-        const pvcSizeInput = document.getElementById('pvcSize');
-
-        toggleBtn.addEventListener('click', () => {
-            const isHidden = newPvcForm.classList.contains('hidden');
-            
-            if (isHidden) {
-                // Switch to "Create New" mode
-                newPvcForm.classList.remove('hidden');
-                existingPvcContainer.classList.add('hidden');
-                toggleBtn.textContent = 'Cancel & Select Existing PVC';
-                createNewPvcInput.value = 'true';
-                
-                // Require new fields
-                pvcNameInput.setAttribute('required', 'required');
-                pvcSizeInput.setAttribute('required', 'required');
-                
-                // Un-require existing select
-                pvcIdSelect.removeAttribute('required');
-                pvcIdSelect.value = ""; 
-            } else {
-                // Switch to "Select Existing" mode
-                newPvcForm.classList.add('hidden');
-                existingPvcContainer.classList.remove('hidden');
-                toggleBtn.textContent = 'Create New PVC';
-                createNewPvcInput.value = 'false';
-                
-                // Un-require new fields
-                pvcNameInput.removeAttribute('required');
-                pvcSizeInput.removeAttribute('required');
-            }
-        });
-    </script>
 </body>
 </html>
