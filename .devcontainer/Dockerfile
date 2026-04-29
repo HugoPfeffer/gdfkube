@@ -164,7 +164,7 @@ RUN curl -LO "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/s
   rm openshift-client-linux.tar.gz
 
 # Install direnv (script installs directly to first writable PATH directory)
-RUN bin_path=/home/node/.local/bin curl -sfL https://direnv.net/install.sh | bash
+RUN curl -sfL https://direnv.net/install.sh | bin_path=/home/node/.local/bin bash
 
 # Configure direnv
 # RUN direnv allow /workspace
