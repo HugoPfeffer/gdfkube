@@ -75,7 +75,7 @@ gitea:
 
 Templates inside a chart access fields via `{{ .Values.body.vars.clusterName }}` etc. Authoring `{{ .Values.clusterName }}` (no `body.vars.` prefix) renders empty and is caught by the §3.6 lint gate — see L10.
 
-**Mandatory labels on every emitted resource (locked at Phase 0 §0.3):** `gdfkube.gov/group: {{ .Values.org }}`. The label is the v2 contract for fleet-wide selectors (e.g. RHACM `Placement`, ArgoCD `ApplicationSet` cluster generators in the remix), and it is rendered by every chart — `cluster-request`, `namespace-request`, `scale-request`, and `infra`. Charts do **not** emit `gdfkube.io/*`, `setic.gov.br/*`, or `gdfkube.gov/env` — `env` is form-specific and was rejected in the Phase-0 label decision. The clusterset membership label `cluster.open-cluster-management.io/clusterset: {{ .Values.org }}` is additionally required on `ManagedCluster` (RHACM-mandated, not gdfkube convention).
+**Mandatory labels on every emitted resource (locked at Phase 0 §0.3):** `gdfkube.gov/org: {{ .Values.org }}`. The label is the v2 contract for fleet-wide selectors (e.g. RHACM `Placement`, ArgoCD `ApplicationSet` cluster generators in the remix), and it is rendered by every chart — `cluster-request`, `namespace-request`, `scale-request`, and `infra`. Charts do **not** emit `gdfkube.io/*`, `setic.gov.br/*`, or `gdfkube.gov/env` — `env` is form-specific and was rejected in the Phase-0 label decision. The clusterset membership label `cluster.open-cluster-management.io/clusterset: {{ .Values.org }}` is additionally required on `ManagedCluster` (RHACM-mandated, not gdfkube convention).
 
 ### 3.4 ArgoCD-side templating decision (Option B)
 
@@ -161,7 +161,7 @@ metadata:
   name: {{ .Values.body.vars.clusterName }}
   labels:
     cluster.open-cluster-management.io/clusterset: {{ .Values.org }}   # exclusive set membership
-    gdfkube.gov/group: {{ .Values.org }}                               # fleet-selector label (Phase 0 §0.3)
+    gdfkube.gov/org: {{ .Values.org }}                               # fleet-selector label (Phase 0 §0.3)
     name: {{ .Values.body.vars.clusterName }}                          # standard RHACM convention
   annotations:
     import.open-cluster-management.io/klusterlet-deploy-mode: "Hosted"
@@ -204,7 +204,7 @@ metadata:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
   labels:
-    gdfkube.gov/group: {{ .Values.org }}
+    gdfkube.gov/org: {{ .Values.org }}
 spec:
   activeDeadlineSeconds: {{ .Values.pullSecretWait.timeoutSeconds }}
   backoffLimit: 0
@@ -316,8 +316,8 @@ $ git push origin l10-regression
 - [ ] L10 regression demo: a wrong-values-path bug introduced on a feature branch causes CI to fail with a clear "empty `metadata.name`" error.
 - [ ] §3.4 decision (B) recorded in `gdfkube-src/charts/README.md`; ApplicationSet template demonstrates literal-Go-template emission with no `helm template` interference.
 - [ ] §3.9 decision (one chart per form type) recorded.
-- [ ] `cluster-request` chart's `managedcluster.yaml` snapshot test pins the §3.10 labels (`cluster.open-cluster-management.io/clusterset`, `gdfkube.gov/group`, `name`) and HyperShift import annotations; removing any of them fails CI.
-- [ ] Every emitted Kubernetes resource (cluster-tier and org-tier) carries `gdfkube.gov/group: {{ .Values.org }}`; no rendered resource carries `gdfkube.io/*`, `setic.gov.br/*`, or `gdfkube.gov/env` (Phase 0 §0.3 contract). Chart-metadata annotations on `Chart.yaml` (e.g. `gdfkube.gov/tier`, `gdfkube.gov/outputRoot`) are excluded from this rule — they are renderer-internal metadata and never reach the cluster.
+- [ ] `cluster-request` chart's `managedcluster.yaml` snapshot test pins the §3.10 labels (`cluster.open-cluster-management.io/clusterset`, `gdfkube.gov/org`, `name`) and HyperShift import annotations; removing any of them fails CI.
+- [ ] Every emitted Kubernetes resource (cluster-tier and org-tier) carries `gdfkube.gov/org: {{ .Values.org }}`; no rendered resource carries `gdfkube.io/*`, `setic.gov.br/*`, or `gdfkube.gov/env` (Phase 0 §0.3 contract). Chart-metadata annotations on `Chart.yaml` (e.g. `gdfkube.gov/tier`, `gdfkube.gov/outputRoot`) are excluded from this rule — they are renderer-internal metadata and never reach the cluster.
 - [ ] `cluster-request` chart emits a sync-wave `-1` `Job` named `wait-pull-secret-{clusterName}` by default (`pullSecretWait.enabled=true`); chart-lint snapshot pins the manifest, the 180s `activeDeadlineSeconds`, the `Sync` hook, and `argocd-manager` SA. A `pullSecretWait.enabled=false` fixture renders zero Jobs — verified by snapshot diff.
 - [ ] `infra` chart's AppProject template emits the two `destinationServiceAccounts` entries (clusters + `*` fallback) verbatim; chart-lint snapshot pins them.
 - [ ] `cluster-request` chart's `klusterletaddonconfig.yaml` renders at sync-wave 2 with the standard add-on set; chart-lint snapshot pins the resource shape.

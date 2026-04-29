@@ -43,38 +43,39 @@ In:
 ### 3.1 Component map (Phase 4 final form)
 
 ```
-                      +----------------------+
-                      |  KafkaCdcConsumer    |   from("kafka:dbz.gdfkube.requests.*?topicIsPattern=true")
-                      |  (route)             |   parses envelope, reads formId from topic name,
-                      +----------+-----------+   builds RequestContext
-                                 |
-                                 v
-                       +---------+----------+      +---------------------+
-                       |   RequestRouter    +----->|  PipelineSelector   |
-                       |  (route)           |      |  c/u/r → CreateOrUpdateSaga
-                       +---------+----------+      |  d     → DeleteSaga
-                                 |                 +----------+----------+
-                                 v                            |
-                     +-----------+-----------+   +-----------+-----------+
-                     |  CreateOrUpdateSaga   |   |     DeleteSaga        |
-                     |  - resolveResourceName|   |  - resolveResourceName|
-                     |  - renderInfra (1st)  |   |  - removeResourceDir  |
-                     |  - renderResource     |   +-----------+-----------+
-                     |  - commitMonorepo     |               |
-                     +-----------+-----------+               v
-                                 |               +-----------------------+
-                                 v               |   GitWriter (JGit)    |
-                     +-----------------------+   +-----------------------+
-                     |     HelmRenderer      +---------------+
-                     |  (helm template)      |
-                     +-----------+-----------+
-                                 |
-                                 v
-                     +-----------------------+
-                     |    ValuesBuilder      |
-                     |  (RequestContext →    |
-                     |   values.yaml object) |
-                     +-----------------------+
+  +----------------------+                          +------------------------+
+  |  KafkaCdcConsumer    |  requests.*              |  KafkaCdcApprovals     |  approvals
+  |  (route: cdc-main)  |  topicIsPattern=true      |  (route: cdc-approvals)|
+  +----------+-----------+                          +----------+-------------+
+             |                                                 |
+             v                                                 v
+   +---------+----------+      +---------------------+  +------+---------------+
+   |   RequestRouter    +----->|  PipelineSelector   |  |   ApprovalRegistry   |
+   |  (choice)          |      |  c/u/r → C/U Saga  |  |   (in-memory futures)|
+   +---------+----------+      |  d     → DeleteSaga |  +------+---------------+
+             |                 +----------+----------+         :
+             v                            |          resolves  : awaitApproval
+ +-----------+-----------+   +-----------+-----------+         :
+ |  CreateOrUpdateSaga   |   |     DeleteSaga        |         :
+ |  0. awaitApproval <···+···+························+·········+
+ |  1. resolveResourceNm |   |  - resolveResourceName|
+ |  2. renderInfra (1st) |   |  - removeResourceDir  |
+ |  3. renderResource    |   +-----------+-----------+
+ |  4. commitMonorepo    |               |
+ +-----------+-----------+               v
+             |               +-----------------------+
+             v               |   GitWriter (JGit)    |
+ +-----------------------+   +-----------------------+
+ |     HelmRenderer      +---------------+
+ |  (helm template)      |
+ +-----------+-----------+
+             |
+             v
+ +-----------------------+
+ |    ValuesBuilder      |
+ |  (RequestContext →    |
+ |   values.yaml object) |
+ +-----------------------+
 ```
 
 ### 3.2 Saga model
@@ -155,9 +156,24 @@ The YAML route file shrinks dramatically because business logic moves into `Saga
       uri: direct:delete
       steps:
         - process: { ref: deleteSagaRunner }
+
+- route:
+    id: cdc-approvals
+    from:
+      uri: "kafka:dbz.gdfkube.approvals?groupId={{gdfkube.cdc.group}}"
+      steps:
+        - process: { ref: approvalEnvelopeParser }
+        - to: direct:approval-decision
+
+- route:
+    id: approval-decision
+    from:
+      uri: direct:approval-decision
+      steps:
+        - bean: { ref: approvalRegistry, method: resolve }
 ```
 
-Three routes total. Step orchestration lives in Java.
+Five routes total. The `cdc-approvals` route (§3.11) runs in parallel with `cdc-main`, subscribing to the approvals topic and resolving futures in `ApprovalRegistry`; `CreateOrUpdateSaga` step 0 (`awaitApproval`) parks on those futures before rendering. Step orchestration lives in Java.
 
 ### 3.5 Operation handling matrix (full)
 
@@ -261,6 +277,9 @@ The saga compensation chain stays unchanged — `awaitApproval` has no compensat
   - `SagaStep.java`, `SagaRunner.java`, `CompensationFailure.java`
   - `CreateOrUpdateSaga.java`, `DeleteSaga.java`
   - `InfraStateChecker.java`
+- `gdfkube-src/camel/src/main/java/io/gdfkube/camel/approval/`:
+  - `ApprovalRegistry.java` — in-memory `ConcurrentHashMap<requestId, CompletableFuture>` (§3.11)
+  - `ApprovalEnvelopeParser.java` — processor for the `cdc-approvals` route
 - `gdfkube-src/camel/src/main/java/io/gdfkube/camel/ResourceNameResolver.java` — full switch.
 - `gdfkube-src/camel/src/main/resources/routes/cdc-consumer.camel.yaml` — pattern subscription, ≤150 lines (project-level acceptance criterion).
 - E2E test suite at `tests/e2e/`:
@@ -323,6 +342,7 @@ $ task gitea:show -- gdfkube-src/infra/orgs/saude/    # HEAD still unchanged —
 - [ ] Camel route YAML ≤150 lines (project-level acceptance criterion).
 - [ ] Snapshot (`op=r`) events route through the same code path as `op=c` (verified by replaying a Debezium snapshot).
 - [ ] Decision for the subscription strategy (pattern vs per-route — §3.6) recorded in `gdfkube-src/camel/README.md`.
+- [ ] Approvals join (§3.11): `cdc-approvals` route consumes `dbz.gdfkube.approvals`; `CreateOrUpdateSaga` step 0 parks on `ApprovalRegistry` future; approved/rejected/timeout paths all verified by E2E test.
 - [ ] §4.6 (schema lookup) is formally retired here if not needed; otherwise its replacement design is documented.
 
 ## 8. Test plan
@@ -340,6 +360,11 @@ $ task gitea:show -- gdfkube-src/infra/orgs/saude/    # HEAD still unchanged —
 | Delete                        | E2E         | Create then delete; assert tier-aware behaviour                                       |
 | Org-tier idempotence          | E2E         | Two requests from same org → infra/ created once                                      |
 | `op=r` snapshot               | E2E         | `task kafka:resnapshot` triggers a snapshot; verify same path as `op=c`               |
+| Approval approved             | E2E         | Request + approval → saga completes rendering; manifest in Gitea                      |
+| Approval rejected             | E2E         | Request + rejection → saga short-circuits; no manifest written, offset committed      |
+| Approval timeout              | E2E         | Request with no approval within `gdfkube.approval.timeout` → treated as rejected      |
+| Approval before request       | E2E         | Approval arrives first; request arrives later → future resolved, saga proceeds        |
+| `ApprovalRegistry` restart    | Component   | Consumer restart drops pending futures; Kafka redelivery re-arms them                 |
 
 ## 9. Risks and on-hold items
 
