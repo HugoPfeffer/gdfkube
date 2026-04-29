@@ -2,8 +2,12 @@
 !.claude/plans/
 !.claude/plans/**
 !.claude/rules/
-!.claude/rules/** 
+!.claude/rules/**
 !.claude/agents/
 !.claude/agents/**
+!.claude/hooks/
+!.claude/hooks/**
+!.claude/skills/
+!.claude/skills/**
 .cursor/
 node_modules/
