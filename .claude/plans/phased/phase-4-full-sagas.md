@@ -185,7 +185,7 @@ Per-route subscription becomes attractive only if a single high-volume form type
 
 v2 codifies this as **tier-aware destinations**: cluster-tier writes are deletable; org-tier writes are append-only.
 
-The org-tier `ManagedClusterSet` is the receiving set for the cluster-tier `ManagedCluster` resources rendered by the `cluster-request` chart. Phase 2 §3.10 pins the cluster-tier `ManagedCluster` as the **authoritative identity source** for HyperShift's `hypershift-addon-agent` — the agent uses Get-then-Create on the hosting cluster, so the labels and annotations the chart emits at sync-wave 0 (`cluster.open-cluster-management.io/clusterset: {{ .Values.org }}`, `gdfkube.gov/group: {{ .Values.org }}`, and the HyperShift import annotations) are the cluster's permanent identity. The saga's job is just to land the rendered manifest in the right path; the contract that the manifest carries the correct labels lives in the chart, not in the saga.
+The org-tier `ManagedClusterSet` is the receiving set for the cluster-tier `ManagedCluster` resources rendered by the `cluster-request` chart. Phase 2 §3.10 pins the cluster-tier `ManagedCluster` as the **authoritative identity source** for HyperShift's `hypershift-addon-agent` — the agent uses Get-then-Create on the hosting cluster, so the labels and annotations the chart emits at sync-wave 0 (`cluster.open-cluster-management.io/clusterset: {{ .Values.org }}`, `gdfkube.gov/org: {{ .Values.org }}`, and the HyperShift import annotations) are the cluster's permanent identity. The saga's job is just to land the rendered manifest in the right path; the contract that the manifest carries the correct labels lives in the chart, not in the saga.
 
 ### 3.8 Idempotency (delete half)
 
@@ -270,7 +270,7 @@ The saga compensation chain stays unchanged — `awaitApproval` has no compensat
   - `scale-patch-only.test.ts` — `scale-request` writes under `orgs/<org>/scales/<clusterName>-<requestId>/`; a follow-up `op=d` on a scale-request is a no-op (no Git activity).
   - `org-tier-isolation.test.ts` — second request from same org leaves infra/ unchanged; delete leaves infra/ unchanged.
   - `partial-org-tier.test.ts` — manually corrupt `infra/orgs/<org>/` (delete one file), assert the saga aborts with `PARTIAL` and surfaces a clear error.
-  - `managedcluster-identity.test.ts` — assert the rendered `managedcluster.yaml` carries the §3.10-pinned labels (`cluster.open-cluster-management.io/clusterset`, `gdfkube.gov/group`, `name`) and HyperShift import annotations (regression cover for the Get-then-Create contract).
+  - `managedcluster-identity.test.ts` — assert the rendered `managedcluster.yaml` carries the §3.10-pinned labels (`cluster.open-cluster-management.io/clusterset`, `gdfkube.gov/org`, `name`) and HyperShift import annotations (regression cover for the Get-then-Create contract).
 
 ## 6. Working-project demo
 
