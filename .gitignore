@@ -1,3 +1,9 @@
-.claude/ 
+.claude/**
+!.claude/plans/
+!.claude/plans/**
+!.claude/rules/
+!.claude/rules/** 
+!.claude/agents/
+!.claude/agents/**
 .cursor/
 node_modules/
