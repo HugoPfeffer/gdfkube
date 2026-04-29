@@ -1,0 +1,105 @@
+name: gdfkube-src
+services:
+  gdfkube-camel-app:
+    annotations:
+      compose.score.dev/workload-name: gdfkube-camel
+    depends_on:
+      wait-for-resources:
+        condition: service_completed_successfully
+        required: true
+    environment:
+      GITEA_TOKEN: ${GITEA_TOKEN:-dev-placeholder-token}
+      GITEA_URL: http://gitea:3000
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    hostname: gdfkube-camel
+    image: quay.io/quarkus/quarkus-micro-image:2.0
+  gdfkube-node-app:
+    annotations:
+      compose.score.dev/workload-name: gdfkube-node
+    depends_on:
+      wait-for-resources:
+        condition: service_completed_successfully
+        required: true
+    environment:
+      GITEA_TOKEN: ${GITEA_TOKEN:-dev-placeholder-token}
+      GITEA_URL: http://gitea:3000
+      MONGO_URI: mongodb://mongo:27017/gdfkube?replicaSet=rs0
+    hostname: gdfkube-node
+    image: nginxinc/nginx-unprivileged:1.27
+  gitea:
+    environment:
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__server__ROOT_URL: http://gitea:3000/
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - http://localhost:3000/api/v1/version
+      interval: 5s
+      retries: 24
+    image: gitea/gitea:1.22
+    ports:
+      - target: 3000
+        published: "3000"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ./scripts/gitea-init.sh
+        target: /usr/local/bin/gitea-init.sh
+        read_only: true
+  kafka:
+    environment:
+      CLUSTER_ID: gdfkube-dev-cluster
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+    image: apache/kafka:3.9
+    ports:
+      - target: 9092
+        published: "9092"
+        protocol: tcp
+  mongo:
+    command:
+      - mongod
+      - --replSet
+      - rs0
+      - --bind_ip_all
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - db.adminCommand('ping')
+      interval: 5s
+      retries: 12
+    image: mongo:7.0
+    ports:
+      - target: 27017
+        published: "27017"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ./scripts/init-mongo.js
+        target: /docker-entrypoint-initdb.d/init-mongo.js
+        read_only: true
+  wait-for-resources:
+    command:
+      - echo
+    depends_on:
+      gitea:
+        condition: service_healthy
+        required: true
+      kafka:
+        condition: service_started
+        required: true
+      mongo:
+        condition: service_healthy
+        required: true
+    image: alpine

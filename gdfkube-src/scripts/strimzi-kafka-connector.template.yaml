@@ -1,0 +1,29 @@
+# strimzi-kafka-connector.template.yaml — Phase 0 parity-only template.
+#
+# CONTRACT: literal values in `metadata.name` and `spec.config` MUST equal the
+# corresponding values in /workspace/gdfkube-src/connector.json. The
+# `scripts/connector-parity.sh` gate enforces field-by-field equality (G2).
+# Do NOT hand-edit `spec.config` here — edit `connector.json` and copy the
+# values across so this template stays in sync.
+#
+# Phase 1 promotes this template to a Helm-managed chart artifact that
+# interpolates from `connector.json` at render time (and the parity gate
+# becomes a Helm-template-vs-source diff instead of a literal diff).
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  # MIRROR: connector.json .name
+  name: gdfkube-mongo-source
+  labels:
+    # canonical label namespace per phase plan §0.3
+    strimzi.io/cluster: gdfkube-connect
+spec:
+  # MIRROR: connector.json .config["connector.class"]
+  class: io.debezium.connector.mongodb.MongoDbConnector
+  tasksMax: 1
+  config:
+    # MIRROR: connector.json .config — keep these in lockstep with connector.json.
+    mongodb.connection.string: "mongodb://mongo:27017/?replicaSet=rs0"
+    topic.prefix: "gdfkube"
+    capture.mode: "change_streams_update_full_with_pre_image"

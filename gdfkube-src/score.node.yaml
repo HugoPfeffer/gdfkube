@@ -1,0 +1,19 @@
+# gdfkube-src/score.node.yaml — Node app, dummy image (Phase 0)
+apiVersion: score.dev/v1b1
+metadata:
+  name: gdfkube-node
+containers:
+  app:
+    image: nginxinc/nginx-unprivileged:1.27   # replaced by real image in Phase 1
+    variables:
+      MONGO_URI: "mongodb://${resources.mongo.host}:${resources.mongo.port}/gdfkube?replicaSet=rs0"
+      GITEA_URL: "${resources.gitea.url}"
+      GITEA_TOKEN: "${resources.gitea.token}"
+    livenessProbe:
+      httpGet: { path: /health, port: 8080 }
+service:
+  ports:
+    http: { port: 8080, targetPort: 8080 }
+resources:
+  mongo:  { type: mongodb }
+  gitea:  { type: gitea }

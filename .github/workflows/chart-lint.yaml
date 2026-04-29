@@ -1,0 +1,29 @@
+# .github/workflows/chart-lint.yaml — Phase 0 chart-lint gate.
+# Enforces guardrails G3 (legacy label literal absent), G5 (Chart.yaml only under allowed roots),
+# and G4 (no imperative cluster-mutation `apply` invocations against `kubectl`/`oc` outside
+# `tests/` and `scripts/`).
+# Source of truth for the rules: gdfkube-src/scripts/chart-lint.sh.
+name: chart-lint
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  chart-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run chart-lint
+        run: |
+          chmod +x gdfkube-src/scripts/chart-lint.sh
+          gdfkube-src/scripts/chart-lint.sh
+      - name: Run chart-lint self-test
+        if: always()
+        run: |
+          if [ -f gdfkube-src/tests/unit/chart-lint-self-test.sh ]; then
+            chmod +x gdfkube-src/tests/unit/chart-lint-self-test.sh
+            gdfkube-src/tests/unit/chart-lint-self-test.sh
+          else
+            echo "chart-lint-self-test.sh not yet present (Wave 4 lands it)"
+          fi

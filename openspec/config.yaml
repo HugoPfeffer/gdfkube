@@ -39,7 +39,7 @@ rules:
     - Every capability MUST have a CAP-* identifier (CAP-001, CAP-002, ...)
     - Non-Goals section MUST contain at least one item
     - Impact section MUST name specific files, APIs, or services — not "the system"
-    - Flag and revise any vague terms: "appropriate", "sufficient", "reasonable", "etc.", "as needed"
+    - 'Flag and revise any vague terms: "appropriate", "sufficient", "reasonable", "etc.", "as needed"'
     - Active voice throughout — no passive constructions
   research:
     - Label ALL findings as REFERENCE CONTEXT, not specification
@@ -62,8 +62,8 @@ rules:
     - All REQ-* from specs must be addressed or explicitly noted as "no design needed"
   tasks:
     - Every task MUST have a TSK-<CAP>-<REQ>-<seq> identifier
-    - Every task MUST declare traces: REQ-* (at least one requirement)
-    - Every task MUST declare depends_on: (TSK-* list or "none")
+    - "Every task MUST declare traces: REQ-* (at least one requirement)"
+    - 'Every task MUST declare depends_on: (TSK-* list or "none")'
     - Parallelizable tasks MUST be marked [P]
     - Tasks MUST be organized into numbered waves based on dependency depth
     - A Dependency Graph section MUST be present at the end of the file

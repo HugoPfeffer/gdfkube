@@ -1,0 +1,43 @@
+# .github/workflows/score-parity.yaml — Phase 0 score-parity gate (G1).
+# Diffs `score-compose generate` vs `score-helm generate` env-var sets and port lists
+# for the two workloads we own. Drift exits non-zero.
+name: score-parity
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yq
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+      - name: Install score-compose
+        uses: score-spec/setup-score-compose@v1
+        with:
+          version: "0.22.0"
+      - name: Install score-helm
+        uses: score-spec/setup-score-helm@v1
+        with:
+          version: "0.5.0"
+      - name: Generate compose surface
+        working-directory: gdfkube-src
+        run: |
+          score-compose generate -f score.node.yaml -f score.camel.yaml -f score-compose.yaml \
+            -o /tmp/score-parity-compose.yaml
+      - name: Generate helm surface
+        working-directory: gdfkube-src
+        run: |
+          mkdir -p /tmp/score-parity-helm
+          score-helm generate -f score.node.yaml -f score.camel.yaml -o /tmp/score-parity-helm
+      - name: Run score-parity diff
+        working-directory: gdfkube-src
+        run: |
+          chmod +x scripts/score-parity.sh
+          scripts/score-parity.sh --compose /tmp/score-parity-compose.yaml \
+                                  --helm /tmp/score-parity-helm --print

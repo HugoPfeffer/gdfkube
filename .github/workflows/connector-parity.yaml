@@ -1,0 +1,24 @@
+# .github/workflows/connector-parity.yaml — Phase 0 connector-parity gate (G2).
+# Diffs gdfkube-src/connector.json against the rendered Strimzi KafkaConnector CR template.
+# Single-source-of-truth invariant; drift exits non-zero.
+name: connector-parity
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yq
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+      - name: Run connector-parity
+        working-directory: gdfkube-src
+        run: |
+          chmod +x scripts/connector-parity.sh
+          scripts/connector-parity.sh --print

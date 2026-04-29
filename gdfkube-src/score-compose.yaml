@@ -1,0 +1,113 @@
+# gdfkube-src/score-compose.yaml — score-compose 0.22+ provisioners file.
+# Consumed by `score-compose init --provisioners file://./score-compose.yaml`.
+# Defines compose-side backing for the resource types our Score specs declare:
+#   - mongodb (with `rs.initiate()` init script mount, single-replica-set for Debezium)
+#   - kafka   (KRaft single broker; outputs `bootstrap`)
+#   - gitea   (sqlite-backed Gitea; outputs `url` and `token`)
+#
+# Phase 0 keeps these provisioners minimal — Phase 2+ may extend them with persistent
+# volumes, healthchecks, or topic auto-creation as the consumer logic grows.
+
+# --- mongodb override (single-node replica set so Debezium oplog tailing works) -------------------
+- uri: template://gdfkube/mongodb
+  type: mongodb
+  description: gdfkube — single-node MongoDB replica set rs0 with init script for Debezium.
+  init: |
+    port: 27017
+    replSet: rs0
+  outputs: |
+    host: mongo
+    port: {{ .Init.port }}
+    connection: "mongodb://mongo:{{ .Init.port }}/?replicaSet={{ .Init.replSet }}"
+  services: |
+    mongo:
+      image: mongo:7.0
+      command: ["mongod", "--replSet", "{{ .Init.replSet }}", "--bind_ip_all"]
+      ports:
+        - target: {{ .Init.port }}
+          published: "{{ .Init.port }}"
+          protocol: tcp
+      volumes:
+        - type: bind
+          source: ./scripts/init-mongo.js
+          target: /docker-entrypoint-initdb.d/init-mongo.js
+          read_only: true
+      healthcheck:
+        test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+        interval: 5s
+        retries: 12
+  expected_outputs:
+    - host
+    - port
+    - connection
+
+# --- kafka (custom — KRaft single broker; default provisioners don't ship one) -------------------
+- uri: template://gdfkube/kafka
+  type: kafka
+  description: gdfkube — KRaft-mode single Kafka broker for local dev.
+  init: |
+    port: 9092
+    controllerPort: 9093
+    clusterId: "gdfkube-dev-cluster"
+  outputs: |
+    bootstrap: "kafka:{{ .Init.port }}"
+    host: kafka
+    port: {{ .Init.port }}
+  services: |
+    kafka:
+      image: apache/kafka:3.9
+      ports:
+        - target: {{ .Init.port }}
+          published: "{{ .Init.port }}"
+          protocol: tcp
+      environment:
+        KAFKA_PROCESS_ROLES: "broker,controller"
+        KAFKA_NODE_ID: "1"
+        KAFKA_LISTENERS: "PLAINTEXT://:{{ .Init.port }},CONTROLLER://:{{ .Init.controllerPort }}"
+        KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:{{ .Init.port }}"
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+        KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:{{ .Init.controllerPort }}"
+        KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+        KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+        CLUSTER_ID: "{{ .Init.clusterId }}"
+  expected_outputs:
+    - bootstrap
+    - host
+    - port
+
+# --- gitea (custom — local-dev Git server; reads token from env so the Secret-shape contract
+#     mirrors the OpenShift agnosticd-provisioned Secret) -----------------------------------------
+- uri: template://gdfkube/gitea
+  type: gitea
+  description: gdfkube — local-dev Gitea instance with sqlite backend; token from $GITEA_TOKEN env.
+  init: |
+    port: 3000
+  outputs: |
+    url: "http://gitea:{{ .Init.port }}"
+    host: gitea
+    port: {{ .Init.port }}
+    token: "${GITEA_TOKEN:-dev-placeholder-token}"
+  services: |
+    gitea:
+      image: gitea/gitea:1.22
+      ports:
+        - target: {{ .Init.port }}
+          published: "{{ .Init.port }}"
+          protocol: tcp
+      environment:
+        GITEA__server__ROOT_URL: "http://gitea:{{ .Init.port }}/"
+        GITEA__database__DB_TYPE: "sqlite3"
+      volumes:
+        - type: bind
+          source: ./scripts/gitea-init.sh
+          target: /usr/local/bin/gitea-init.sh
+          read_only: true
+      healthcheck:
+        test: ["CMD", "curl", "-fsS", "http://localhost:{{ .Init.port }}/api/v1/version"]
+        interval: 5s
+        retries: 24
+  expected_outputs:
+    - url
+    - host
+    - port
+    - token

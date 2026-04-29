@@ -17,7 +17,7 @@ If a request mentions "the container," disambiguate. Default assumption when unc
 - `postStartCommand` runs `.devcontainer/scripts/init-firewall.sh`. That script applies nftables rules **inside the container's netns only** — it never modifies host firewall state.
 - Persistent volumes: `/commandhistory` (bash history), `/home/node/.claude` (Claude config).
 - Forwarded port: `9999` (plannotator).
-- Pre-installed: `claude`, `opencode`, `openspec`, `specify`, `kubectl`, `helm`, `oc`, `gh`, `trufflehog`, `uv`, `pipx`, `pre-commit`, `direnv`, `starship`, `git-delta`.
+- Pre-installed: `claude`, `opencode`, `openspec`, `specify`, `kubectl`, `helm`, `oc`, `gh`, `trufflehog`, `uv`, `pipx`, `pre-commit`, `direnv`, `starship`, `git-delta`, `task`, `watchexec`, `yq`, `score-compose`, `score-helm`.
 
 When asked to "rebuild the container" inside a Claude Code session: that almost always means rebuild the **devcontainer** (VS Code: *Dev Containers: Rebuild Container*). The project image rebuild is a separate pipeline.
 

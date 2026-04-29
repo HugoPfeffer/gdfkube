@@ -168,7 +168,41 @@ RUN curl -sfL https://direnv.net/install.sh | bin_path=/home/node/.local/bin bas
 
 # Configure direnv
 # RUN direnv allow /workspace
-  
+
+# Install yq (mikefarah) — used by chart-lint.sh, score-parity.sh, connector-parity.sh
+ARG YQ_VERSION=4.44.3
+RUN curl -fsSL -o /home/node/.local/bin/yq \
+    "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" && \
+    chmod +x /home/node/.local/bin/yq
+
+# Install Task (Taskfile runner) — primary TDD entry point per Phase 0 §3.6.1
+ARG TASK_VERSION=3.40.1
+RUN curl -fsSL "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_amd64.tar.gz" \
+    | tar -xz -C /home/node/.local/bin task
+
+# Install watchexec — backs `task test:watch` (TDD inner loop)
+ARG WATCHEXEC_VERSION=2.2.0
+RUN curl -fsSL -o /tmp/watchexec.tar.xz \
+    "https://github.com/watchexec/watchexec/releases/download/v${WATCHEXEC_VERSION}/watchexec-${WATCHEXEC_VERSION}-x86_64-unknown-linux-musl.tar.xz" && \
+    tar -xJf /tmp/watchexec.tar.xz -C /tmp && \
+    mv "/tmp/watchexec-${WATCHEXEC_VERSION}-x86_64-unknown-linux-musl/watchexec" /home/node/.local/bin/watchexec && \
+    rm -rf /tmp/watchexec*
+
+# Install score-compose — generates compose.yaml from score.*.yaml
+ARG SCORE_COMPOSE_VERSION=0.37.0
+RUN curl -fsSL -o /tmp/score-compose.tar.gz \
+    "https://github.com/score-spec/score-compose/releases/download/${SCORE_COMPOSE_VERSION}/score-compose_${SCORE_COMPOSE_VERSION}_linux_amd64.tar.gz" && \
+    tar -xzf /tmp/score-compose.tar.gz -C /home/node/.local/bin score-compose && \
+    rm /tmp/score-compose.tar.gz
+
+# Install score-helm — generates Helm release from score.*.yaml
+# Note: score-helm tags are v-prefixed (v0.10.x) but asset filenames are not.
+ARG SCORE_HELM_VERSION=0.10.4
+RUN curl -fsSL -o /tmp/score-helm.tar.gz \
+    "https://github.com/score-spec/score-helm/releases/download/v${SCORE_HELM_VERSION}/score-helm_${SCORE_HELM_VERSION}_linux_amd64.tar.gz" && \
+    tar -xzf /tmp/score-helm.tar.gz -C /home/node/.local/bin score-helm && \
+    rm /tmp/score-helm.tar.gz
+
 USER root
 
 COPY scripts/init-firewall.sh /usr/local/bin/

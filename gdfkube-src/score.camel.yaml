@@ -1,0 +1,14 @@
+# gdfkube-src/score.camel.yaml — Camel-Quarkus consumer, dummy image (Phase 0)
+apiVersion: score.dev/v1b1
+metadata:
+  name: gdfkube-camel
+containers:
+  app:
+    image: quay.io/quarkus/quarkus-micro-image:2.0   # replaced by Phase 3 build
+    variables:
+      KAFKA_BOOTSTRAP_SERVERS: "${resources.kafka.bootstrap}"
+      GITEA_URL: "${resources.gitea.url}"
+      GITEA_TOKEN: "${resources.gitea.token}"
+resources:
+  kafka:  { type: kafka }
+  gitea:  { type: gitea }
