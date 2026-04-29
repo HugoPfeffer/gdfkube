@@ -15,7 +15,7 @@
       "dockerDashComposeVersion": "latest"
     }
   },
-  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
+  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW", "--group-add=969"],
   "customizations": {
     "vscode": {
       "extensions": [
