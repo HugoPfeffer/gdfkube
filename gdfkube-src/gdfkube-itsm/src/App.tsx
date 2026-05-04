@@ -21,6 +21,7 @@ import { UtilityBand } from './shell/UtilityBand';
 import { ToastStack, type Toast } from './shell/ToastStack';
 import { useGdfData } from './state/dataContext';
 import { useTweaks } from './tweaks/useTweaks';
+import { TweaksPanel } from './tweaks/TweaksPanel';
 import { useRouter } from './router';
 import type { Role, Tweaks, User } from './types';
 
@@ -71,7 +72,8 @@ function App() {
   const { route, params, navigate } = useRouter();
   const [role, setRole] = useState<Role>('operator');
   const [toast, setToast] = useState<Toast | null>(null);
-  const [tweaks] = useTweaks(DEFAULT_TWEAKS);
+  const [tweaks, setTweaks] = useTweaks(DEFAULT_TWEAKS);
+  const [tweaksOpen, setTweaksOpen] = useState(false);
   const data = useGdfData();
 
   const user = useMemo(() => pickUser(data.users, role), [data.users, role]);
@@ -189,6 +191,29 @@ function App() {
         </div>
       </div>
       <ToastStack toast={toast} onDismiss={() => setToast(null)} />
+      <button
+        type="button"
+        className="btn"
+        onClick={() => setTweaksOpen((v) => !v)}
+        style={{
+          position: 'fixed',
+          right: 16,
+          bottom: 16,
+          zIndex: 250,
+          boxShadow: '0 2px 8px rgba(15, 38, 77, 0.12)',
+        }}
+      >
+        Tweaks
+      </button>
+      <TweaksPanel
+        open={tweaksOpen}
+        tweaks={tweaks}
+        setTweaks={setTweaks}
+        onClose={() => setTweaksOpen(false)}
+        role={role}
+        setRole={setRole}
+        navigate={navigate}
+      />
     </div>
   );
 }

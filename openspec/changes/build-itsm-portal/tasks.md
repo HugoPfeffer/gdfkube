@@ -117,9 +117,9 @@
 
 ## 15. Tweaks panel
 
-- [ ] 15.1 Build `src/tweaks/TweaksPanel.tsx` with Appearance (theme, density, sidebar collapse), Demo (pipeline speed slider, demo banner toggle), Quick actions (role toggle, open new-request flow).
-- [ ] 15.2 Apply theme via `document.documentElement.setAttribute("data-theme", ...)` from a `useEffect`.
-- [ ] 15.3 Persist via `useTweaks(defaults)`; cover the load-from-localStorage path in a Vitest test.
+- [x] 15.1 Build `src/tweaks/TweaksPanel.tsx` with Appearance (theme, density, sidebar collapse), Demo (pipeline speed slider, demo banner toggle), Quick actions (role toggle, open new-request flow).
+- [x] 15.2 Apply theme via `document.documentElement.setAttribute("data-theme", ...)` from a `useEffect`.
+- [x] 15.3 Persist via `useTweaks(defaults)`; cover the load-from-localStorage path in a Vitest test.
 
 ## 16. End-to-end flow
 
