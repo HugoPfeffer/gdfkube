@@ -86,13 +86,13 @@
 
 ## 12. Approvals page
 
-- [ ] 12.1 Build `src/pages/Approvals.tsx` with the pending queue (left) + decision detail (right) layout.
-- [ ] 12.2 Implement filter chips (All / Production / Scale) on the queue.
-- [ ] 12.3 Implement the decided-this-session log section.
-- [ ] 12.4 Build `src/pages/approvals/DecisionPanel.tsx` with payload, justification quote, policy checks, comment textarea, Approve/Reject + Reassign / Request changes buttons, and the 3-step approval-chain visualization.
-- [ ] 12.5 Implement the override modal triggered when approving a request with at least one failing policy check.
-- [ ] 12.6 Wire Approve to set `status: "provisioning"`, `stage: 1` and append to the chain. Wire Reject to set `status: "failed"`.
-- [ ] 12.7 Component tests: chip filtering, Approve transitions request, override modal blocks until confirmed, Reject marks failed.
+- [x] 12.1 Build `src/pages/Approvals.tsx` with the pending queue (left) + decision detail (right) layout.
+- [x] 12.2 Implement filter chips (All / Production / Scale) on the queue.
+- [x] 12.3 Implement the decided-this-session log section.
+- [x] 12.4 Build `src/pages/approvals/DecisionPanel.tsx` with payload, justification quote, policy checks, comment textarea, Approve/Reject + Reassign / Request changes buttons, and the 3-step approval-chain visualization.
+- [x] 12.5 Implement the override modal triggered when approving a request with at least one failing policy check.
+- [x] 12.6 Wire Approve to set `status: "provisioning"`, `stage: 1` and append to the chain. Wire Reject to set `status: "failed"`.
+- [x] 12.7 Component tests: chip filtering, Approve transitions request, override modal blocks until confirmed, Reject marks failed.
 
 ## 13. Admin → Forms
 

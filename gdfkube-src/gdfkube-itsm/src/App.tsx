@@ -7,6 +7,7 @@
 // so the App can be exercised end-to-end before each page lands.
 
 import { useEffect, useMemo, useState } from 'react';
+import { Approvals } from './pages/Approvals';
 import { Catalog } from './pages/Catalog';
 import { Dashboard } from './pages/Dashboard';
 import { NewRequest } from './pages/NewRequest';
@@ -138,6 +139,13 @@ function App() {
       <RequestsList role={role} user={user} navigate={navigate} />
     ) : route === 'request-detail' ? (
       <RequestDetail id={params.id} navigate={navigate} tweaks={tweaks} />
+    ) : route === 'approvals' ? (
+      <Approvals
+        role={role}
+        user={user}
+        navigate={navigate}
+        setToast={setToast}
+      />
     ) : (
       <div className="page-placeholder">{route}</div>
     );
