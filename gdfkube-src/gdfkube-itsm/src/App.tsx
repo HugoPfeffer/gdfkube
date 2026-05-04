@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Catalog } from './pages/Catalog';
 import { Dashboard } from './pages/Dashboard';
 import { NewRequest } from './pages/NewRequest';
+import { RequestsList } from './pages/RequestsList';
 import { Sidebar } from './shell/Sidebar';
 import { Topbar } from './shell/Topbar';
 import { UtilityBand } from './shell/UtilityBand';
@@ -132,6 +133,8 @@ function App() {
         user={user}
         role={role}
       />
+    ) : route === 'requests' ? (
+      <RequestsList role={role} user={user} navigate={navigate} />
     ) : (
       <div className="page-placeholder">{route}</div>
     );

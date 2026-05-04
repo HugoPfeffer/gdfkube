@@ -71,10 +71,10 @@
 
 ## 10. Requests list page
 
-- [ ] 10.1 Build `src/pages/RequestsList.tsx` with role-scoped data (operator: own; admin: all), title swap.
-- [ ] 10.2 Implement status filter chips (All / Approval / Provisioning / Ready / Failed) with single-active state.
-- [ ] 10.3 Implement inline progress indicator on `provisioning` rows.
-- [ ] 10.4 Component tests: operator scope, admin scope, chip filtering, progress indicator presence.
+- [x] 10.1 Build `src/pages/RequestsList.tsx` with role-scoped data (operator: own; admin: all), title swap.
+- [x] 10.2 Implement status filter chips (All / Approval / Provisioning / Ready / Failed) with single-active state.
+- [x] 10.3 Implement inline progress indicator on `provisioning` rows.
+- [x] 10.4 Component tests: operator scope, admin scope, chip filtering, progress indicator presence.
 
 ## 11. Request detail page
 
