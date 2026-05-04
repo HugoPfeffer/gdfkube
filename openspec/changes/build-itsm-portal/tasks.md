@@ -128,5 +128,5 @@
 
 ## 17. Documentation
 
-- [ ] 17.1 Write `gdfkube-src/gdfkube-itsm/README.md` covering: dev/build commands, role switcher, persistence caveat (in-memory only), Tweaks panel keys, link back to the originating proposal.
-- [ ] 17.2 Add a top-level pointer in `docs/` (only if the docs index exists) referencing the new module.
+- [x] 17.1 Write `gdfkube-src/gdfkube-itsm/README.md` covering: dev/build commands, role switcher, persistence caveat (in-memory only), Tweaks panel keys, link back to the originating proposal.
+- [ ] 17.2 Add a top-level pointer in `docs/` (only if the docs index exists) referencing the new module. (N/A — no docs/ index)
