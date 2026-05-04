@@ -259,6 +259,58 @@ describe('dataReducer', () => {
     });
     expect(patched.groups.find((g) => g.id === 'educacao')?.users).toBe(12);
   });
+
+  it('UPDATE_REQUEST_STATUS against an unknown id leaves the requests array unchanged', () => {
+    const state = baseState();
+    const result = dataReducer(state, {
+      type: 'UPDATE_REQUEST_STATUS',
+      id: 'REQ-DOES-NOT-EXIST',
+      status: 'failed',
+    });
+    expect(result.requests).toHaveLength(state.requests.length);
+    expect(result.requests).toEqual(state.requests);
+  });
+
+  it('UPDATE_FORM and UPDATE_USER against unknown ids leave their slices unchanged', () => {
+    const state = baseState();
+    const formResult = dataReducer(state, {
+      type: 'UPDATE_FORM',
+      id: 'no-such-form',
+      patch: { name: 'Should not apply' },
+    });
+    expect(formResult.forms).toEqual(state.forms);
+
+    const userResult = dataReducer(state, {
+      type: 'UPDATE_USER',
+      id: 'no-such-user',
+      patch: { role: 'admin' },
+    });
+    expect(userResult.users).toEqual(state.users);
+  });
+
+  it('UPDATE_FIELD against an unknown formId leaves state unchanged', () => {
+    const state = baseState();
+    const result = dataReducer(state, {
+      type: 'UPDATE_FIELD',
+      formId: 'no-such-form',
+      key: 'a',
+      patch: { label: 'Should not apply' },
+    });
+    expect(result).toBe(state);
+    expect(result.fields).toEqual(state.fields);
+  });
+
+  it('REORDER_FIELDS with from out of bounds leaves state unchanged', () => {
+    const state = baseState();
+    const result = dataReducer(state, {
+      type: 'REORDER_FIELDS',
+      formId: 'cluster-request',
+      from: 99,
+      to: 0,
+    });
+    expect(result).toBe(state);
+    expect(result.fields['cluster-request']?.map((f) => f.key)).toEqual(['a', 'b', 'c']);
+  });
 });
 
 describe('GdfDataProvider', () => {
@@ -274,27 +326,6 @@ describe('GdfDataProvider', () => {
     expect(result.current.requests).toHaveLength(1);
     expect(result.current.forms[0]?.id).toBe('cluster-request');
     expect(result.current.fields['cluster-request']?.map((f) => f.key)).toEqual(['a', 'b', 'c']);
-  });
-
-  it('dispatch from useGdfDispatch updates the data hook output', () => {
-    const initial = baseState();
-    const { result: dataResult } = renderHook(() => useGdfData(), {
-      wrapper: wrapper(initial),
-    });
-    expect(dataResult.current.requests).toHaveLength(1);
-
-    const { result: dispatchResult } = renderHook(() => useGdfDispatch(), {
-      wrapper: wrapper(initial),
-    });
-
-    act(() => {
-      dispatchResult.current({
-        type: 'ADD_REQUEST',
-        request: makeRequest({ id: 'REQ-NEW' }),
-      });
-    });
-    // Note: the two renderHook calls have separate providers, so we re-test via a
-    // combined render to confirm dispatch wires through.
   });
 
   it('dispatch through a single provider updates state observed by useGdfData', () => {
