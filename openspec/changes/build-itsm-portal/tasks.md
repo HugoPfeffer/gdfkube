@@ -21,10 +21,10 @@
 
 ## 3. Seed data
 
-- [ ] 3.1 Port `data.jsx` to `src/data/seeds.ts`: `ORGS`, `ENVS`, `REQUESTS`, `PIPELINE_STAGES`, `ACTIVITY_LOG`, `KPIS`, `RECENT_ACTIVITY`, `CATALOG_ITEMS`, `CLUSTERS`. Export a typed `GDF_DATA`.
-- [ ] 3.2 Port admin seeds from `admin.jsx` to `src/data/adminSeeds.ts`: forms (`cluster-request`, `namespace-request`, `scale-request` only), fields keyed by form id, users, groups. Export typed `GDF_ADMIN_DATA`.
-- [ ] 3.3 Port `DEFAULT_TEMPLATES` to `src/data/defaultTemplates.ts` as a map from form id to `TemplateFile[]` (cluster-request → hostedcluster.yaml + applicationset.yaml + managedcluster.yaml; namespace-request → namespace.yaml + resourcequota.yaml; scale-request → nodepool.yaml).
-- [ ] 3.4 Wrap `GDF_DATA` and `GDF_ADMIN_DATA` in a `useReducer`-backed context in `src/state/dataContext.tsx` so admin edits propagate to consumer pages.
+- [x] 3.1 Port `data.jsx` to `src/data/seeds.ts`: `ORGS`, `ENVS`, `REQUESTS`, `PIPELINE_STAGES`, `ACTIVITY_LOG`, `KPIS`, `RECENT_ACTIVITY`, `CATALOG_ITEMS`, `CLUSTERS`. Export a typed `GDF_DATA`.
+- [x] 3.2 Port admin seeds from `admin.jsx` to `src/data/adminSeeds.ts`: forms (`cluster-request`, `namespace-request`, `scale-request` only), fields keyed by form id, users, groups. Export typed `GDF_ADMIN_DATA`.
+- [x] 3.3 Port `DEFAULT_TEMPLATES` to `src/data/defaultTemplates.ts` as a map from form id to `TemplateFile[]` (cluster-request → hostedcluster.yaml + applicationset.yaml + managedcluster.yaml; namespace-request → namespace.yaml + resourcequota.yaml; scale-request → nodepool.yaml).
+- [x] 3.4 Wrap `GDF_DATA` and `GDF_ADMIN_DATA` in a `useReducer`-backed context in `src/state/dataContext.tsx` so admin edits propagate to consumer pages.
 
 ## 4. Icons
 
