@@ -2,3 +2,4 @@
 !.env.example
 .envrc
 .claude/plans
+.worktrees
