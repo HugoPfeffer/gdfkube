@@ -97,7 +97,8 @@ export function Sidebar({ route, navigate, role, collapsed }: SidebarProps) {
           if (entry.adminOnly && role !== 'admin') return null;
           const Ic = Icons[entry.icon];
           return (
-            <div
+            <button
+              type="button"
               key={entry.id}
               className={'nav-item' + (route === entry.id ? ' active' : '')}
               onClick={() => navigate(entry.id)}
@@ -108,7 +109,7 @@ export function Sidebar({ route, navigate, role, collapsed }: SidebarProps) {
               {!collapsed && entry.badge != null && (
                 <span className="badge">{entry.badge}</span>
               )}
-            </div>
+            </button>
           );
         })}
       </nav>

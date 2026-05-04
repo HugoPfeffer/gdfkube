@@ -91,6 +91,24 @@ describe('Topbar', () => {
     expect(screen.queryByText('Switch role')).not.toBeInTheDocument();
   });
 
+  it('pressing Escape closes the role menu', () => {
+    const setRole = vi.fn();
+    const { container } = render(
+      <Topbar
+        crumbs={['Home']}
+        role="operator"
+        setRole={setRole}
+        user={makeUser()}
+      />,
+    );
+
+    fireEvent.click(container.querySelector('.role-switch')!);
+    expect(screen.getByText('Switch role')).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByText('Switch role')).not.toBeInTheDocument();
+  });
+
   it('clicking outside closes the role menu', () => {
     const setRole = vi.fn();
     const { container } = render(

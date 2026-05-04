@@ -36,7 +36,7 @@ export function ToastStack({ toast, onDismiss }: ToastStackProps) {
   if (!toast) return null;
 
   return (
-    <div className="toast-stack">
+    <div className="toast-stack" role="status" aria-live="polite">
       <div className={'toast ' + toast.kind}>
         <div className="toast-icon" aria-hidden="true">
           {toast.kind === 'success' ? <Icons.check /> : <Icons.info />}

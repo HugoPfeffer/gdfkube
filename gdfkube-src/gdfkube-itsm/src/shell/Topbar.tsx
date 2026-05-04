@@ -33,13 +33,20 @@ export function Topbar({ crumbs, role, setRole, user, onNotify }: TopbarProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handler(e: MouseEvent) {
+    function handleMouse(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', handleMouse);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleMouse);
+      document.removeEventListener('keydown', handleKey);
+    };
   }, []);
 
   const initials = initialsOf(user);
@@ -80,7 +87,13 @@ export function Topbar({ crumbs, role, setRole, user, onNotify }: TopbarProps) {
         <span className="pip"></span>
       </button>
       <div ref={ref} style={{ position: 'relative' }}>
-        <div className="role-switch" onClick={() => setOpen((v) => !v)}>
+        <button
+          type="button"
+          className="role-switch"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
           <div className="avatar">{initials}</div>
           <div className="who">
             <span className="name">{user.name}</span>
@@ -89,7 +102,7 @@ export function Topbar({ crumbs, role, setRole, user, onNotify }: TopbarProps) {
             </span>
           </div>
           <Icons.chevronDown />
-        </div>
+        </button>
         {open && (
           <div className="menu" style={{ right: 0, top: 44 }}>
             <div
@@ -104,7 +117,9 @@ export function Topbar({ crumbs, role, setRole, user, onNotify }: TopbarProps) {
             >
               Switch role
             </div>
-            <div
+            <button
+              type="button"
+              role="menuitem"
               className={'menu-item' + (role === 'operator' ? ' active' : '')}
               onClick={() => {
                 setRole('operator');
@@ -121,8 +136,10 @@ export function Topbar({ crumbs, role, setRole, user, onNotify }: TopbarProps) {
               {role === 'operator' && (
                 <Icons.check className="menu-check" />
               )}
-            </div>
-            <div
+            </button>
+            <button
+              type="button"
+              role="menuitem"
               className={'menu-item' + (role === 'admin' ? ' active' : '')}
               onClick={() => {
                 setRole('admin');
@@ -137,7 +154,7 @@ export function Topbar({ crumbs, role, setRole, user, onNotify }: TopbarProps) {
                 </div>
               </div>
               {role === 'admin' && <Icons.check className="menu-check" />}
-            </div>
+            </button>
             <div className="menu-sep"></div>
             <div className="menu-item">
               <Icons.cog /> Preferences
