@@ -61,13 +61,13 @@
 
 ## 9. Generic form runner (NewRequest)
 
-- [ ] 9.1 Build `src/forms/GenericRequest.tsx` reading `GDF_ADMIN_DATA.fields[formId]`, rendering each field per `type` and `displayAs`.
-- [ ] 9.2 Implement the Radio-cards display variant in `src/forms/RadioCards.tsx`.
-- [ ] 9.3 Implement the prefix chrome with token interpolation in `src/forms/PrefixedInput.tsx`.
-- [ ] 9.4 Implement the live `meta` + `vars` payload preview pane.
-- [ ] 9.5 Implement the Submit handler that builds the new request, sets `status: "approval"`, populates `policyChecks`, dispatches a new entry into `GDF_DATA.REQUESTS`, navigates to `request-detail`, and triggers the info toast.
-- [ ] 9.6 Wire `src/pages/NewRequest.tsx` to delegate to `GenericRequest` for every form id (no bespoke ClusterRequest component).
-- [ ] 9.7 Component tests: required-field disables submit; pipe-grammar parses values + descriptions + dot colors; prefix interpolates against sibling field; submit creates `status: "approval"` and triggers toast.
+- [x] 9.1 Build `src/forms/GenericRequest.tsx` reading `GDF_ADMIN_DATA.fields[formId]`, rendering each field per `type` and `displayAs`.
+- [x] 9.2 Implement the Radio-cards display variant in `src/forms/RadioCards.tsx`.
+- [x] 9.3 Implement the prefix chrome with token interpolation in `src/forms/PrefixedInput.tsx`.
+- [x] 9.4 Implement the live `meta` + `vars` payload preview pane.
+- [x] 9.5 Implement the Submit handler that builds the new request, sets `status: "approval"`, populates `policyChecks`, dispatches a new entry into `GDF_DATA.REQUESTS`, navigates to `request-detail`, and triggers the info toast.
+- [x] 9.6 Wire `src/pages/NewRequest.tsx` to delegate to `GenericRequest` for every form id (no bespoke ClusterRequest component).
+- [x] 9.7 Component tests: required-field disables submit; pipe-grammar parses values + descriptions + dot colors; prefix interpolates against sibling field; submit creates `status: "approval"` and triggers toast.
 
 ## 10. Requests list page
 

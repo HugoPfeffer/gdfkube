@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Catalog } from './pages/Catalog';
 import { Dashboard } from './pages/Dashboard';
+import { NewRequest } from './pages/NewRequest';
 import { Sidebar } from './shell/Sidebar';
 import { Topbar } from './shell/Topbar';
 import { UtilityBand } from './shell/UtilityBand';
@@ -123,6 +124,14 @@ function App() {
       <Dashboard role={role} navigate={navigate} user={user} />
     ) : route === 'catalog' ? (
       <Catalog navigate={navigate} />
+    ) : route === 'new-request' ? (
+      <NewRequest
+        formId={params.formId}
+        navigate={navigate}
+        setToast={setToast}
+        user={user}
+        role={role}
+      />
     ) : (
       <div className="page-placeholder">{route}</div>
     );
