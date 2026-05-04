@@ -96,14 +96,14 @@
 
 ## 13. Admin → Forms
 
-- [ ] 13.1 Build `src/pages/admin/Forms.tsx` with top-level Forms / Form Fields tabs and ensure the Form Fields tab has no "New field" button.
-- [ ] 13.2 Build `src/admin/FormEditor.tsx` with Definition / Fields / Template sub-tabs.
-- [ ] 13.3 Implement the editable Fields table with the type-aware Validation/options control and the advanced sub-row exposing `displayAs`, `prefix`, `help`.
-- [ ] 13.4 Implement HTML5 drag-and-drop reordering with the `⋮⋮` handle and the dim-and-border visual feedback.
-- [ ] 13.5 Build `src/admin/TemplateEditor.tsx` with multi-file inner tabs (switch / rename / add / remove), YAML textarea, Rendered preview toggle.
-- [ ] 13.6 Build the Available variables panel with the System group at the top + From form fields group below; click-to-copy each token using the clipboard helper.
-- [ ] 13.7 Build `src/admin/NewFormPage.tsx` for creating a new form; Create button disabled until id and name are set and id does not collide; show inline collision error.
-- [ ] 13.8 Component tests: drag reorder, type-aware control switch, multi-file add/rename/remove, copy via fallback path, id collision blocks Create, persist new form into context.
+- [x] 13.1 Build `src/pages/admin/Forms.tsx` with top-level Forms / Form Fields tabs and ensure the Form Fields tab has no "New field" button.
+- [x] 13.2 Build `src/admin/FormEditor.tsx` with Definition / Fields / Template sub-tabs.
+- [x] 13.3 Implement the editable Fields table with the type-aware Validation/options control and the advanced sub-row exposing `displayAs`, `prefix`, `help`.
+- [x] 13.4 Implement HTML5 drag-and-drop reordering with the `⋮⋮` handle and the dim-and-border visual feedback.
+- [x] 13.5 Build `src/admin/TemplateEditor.tsx` with multi-file inner tabs (switch / rename / add / remove), YAML textarea, Rendered preview toggle.
+- [x] 13.6 Build the Available variables panel with the System group at the top + From form fields group below; click-to-copy each token using the clipboard helper.
+- [x] 13.7 Build `src/admin/NewFormPage.tsx` for creating a new form; Create button disabled until id and name are set and id does not collide; show inline collision error.
+- [x] 13.8 Component tests: drag reorder, type-aware control switch, multi-file add/rename/remove, copy via fallback path, id collision blocks Create, persist new form into context.
 
 ## 14. Admin → Users
 

@@ -13,6 +13,7 @@ import { Dashboard } from './pages/Dashboard';
 import { NewRequest } from './pages/NewRequest';
 import { RequestDetail } from './pages/RequestDetail';
 import { RequestsList } from './pages/RequestsList';
+import { Forms as AdminForms } from './pages/admin/Forms';
 import { Sidebar } from './shell/Sidebar';
 import { Topbar } from './shell/Topbar';
 import { UtilityBand } from './shell/UtilityBand';
@@ -146,6 +147,8 @@ function App() {
         navigate={navigate}
         setToast={setToast}
       />
+    ) : route === 'admin-forms' ? (
+      <AdminForms navigate={navigate} />
     ) : (
       <div className="page-placeholder">{route}</div>
     );
