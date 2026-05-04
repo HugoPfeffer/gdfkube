@@ -40,11 +40,11 @@
 
 ## 6. Routing and App root
 
-- [ ] 6.1 Implement `useRouter()` hook in `src/router.ts` exposing `route`, `routeParams`, and `navigate(route, params)` over a `useReducer`.
-- [ ] 6.2 Build `src/App.tsx` switching on `route`: `home`, `catalog`, `new-request`, `requests`, `request-detail`, `approvals`, `admin-forms`, `admin-users`.
-- [ ] 6.3 Implement the role-route guard `useEffect` redirecting operators away from admin/approval routes.
-- [ ] 6.4 Implement breadcrumb derivation for every route (parameterized by `routeParams.formId` for new-request and `routeParams.id` for request-detail).
-- [ ] 6.5 Wire the Tweaks panel to App state, including persisted defaults.
+- [x] 6.1 Implement `useRouter()` hook in `src/router.ts` exposing `route`, `routeParams`, and `navigate(route, params)` over a `useReducer`.
+- [x] 6.2 Build `src/App.tsx` switching on `route`: `home`, `catalog`, `new-request`, `requests`, `request-detail`, `approvals`, `admin-forms`, `admin-users`.
+- [x] 6.3 Implement the role-route guard `useEffect` redirecting operators away from admin/approval routes.
+- [x] 6.4 Implement breadcrumb derivation for every route (parameterized by `routeParams.formId` for new-request and `routeParams.id` for request-detail).
+- [x] 6.5 Wire the Tweaks panel to App state, including persisted defaults.
 
 ## 7. Dashboard page
 
