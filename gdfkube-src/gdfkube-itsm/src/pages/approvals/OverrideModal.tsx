@@ -1,7 +1,13 @@
 // Override modal — confirms an approval when one or more policy checks
 // have `ok: false`. The modal lists the failing checks and requires an
 // explicit Confirm before the parent commits the approval.
+//
+// A11y: when the modal opens we move focus to the Confirm button so a
+// keyboard user can act without tabbing past the dialog chrome, and we
+// register a window-level keydown listener that calls `onCancel()` on
+// Escape so the modal behaves like any standard system dialog.
 
+import { useEffect, useRef } from 'react';
 import { Icons } from '../../icons/Icons';
 import type { PolicyCheck } from '../../types';
 
@@ -18,6 +24,25 @@ export function OverrideModal({
   onConfirm,
   onCancel,
 }: OverrideModalProps) {
+  const confirmRef = useRef<HTMLButtonElement | null>(null);
+
+  // Focus the Confirm button when the modal opens. Re-runs whenever `open`
+  // toggles to true so reopens after a Cancel still land focus correctly.
+  useEffect(() => {
+    if (open) confirmRef.current?.focus();
+  }, [open]);
+
+  // Escape-to-close. Only attach the listener while the modal is open so we
+  // don't intercept keystrokes meant for the page underneath.
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onCancel]);
+
   if (!open) return null;
   return (
     <div
@@ -54,7 +79,12 @@ export function OverrideModal({
           <button type="button" className="btn ghost" onClick={onCancel}>
             Cancel
           </button>
-          <button type="button" className="btn primary" onClick={onConfirm}>
+          <button
+            ref={confirmRef}
+            type="button"
+            className="btn primary"
+            onClick={onConfirm}
+          >
             Confirm override
           </button>
         </div>

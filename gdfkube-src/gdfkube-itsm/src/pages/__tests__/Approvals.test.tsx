@@ -534,4 +534,81 @@ describe('Approvals', () => {
     expect(empty).not.toBeNull();
     expect(empty!.textContent).toMatch(/select|choose|pick/i);
   });
+
+  it('override modal: Confirm button receives focus when the modal opens', () => {
+    const requests = [
+      makeRequest('REQ0010238', {
+        policyChecks: [
+          { id: 'window', label: 'Production change window', ok: false },
+        ],
+      }),
+    ];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '.approval-row[data-id="REQ0010238"]',
+      ) as HTMLElement,
+    );
+    fireEvent.click(
+      within(
+        container.querySelector(
+          '[data-testid="decision-panel"]',
+        ) as HTMLElement,
+      ).getByRole('button', { name: /Approve/i }),
+    );
+
+    const modal = container.querySelector(
+      '[data-testid="override-modal"]',
+    ) as HTMLElement;
+    const confirmBtn = within(modal).getByRole('button', {
+      name: /Confirm/i,
+    });
+    expect(document.activeElement).toBe(confirmBtn);
+  });
+
+  it('override modal: Escape closes the modal and leaves the request pending', () => {
+    const requests = [
+      makeRequest('REQ0010238', {
+        policyChecks: [
+          { id: 'window', label: 'Production change window', ok: false },
+        ],
+      }),
+    ];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '.approval-row[data-id="REQ0010238"]',
+      ) as HTMLElement,
+    );
+    fireEvent.click(
+      within(
+        container.querySelector(
+          '[data-testid="decision-panel"]',
+        ) as HTMLElement,
+      ).getByRole('button', { name: /Approve/i }),
+    );
+
+    expect(
+      container.querySelector('[data-testid="override-modal"]'),
+    ).not.toBeNull();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(
+      container.querySelector('[data-testid="override-modal"]'),
+    ).toBeNull();
+
+    const queue = container.querySelector(
+      '[data-testid="approval-queue"]',
+    ) as HTMLElement;
+    expect(
+      queue.querySelector('.approval-row[data-id="REQ0010238"]'),
+    ).not.toBeNull();
+  });
 });
