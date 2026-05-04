@@ -7,7 +7,7 @@
 //   - banner "View activity" CTA navigates to requests
 //   - activity entry of type `err` has a leading dot using `var(--red-500)`
 
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { GdfDataProvider, type DataState } from '../../state/dataContext';
@@ -150,6 +150,35 @@ describe('Dashboard', () => {
     });
   });
 
+  it('recent-request rows are keyboard accessible (Enter/Space activate)', () => {
+    const navigate = vi.fn();
+    render(
+      withProvider(
+        makeState(),
+        <Dashboard role="operator" navigate={navigate} user={operatorUser} />,
+      ),
+    );
+
+    const row = screen.getByText('REQ0010251').closest('tr')!;
+    expect(row.getAttribute('tabindex')).toBe('0');
+    expect(row.getAttribute('role')).toBe('button');
+
+    fireEvent.keyDown(row, { key: 'Enter' });
+    expect(navigate).toHaveBeenLastCalledWith('request-detail', {
+      id: 'REQ0010251',
+    });
+
+    navigate.mockClear();
+    fireEvent.keyDown(row, { key: ' ' });
+    expect(navigate).toHaveBeenLastCalledWith('request-detail', {
+      id: 'REQ0010251',
+    });
+
+    navigate.mockClear();
+    fireEvent.keyDown(row, { key: 'Tab' });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('clicking the banner "View activity" button navigates to requests', () => {
     const navigate = vi.fn();
     render(
@@ -188,15 +217,15 @@ describe('Dashboard', () => {
       ),
     );
 
-    const card = within(
-      container.querySelector('[data-testid="recent-requests"]')!,
+    const card = container.querySelector('[data-testid="recent-requests"]')!;
+    // Body rows are queried directly (rather than via role="row") because each
+    // body row carries an explicit role="button" for keyboard accessibility,
+    // which overrides the implicit `row` role.
+    const bodyRows = card.querySelectorAll('tbody tr');
+    expect(bodyRows.length).toBe(4);
+    const ids = Array.from(bodyRows).map(
+      (r) => r.querySelector('.row-id')?.textContent,
     );
-    const rows = card.getAllByRole('row');
-    // header + 4 body rows
-    expect(rows.length).toBe(5);
-    const ids = rows
-      .slice(1)
-      .map((r) => r.querySelector('.row-id')?.textContent);
     expect(ids).toEqual([
       'REQ0010251',
       'REQ0010249',

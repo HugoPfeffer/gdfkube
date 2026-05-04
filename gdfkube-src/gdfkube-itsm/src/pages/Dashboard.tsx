@@ -122,7 +122,15 @@ export function Dashboard({ role, navigate, user }: DashboardProps) {
               {recent.map((r) => (
                 <tr
                   key={r.id}
+                  tabIndex={0}
+                  role="button"
                   onClick={() => navigate('request-detail', { id: r.id })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      if (e.key === ' ') e.preventDefault();
+                      navigate('request-detail', { id: r.id });
+                    }
+                  }}
                 >
                   <td>
                     <span className="row-id">{r.id}</span>
