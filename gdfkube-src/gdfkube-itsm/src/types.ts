@@ -1,6 +1,6 @@
 // Types for the ITSM portal demo. This file exports types only — no runtime values.
 
-export type Role = 'operator' | 'admin';
+export type Role = 'operator' | 'admin' | 'approver' | 'service';
 
 export type User = {
   id: string;
@@ -12,6 +12,8 @@ export type User = {
   status?: 'active' | 'disabled';
   username?: string;
   mfa?: string;
+  active?: boolean;
+  last?: string;
 };
 
 export type RouteName =
@@ -70,12 +72,20 @@ export type Request = {
   policyChecks: PolicyCheck[];
   approvalChain?: ApprovalDecision[];
   reason?: string;
+  // Optional display extras carried through from the seed bundle.
+  formLabel?: string;
+  progress?: number;
+  waiting?: string;
+  estCost?: string;
+  requestId?: string;
 };
 
 export type PipelineStage = {
   id: string;
   label: string;
   description?: string;
+  sub?: string;
+  icon?: string;
 };
 
 export type KPI = {
@@ -83,6 +93,8 @@ export type KPI = {
   label: string;
   value: string | number;
   delta?: string;
+  accent?: string;
+  trend?: 'up' | 'down';
 };
 
 export type ActivityEntry = {
@@ -92,6 +104,34 @@ export type ActivityEntry = {
   verb: string;
   objectId?: string;
   detail?: string;
+  type?: 'info' | 'ok' | 'warn' | 'err';
+};
+
+export type LogEntry = {
+  ts: string;
+  lvl: 'info' | 'ok' | 'warn' | 'err';
+  msg: string;
+};
+
+export type Cluster = {
+  name: string;
+  org: string;
+  env: Env;
+  nodes: number;
+  version: string;
+  age: string;
+  health: 'provisioning' | 'healthy' | 'degraded' | 'failed';
+  region: string;
+};
+
+export type Group = {
+  id: string;
+  name: string;
+  fullName: string;
+  users: number;
+  forms: number;
+  repo: string;
+  clusters: number | null;
 };
 
 export type CatalogItem = {
@@ -117,6 +157,8 @@ export type Field = {
   max?: number;
   options?: string;
   displayAs?: FieldDisplayAs;
+  // Numeric id from the seed bundle (used as a stable React key during reorder).
+  id?: number;
 };
 
 export type FormDef = {
@@ -127,6 +169,9 @@ export type FormDef = {
   status: 'active' | 'disabled';
   lastEdited?: string;
   submissions?: number;
+  // Bundle-only display extras.
+  fieldCount?: number;
+  updated?: string;
 };
 
 export type TemplateFile = {
