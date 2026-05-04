@@ -48,9 +48,9 @@
 
 ## 7. Dashboard page
 
-- [ ] 7.1 Build `src/pages/Dashboard.tsx`: page head (role-aware title), banner, KPI grid (3 cards), Recent Requests table, Activity Stream card.
-- [ ] 7.2 Implement `StatusPill` in `src/components/StatusPill.tsx`.
-- [ ] 7.3 Component tests covering title swap on role change, KPI card count, row click navigation.
+- [x] 7.1 Build `src/pages/Dashboard.tsx`: page head (role-aware title), banner, KPI grid (3 cards), Recent Requests table, Activity Stream card.
+- [x] 7.2 Implement `StatusPill` in `src/components/StatusPill.tsx`.
+- [x] 7.3 Component tests covering title swap on role change, KPI card count, row click navigation.
 
 ## 8. Service Catalog page
 

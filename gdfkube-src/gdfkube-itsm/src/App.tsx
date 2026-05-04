@@ -7,6 +7,7 @@
 // so the App can be exercised end-to-end before each page lands.
 
 import { useEffect, useMemo, useState } from 'react';
+import { Dashboard } from './pages/Dashboard';
 import { Sidebar } from './shell/Sidebar';
 import { Topbar } from './shell/Topbar';
 import { UtilityBand } from './shell/UtilityBand';
@@ -116,7 +117,12 @@ function App() {
     }
   }, [route, params.formId, params.id, data.forms, role]);
 
-  const pageElement = <div className="page-placeholder">{route}</div>;
+  const pageElement =
+    route === 'home' ? (
+      <Dashboard role={role} navigate={navigate} user={user} />
+    ) : (
+      <div className="page-placeholder">{route}</div>
+    );
 
   const shellClass =
     `app-shell density-${tweaks.density}` +
