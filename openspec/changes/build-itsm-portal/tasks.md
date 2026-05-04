@@ -107,13 +107,13 @@
 
 ## 14. Admin → Users
 
-- [ ] 14.1 Build `src/pages/admin/Users.tsx` with Users / Groups tabs.
-- [ ] 14.2 Implement search + role filter on the Users table.
-- [ ] 14.3 Build `src/admin/UserEditor.tsx` with name, username, email, group, role, status, password (set/change), MFA, recent sessions list.
-- [ ] 14.4 Build `src/admin/NewUserPage.tsx`; Create disabled until name, username, email, group, role are non-empty.
-- [ ] 14.5 Build `src/admin/GroupEditor.tsx` with id, display name, full name, Git repo (auto-suggest from id), ManagedClusterSet binding, auto-provision toggle.
-- [ ] 14.6 Build `src/admin/NewGroupPage.tsx` with the live preview of Keycloak group, repo, AppProject, binding.
-- [ ] 14.7 Component tests: role filter, repo auto-suggest, missing-fields disables Create.
+- [x] 14.1 Build `src/pages/admin/Users.tsx` with Users / Groups tabs.
+- [x] 14.2 Implement search + role filter on the Users table.
+- [x] 14.3 Build `src/admin/UserEditor.tsx` with name, username, email, group, role, status, password (set/change), MFA, recent sessions list.
+- [x] 14.4 Build `src/admin/NewUserPage.tsx`; Create disabled until name, username, email, group, role are non-empty.
+- [x] 14.5 Build `src/admin/GroupEditor.tsx` with id, display name, full name, Git repo (auto-suggest from id), ManagedClusterSet binding, auto-provision toggle.
+- [x] 14.6 Build `src/admin/NewGroupPage.tsx` with the live preview of Keycloak group, repo, AppProject, binding.
+- [x] 14.7 Component tests: role filter, repo auto-suggest, missing-fields disables Create.
 
 ## 15. Tweaks panel
 
