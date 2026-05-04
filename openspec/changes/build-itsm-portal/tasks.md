@@ -54,10 +54,10 @@
 
 ## 8. Service Catalog page
 
-- [ ] 8.1 Build `src/pages/Catalog.tsx` reading active forms from `GDF_ADMIN_DATA.forms` via context.
-- [ ] 8.2 Implement an icon/description lookup keyed by form id with a generic fallback.
-- [ ] 8.3 Mark `cluster-request` as featured.
-- [ ] 8.4 Component tests: disabled form is hidden; new form id renders with generic chrome; tile click navigates with `formId`.
+- [x] 8.1 Build `src/pages/Catalog.tsx` reading active forms from `GDF_ADMIN_DATA.forms` via context.
+- [x] 8.2 Implement an icon/description lookup keyed by form id with a generic fallback.
+- [x] 8.3 Mark `cluster-request` as featured.
+- [x] 8.4 Component tests: disabled form is hidden; new form id renders with generic chrome; tile click navigates with `formId`.
 
 ## 9. Generic form runner (NewRequest)
 

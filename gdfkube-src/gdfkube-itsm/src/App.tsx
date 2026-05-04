@@ -7,6 +7,7 @@
 // so the App can be exercised end-to-end before each page lands.
 
 import { useEffect, useMemo, useState } from 'react';
+import { Catalog } from './pages/Catalog';
 import { Dashboard } from './pages/Dashboard';
 import { Sidebar } from './shell/Sidebar';
 import { Topbar } from './shell/Topbar';
@@ -120,6 +121,8 @@ function App() {
   const pageElement =
     route === 'home' ? (
       <Dashboard role={role} navigate={navigate} user={user} />
+    ) : route === 'catalog' ? (
+      <Catalog navigate={navigate} />
     ) : (
       <div className="page-placeholder">{route}</div>
     );
