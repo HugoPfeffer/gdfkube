@@ -32,11 +32,11 @@
 
 ## 5. App shell
 
-- [ ] 5.1 Build `src/shell/UtilityBand.tsx` (status dot + version pill).
-- [ ] 5.2 Build `src/shell/Sidebar.tsx` enforcing role-gated items, badge logic, collapsed-mode tooltips.
-- [ ] 5.3 Build `src/shell/Topbar.tsx` with breadcrumbs, search input + ⌘K hint, refresh + notifications buttons, role switcher menu (close-on-outside-click).
-- [ ] 5.4 Build `src/shell/ToastStack.tsx` displaying a single active toast with auto-dismiss after 5s.
-- [ ] 5.5 Component tests for Sidebar (role gating, badge math), Topbar (role switch), ToastStack (auto-dismiss).
+- [x] 5.1 Build `src/shell/UtilityBand.tsx` (status dot + version pill).
+- [x] 5.2 Build `src/shell/Sidebar.tsx` enforcing role-gated items, badge logic, collapsed-mode tooltips.
+- [x] 5.3 Build `src/shell/Topbar.tsx` with breadcrumbs, search input + ⌘K hint, refresh + notifications buttons, role switcher menu (close-on-outside-click).
+- [x] 5.4 Build `src/shell/ToastStack.tsx` displaying a single active toast with auto-dismiss after 5s.
+- [x] 5.5 Component tests for Sidebar (role gating, badge math), Topbar (role switch), ToastStack (auto-dismiss).
 
 ## 6. Routing and App root
 
