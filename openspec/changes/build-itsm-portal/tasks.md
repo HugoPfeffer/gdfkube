@@ -78,11 +78,11 @@
 
 ## 11. Request detail page
 
-- [ ] 11.1 Build `src/pages/RequestDetail.tsx` with the 7-stage pipeline visualization in `src/components/Pipeline.tsx`.
-- [ ] 11.2 Wire `pipelineSpeed` tweak to the active stage's animation duration.
-- [ ] 11.3 Add Request Details, Approvals, and Cluster Access side panels.
-- [ ] 11.4 Disable kubeconfig download until `status === "ready"`.
-- [ ] 11.5 Confirm via test that no "Generated Manifests" or "Pipeline Activity" cards are rendered.
+- [x] 11.1 Build `src/pages/RequestDetail.tsx` with the 7-stage pipeline visualization in `src/components/Pipeline.tsx`.
+- [x] 11.2 Wire `pipelineSpeed` tweak to the active stage's animation duration.
+- [x] 11.3 Add Request Details, Approvals, and Cluster Access side panels.
+- [x] 11.4 Disable kubeconfig download until `status === "ready"`.
+- [x] 11.5 Confirm via test that no "Generated Manifests" or "Pipeline Activity" cards are rendered.
 
 ## 12. Approvals page
 

@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Catalog } from './pages/Catalog';
 import { Dashboard } from './pages/Dashboard';
 import { NewRequest } from './pages/NewRequest';
+import { RequestDetail } from './pages/RequestDetail';
 import { RequestsList } from './pages/RequestsList';
 import { Sidebar } from './shell/Sidebar';
 import { Topbar } from './shell/Topbar';
@@ -135,6 +136,8 @@ function App() {
       />
     ) : route === 'requests' ? (
       <RequestsList role={role} user={user} navigate={navigate} />
+    ) : route === 'request-detail' ? (
+      <RequestDetail id={params.id} navigate={navigate} tweaks={tweaks} />
     ) : (
       <div className="page-placeholder">{route}</div>
     );
