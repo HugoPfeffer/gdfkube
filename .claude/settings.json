@@ -1,10 +1,13 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "env": {},
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "attribution": {
     "commit": "",
     "pr": ""
   },
+  "teammateMode": "in-process",
   "permissions": {
     "allow": [
       "mcp__firecrawl-mcp__firecrawl_search",
