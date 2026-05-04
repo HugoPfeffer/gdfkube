@@ -135,8 +135,7 @@ describe('TemplateEditor', () => {
       withProvider(makeState(tpl), <TemplateEditor formId="cluster-request" />),
     );
 
-    const aTab = screen.getByTestId('template-tab-a.yaml');
-    fireEvent.click(within(aTab).getByLabelText(/remove a\.yaml/i));
+    fireEvent.click(screen.getByRole('button', { name: /remove a\.yaml/i }));
 
     expect(screen.queryByTestId('template-tab-a.yaml')).toBeNull();
     expect(screen.getByTestId('template-tab-b.yaml')).toBeInTheDocument();

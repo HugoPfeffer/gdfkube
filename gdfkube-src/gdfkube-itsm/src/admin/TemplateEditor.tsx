@@ -76,16 +76,22 @@ export function TemplateEditor({ formId }: { formId: string }) {
     <div className="template-editor" style={{ marginTop: 16 }}>
       <div className="template-tabs" role="tablist" aria-label="Template files" style={{ display: 'flex', borderBottom: '1px solid var(--ink-200)', flexWrap: 'wrap' }}>
         {files.map((f, i) => (
-          <div
+          <span
             key={`${f.name}-${i}`}
-            role="tab"
-            aria-selected={i === idx}
-            data-testid={`template-tab-${f.name}`}
-            className={`template-tab${i === idx ? ' active' : ''}`}
-            onClick={() => setActiveIdx(i)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', cursor: 'pointer', borderBottom: i === idx ? '2px solid var(--civic-500)' : 'none' }}
+            className={`template-tab-wrap${i === idx ? ' active' : ''}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderBottom: i === idx ? '2px solid var(--civic-500)' : 'none' }}
           >
-            <span className="mono">{f.name}</span>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={i === idx}
+              data-testid={`template-tab-${f.name}`}
+              className={`template-tab${i === idx ? ' active' : ''}`}
+              onClick={() => setActiveIdx(i)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'transparent', border: 0, padding: 0, font: 'inherit', cursor: 'pointer', color: 'inherit' }}
+            >
+              <span className="mono">{f.name}</span>
+            </button>
             {files.length > 1 && (
               <button
                 type="button"
@@ -95,7 +101,7 @@ export function TemplateEditor({ formId }: { formId: string }) {
                 onClick={(e) => { e.stopPropagation(); removeFile(i); }}
               >✕</button>
             )}
-          </div>
+          </span>
         ))}
         <button type="button" className="btn ghost sm" onClick={addFile} aria-label="Add manifest">+ Add manifest</button>
       </div>
