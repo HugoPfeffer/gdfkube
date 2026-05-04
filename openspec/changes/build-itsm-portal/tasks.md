@@ -1,13 +1,13 @@
 ## 1. Project scaffolding
 
-- [ ] 1.1 Create `gdfkube-src/gdfkube-itsm/` and initialize a Vite + React 18 + TypeScript app (`npm create vite@latest gdfkube-itsm -- --template react-ts`).
-- [ ] 1.2 Pin dependencies: `react@18.3.1`, `react-dom@18.3.1`, `vite@^5`, `@vitejs/plugin-react@^4`, `typescript@^5`.
-- [ ] 1.3 Add dev dependencies: `vitest@^1`, `@testing-library/react@^14`, `@testing-library/jest-dom@^6`, `jsdom@^24`, `eslint@^9`, `prettier@^3`.
-- [ ] 1.4 Add npm scripts: `dev`, `build`, `preview`, `typecheck` (`tsc --noEmit`), `test` (`vitest run`), `test:watch` (`vitest`), `lint` (`eslint src --ext .ts,.tsx`).
-- [ ] 1.5 Configure `tsconfig.json` with `strict: true`, `jsx: react-jsx`, `paths` for `@/*` → `src/*`.
-- [ ] 1.6 Add Google Fonts link tags for Inter Tight, JetBrains Mono, Source Serif 4 to `index.html`.
-- [ ] 1.7 Copy the bundle's `styles.css` into `src/styles.css` and import it from `src/main.tsx`.
-- [ ] 1.8 Add a path-filtered GitHub Actions workflow `.github/workflows/gdfkube-itsm-ci.yml` that runs `npm ci && npm run typecheck && npm run test && npm run build` on changes under `gdfkube-src/gdfkube-itsm/**`.
+- [x] 1.1 Create `gdfkube-src/gdfkube-itsm/` and initialize a Vite + React 18 + TypeScript app (`npm create vite@latest gdfkube-itsm -- --template react-ts`).
+- [x] 1.2 Pin dependencies: `react@18.3.1`, `react-dom@18.3.1`, `vite@^5`, `@vitejs/plugin-react@^4`, `typescript@^5`.
+- [x] 1.3 Add dev dependencies: `vitest@^1`, `@testing-library/react@^14`, `@testing-library/jest-dom@^6`, `jsdom@^24`, `eslint@^9`, `prettier@^3`.
+- [x] 1.4 Add npm scripts: `dev`, `build`, `preview`, `typecheck` (`tsc --noEmit`), `test` (`vitest run`), `test:watch` (`vitest`), `lint` (`eslint src --ext .ts,.tsx`).
+- [x] 1.5 Configure `tsconfig.json` with `strict: true`, `jsx: react-jsx`, `paths` for `@/*` → `src/*`.
+- [x] 1.6 Add Google Fonts link tags for Inter Tight, JetBrains Mono, Source Serif 4 to `index.html`.
+- [x] 1.7 Copy the bundle's `styles.css` into `src/styles.css` and import it from `src/main.tsx`.
+- [x] 1.8 Add a path-filtered GitHub Actions workflow `.github/workflows/gdfkube-itsm-ci.yml` that runs `npm ci && npm run typecheck && npm run test && npm run build` on changes under `gdfkube-src/gdfkube-itsm/**`.
 
 ## 2. Type definitions and core helpers
 
