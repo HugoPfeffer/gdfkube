@@ -28,7 +28,7 @@
 
 ## 4. Icons
 
-- [ ] 4.1 Port `icons.jsx` to `src/icons/Icons.tsx` preserving all 30 icon names; export as a typed `Icons` object with `ComponentType<{size?: number; className?: string}>` values.
+- [x] 4.1 Port `icons.jsx` to `src/icons/Icons.tsx` preserving all 30 icon names; export as a typed `Icons` object with `ComponentType<{size?: number; className?: string}>` values.
 
 ## 5. App shell
 
