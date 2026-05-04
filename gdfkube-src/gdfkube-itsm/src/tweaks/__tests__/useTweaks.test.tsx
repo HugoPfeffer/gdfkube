@@ -68,4 +68,18 @@ describe('useTweaks', () => {
     const { result } = renderHook(() => useTweaks(defaults));
     expect(result.current[0]).toEqual(defaults);
   });
+
+  it('supports a functional updater and persists the resolved value', () => {
+    const { result } = renderHook(() => useTweaks(defaults));
+
+    act(() => {
+      const [, setTweaks] = result.current;
+      setTweaks((prev) => ({ ...prev, theme: 'dark' }));
+    });
+
+    expect(result.current[0]).toEqual({ ...defaults, theme: 'dark' });
+
+    const stored = JSON.parse(localStorage.getItem('gdfkube.tweaks') ?? '{}');
+    expect(stored).toEqual({ ...defaults, theme: 'dark' });
+  });
 });

@@ -3,6 +3,8 @@ import type { Tweaks } from '../types';
 
 const STORAGE_KEY = 'gdfkube.tweaks';
 
+export type TweaksUpdater = Tweaks | ((prev: Tweaks) => Tweaks);
+
 /**
  * React hook that exposes the user's UI tweaks (density, theme, etc).
  *
@@ -10,20 +12,24 @@ const STORAGE_KEY = 'gdfkube.tweaks';
  * shallow-merges the result over `defaults`. Invalid/missing storage falls
  * back to `defaults` unchanged.
  *
- * The setter writes the next value back to localStorage.
+ * The setter accepts either a value or a functional updater (mirroring
+ * React's `setState`). The resolved final value is persisted to localStorage.
  */
 export function useTweaks(
   defaults: Tweaks,
-): [Tweaks, (next: Tweaks) => void] {
+): [Tweaks, (next: TweaksUpdater) => void] {
   const [tweaks, setTweaksState] = useState<Tweaks>(() => readInitial(defaults));
 
-  const setTweaks = useCallback((next: Tweaks) => {
-    setTweaksState(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // ignore quota / serialization errors — in-memory state still updates
-    }
+  const setTweaks = useCallback((next: TweaksUpdater) => {
+    setTweaksState((prev) => {
+      const resolved = typeof next === 'function' ? next(prev) : next;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(resolved));
+      } catch {
+        // ignore quota / serialization errors — in-memory state still updates
+      }
+      return resolved;
+    });
   }, []);
 
   return [tweaks, setTweaks];
