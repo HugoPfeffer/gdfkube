@@ -564,7 +564,7 @@ table.list tbody tr:last-child td { border-bottom: none; }
   border-color: var(--civic-500);
   color: white;
   box-shadow: 0 0 0 4px var(--civic-100);
-  animation: pulse 1.4s ease-in-out infinite;
+  animation: pulse var(--anim-duration, 4s) ease-in-out infinite;
 }
 .pipe-stage.failed .node { background: var(--red-500); border-color: var(--red-500); color: white; }
 @keyframes pulse {
