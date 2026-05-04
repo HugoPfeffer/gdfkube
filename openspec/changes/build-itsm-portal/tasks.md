@@ -11,13 +11,13 @@
 
 ## 2. Type definitions and core helpers
 
-- [ ] 2.1 In `src/types.ts`, define `Role`, `User`, `RouteName`, `RouteParams`, `Org`, `Env`, `Request`, `RequestStatus`, `PolicyCheck`, `PipelineStage`, `KPI`, `ActivityEntry`, `CatalogItem`, `FieldType`, `FieldBucket`, `FieldDisplayAs`, `Field`, `FormDef`, `TemplateFile`, `Tweaks`.
-- [ ] 2.2 Implement `parseSelectOptions(input: string): SelectOption[]` in `src/forms/parseSelectOptions.ts` (split on `;` if present, else `,`; pipe-separated `value | label | description | dotColor`).
-- [ ] 2.3 Implement `interpolateTokens(input: string, values: Record<string, string>): string` in `src/forms/interpolateTokens.ts`.
-- [ ] 2.4 Implement `validateField(field: Field, value: unknown): string | null` in `src/forms/validate.ts` (regex on text, min/max on number, required check).
-- [ ] 2.5 Implement `copyToClipboard(text: string): Promise<void>` in `src/utils/clipboard.ts` with the textarea + `execCommand` fallback.
-- [ ] 2.6 Implement `useTweaks(defaults: Tweaks)` in `src/tweaks/useTweaks.ts` reading/writing `localStorage["gdfkube.tweaks"]`.
-- [ ] 2.7 Add unit tests in `src/forms/__tests__/parseSelectOptions.test.ts`, `interpolateTokens.test.ts`, `validate.test.ts`, `src/utils/__tests__/clipboard.test.ts` covering grammar fallbacks, sandboxed clipboard rejection, regex validation edge cases.
+- [x] 2.1 In `src/types.ts`, define `Role`, `User`, `RouteName`, `RouteParams`, `Org`, `Env`, `Request`, `RequestStatus`, `PolicyCheck`, `PipelineStage`, `KPI`, `ActivityEntry`, `CatalogItem`, `FieldType`, `FieldBucket`, `FieldDisplayAs`, `Field`, `FormDef`, `TemplateFile`, `Tweaks`.
+- [x] 2.2 Implement `parseSelectOptions(input: string): SelectOption[]` in `src/forms/parseSelectOptions.ts` (split on `;` if present, else `,`; pipe-separated `value | label | description | dotColor`).
+- [x] 2.3 Implement `interpolateTokens(input: string, values: Record<string, string>): string` in `src/forms/interpolateTokens.ts`.
+- [x] 2.4 Implement `validateField(field: Field, value: unknown): string | null` in `src/forms/validate.ts` (regex on text, min/max on number, required check).
+- [x] 2.5 Implement `copyToClipboard(text: string): Promise<void>` in `src/utils/clipboard.ts` with the textarea + `execCommand` fallback.
+- [x] 2.6 Implement `useTweaks(defaults: Tweaks)` in `src/tweaks/useTweaks.ts` reading/writing `localStorage["gdfkube.tweaks"]`.
+- [x] 2.7 Add unit tests in `src/forms/__tests__/parseSelectOptions.test.ts`, `interpolateTokens.test.ts`, `validate.test.ts`, `src/utils/__tests__/clipboard.test.ts` covering grammar fallbacks, sandboxed clipboard rejection, regex validation edge cases.
 
 ## 3. Seed data
 
