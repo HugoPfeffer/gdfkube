@@ -13,10 +13,10 @@
 
 ## 3. StatusPill realignment
 
-- [ ] 3.1 In `StatusPill.tsx`, drop the `pill-<status>` class output. Emit `pill green` for `ready` / `healthy`, `pill amber` for `pending` / `provisioning` / `degraded`, `pill blue` for `approval`, `pill red` for `failed`.
-- [ ] 3.2 Update labels: `approval` → "Awaiting approval" (was "Approval pending").
-- [ ] 3.3 Add the missing statuses (`pending`, `healthy`, `degraded`) to `RequestStatus` if needed (or keep them as a status-pill-only union if no Request actually carries them).
-- [ ] 3.4 Update tests asserting `pill-approval` / `pill-provisioning` to assert the tone class instead.
+- [x] 3.1 In `StatusPill.tsx`, drop the `pill-<status>` class output. Emit `pill green` for `ready` / `healthy`, `pill amber` for `pending` / `provisioning` / `degraded`, `pill blue` for `approval`, `pill red` for `failed`.
+- [x] 3.2 Update labels: `approval` → "Awaiting approval" (was "Approval pending").
+- [x] 3.3 Add the missing statuses (`pending`, `healthy`, `degraded`) to `RequestStatus` if needed (or keep them as a status-pill-only union if no Request actually carries them).
+- [x] 3.4 Update tests asserting `pill-approval` / `pill-provisioning` to assert the tone class instead.
 
 ## 4. GenericRequest functional fixes
 
