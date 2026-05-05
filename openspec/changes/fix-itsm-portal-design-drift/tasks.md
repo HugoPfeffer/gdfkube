@@ -28,13 +28,13 @@
 
 ## 5. Dashboard restoration
 
-- [ ] 5.1 In `Dashboard.tsx`, render the pipeline-health card with `<div className="banner">` instead of `<div className="card">`.
-- [ ] 5.2 Wrap the Recent Requests + Activity Stream cards in `<div className="detail-grid">`.
-- [ ] 5.3 Add a `.page-head-row` containing the title plus a primary "New cluster request" button (operator role only) navigating to `new-request` with `formId: "cluster-request"`.
-- [ ] 5.4 Add a "View all" ghost button in the Recent Requests card header navigating to `requests`.
-- [ ] 5.5 Add a "Refresh" ghost button in the Activity Stream card header (decorative — show a brief icon spin or info toast).
-- [ ] 5.6 Render Submitted column as `r.submittedAt.split(' ')[1]` (time only) with the full timestamp as the cell `title`.
-- [ ] 5.7 Update `Dashboard.test.tsx` for the banner class, detail-grid layout, header CTA, View-all button, and time-only Submitted format.
+- [x] 5.1 In `Dashboard.tsx`, render the pipeline-health card with `<div className="banner">` instead of `<div className="card">`.
+- [x] 5.2 Wrap the Recent Requests + Activity Stream cards in `<div className="detail-grid">`.
+- [x] 5.3 Add a `.page-head-row` containing the title plus a primary "New cluster request" button (operator role only) navigating to `new-request` with `formId: "cluster-request"`.
+- [x] 5.4 Add a "View all" ghost button in the Recent Requests card header navigating to `requests`.
+- [x] 5.5 Add a "Refresh" ghost button in the Activity Stream card header (decorative — show a brief icon spin or info toast).
+- [x] 5.6 Render Submitted column as `r.submittedAt.split(' ')[1]` (time only) with the full timestamp as the cell `title`.
+- [x] 5.7 Update `Dashboard.test.tsx` for the banner class, detail-grid layout, header CTA, View-all button, and time-only Submitted format.
 
 ## 6. Catalog restoration
 

@@ -128,7 +128,12 @@ function App() {
 
   const pageElement =
     route === 'home' ? (
-      <Dashboard role={role} navigate={navigate} user={user} />
+      <Dashboard
+        role={role}
+        navigate={navigate}
+        user={user}
+        setToast={setToast}
+      />
     ) : route === 'catalog' ? (
       <Catalog navigate={navigate} />
     ) : route === 'new-request' ? (
