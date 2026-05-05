@@ -1,9 +1,9 @@
 ## 1. Layout shell
 
-- [ ] 1.1 Replace `App.tsx` wrapper class chain `app-shell > shell > main-col` with `<div className="app" data-density={tweaks.density}>` engaging the existing `.app` Grid layout in `styles.css:87-126`.
-- [ ] 1.2 Rename the demo-banner modifier on the wrapper from `banner` to `with-banner` (or drop entirely, applying via a sibling element) so it does not stomp on the page-level `.banner` rule used by Dashboard.
-- [ ] 1.3 Remove the floating "Tweaks" button at `position:fixed; right:16px; bottom:16px;` if it conflicts with the `.app` Grid; reposition into the topbar or keep absolute as long as it doesn't overlap content.
-- [ ] 1.4 Update `App.test.tsx` to assert `document.querySelector(".app")` exists and has `data-density="compact"` after first mount.
+- [x] 1.1 Replace `App.tsx` wrapper class chain `app-shell > shell > main-col` with `<div className="app" data-density={tweaks.density}>` engaging the existing `.app` Grid layout in `styles.css:87-126`.
+- [x] 1.2 Rename the demo-banner modifier on the wrapper from `banner` to `with-banner` (or drop entirely, applying via a sibling element) so it does not stomp on the page-level `.banner` rule used by Dashboard.
+- [x] 1.3 Remove the floating "Tweaks" button at `position:fixed; right:16px; bottom:16px;` if it conflicts with the `.app` Grid; reposition into the topbar or keep absolute as long as it doesn't overlap content.
+- [x] 1.4 Update `App.test.tsx` to assert `document.querySelector(".app")` exists and has `data-density="compact"` after first mount.
 
 ## 2. Pulse animation duration baseline
 

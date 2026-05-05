@@ -158,38 +158,32 @@ function App() {
       <div className="page-placeholder">{route}</div>
     );
 
-  const shellClass =
-    `app-shell density-${tweaks.density}` +
-    (tweaks.showDemoBanner ? ' banner' : '');
+  const appClass = tweaks.showDemoBanner ? 'app with-banner' : 'app';
 
   return (
-    <div className={shellClass}>
+    <div className={appClass} data-density={tweaks.density}>
       <UtilityBand />
-      <div className="shell">
-        <Sidebar
-          route={route}
-          navigate={navigate}
-          role={role}
-          collapsed={tweaks.sidebarCollapsed}
-        />
-        <div className="main-col">
-          <Topbar
-            crumbs={crumbs}
-            role={role}
-            setRole={setRole}
-            user={user}
-            onNotify={() =>
-              setToast({
-                id: `notify-${Date.now()}`,
-                kind: 'info',
-                title: 'Notifications',
-                body: 'No new notifications.',
-              })
-            }
-          />
-          <main className="main">{pageElement}</main>
-        </div>
-      </div>
+      <Sidebar
+        route={route}
+        navigate={navigate}
+        role={role}
+        collapsed={tweaks.sidebarCollapsed}
+      />
+      <Topbar
+        crumbs={crumbs}
+        role={role}
+        setRole={setRole}
+        user={user}
+        onNotify={() =>
+          setToast({
+            id: `notify-${Date.now()}`,
+            kind: 'info',
+            title: 'Notifications',
+            body: 'No new notifications.',
+          })
+        }
+      />
+      <main className="main">{pageElement}</main>
       <ToastStack toast={toast} onDismiss={() => setToast(null)} />
       <button
         type="button"

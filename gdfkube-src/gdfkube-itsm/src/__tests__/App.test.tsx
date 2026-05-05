@@ -168,17 +168,33 @@ describe('App', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
-  it('renders the demo banner class when showDemoBanner default is true', () => {
+  it('renders the demo banner modifier when showDemoBanner default is true', () => {
     const { container } = render(withProvider(makeState(), <App />));
-    expect(container.querySelector('.app-shell')?.className).toContain('banner');
+    expect(container.querySelector('.app')?.className).toContain('with-banner');
   });
 
-  it('hides the demo banner class when persisted tweaks disable it', () => {
+  it('hides the demo banner modifier when persisted tweaks disable it', () => {
     localStorage.setItem(
       'gdfkube.tweaks',
       JSON.stringify({ showDemoBanner: false }),
     );
     const { container } = render(withProvider(makeState(), <App />));
-    expect(container.querySelector('.app-shell')?.className).not.toContain('banner');
+    expect(container.querySelector('.app')?.className).not.toContain(
+      'with-banner',
+    );
+  });
+
+  it('uses the .app grid host with data-density attribute', () => {
+    render(withProvider(makeState(), <App />));
+    const app = document.querySelector('.app');
+    expect(app).not.toBeNull();
+    expect(app?.getAttribute('data-density')).toBe('compact');
+  });
+
+  it('does not render the dead app-shell / shell / main-col wrapper classes', () => {
+    const { container } = render(withProvider(makeState(), <App />));
+    expect(container.querySelector('.app-shell')).toBeNull();
+    expect(container.querySelector('.shell')).toBeNull();
+    expect(container.querySelector('.main-col')).toBeNull();
   });
 });
