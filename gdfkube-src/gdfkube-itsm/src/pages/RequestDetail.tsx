@@ -71,7 +71,20 @@ export function RequestDetail({ id, navigate, tweaks, role }: RequestDetailProps
 
   const chain = request.approvalChain ?? [];
   const ready = request.status === 'ready';
-  const orgName = ORGS.find((o) => o.id === request.requesterGroupName)?.name ?? request.requesterGroupName;
+  const orgName =
+    ORGS.find((o) => o.id === request.requesterGroupName)?.fullName ??
+    request.requesterGroupName;
+  const cn = clusterName(request);
+  const varStr = (key: string): string | undefined => {
+    const v = request.vars?.[key];
+    return typeof v === 'string' && v ? v : undefined;
+  };
+  const apiUrl =
+    varStr('apiUrl') ?? `https://api.${cn}.${request.requesterGroupName}.gov.local:6443`;
+  const consoleUrl =
+    varStr('consoleUrl') ??
+    `https://console-openshift-console.apps.${cn}.${request.requesterGroupName}.gov.local`;
+  const ocpVersion = varStr('ocpVersion') ?? 'OpenShift 4.16.7';
 
   return (
     <div className="page">
@@ -82,14 +95,20 @@ export function RequestDetail({ id, navigate, tweaks, role }: RequestDetailProps
               <span className="row-id" style={{ fontSize: 14 }}>{request.id}</span>
               <StatusPill status={request.status} />
             </div>
-            <h1 className="page-title">Cluster {clusterName(request)} · {orgName}</h1>
-            <p className="page-sub">Submitted {request.submittedAt} by {requesterName(request)}</p>
+            <h1 className="page-title">Cluster {cn} · {orgName}</h1>
+            <p className="page-sub">Submitted by {requesterName(request)}</p>
           </div>
           <div className="row">
             <button type="button" className="btn ghost" onClick={() => navigate('requests')}>← Back</button>
             <button type="button" className="btn"><Icons.link /> Open in Gitea</button>
             {role === 'admin' && request.status === 'approval' && (
-              <button type="button" className="btn primary"><Icons.check /> Approve</button>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => navigate('approvals', { id: request.id })}
+              >
+                <Icons.check /> Approve
+              </button>
             )}
             {ready && <button type="button" className="btn"><Icons.download /> kubeconfig</button>}
           </div>
@@ -151,9 +170,9 @@ export function RequestDetail({ id, navigate, tweaks, role }: RequestDetailProps
               <div className="card-head"><h2 className="card-title">Cluster Access</h2></div>
               <div className="card-body">
                 <dl className="dl">
-                  <dt>API</dt><dd className="mono" style={{ fontSize: 11 }}>https://api.{clusterName(request)}.{request.requesterGroupName}.gov.local:6443</dd>
-                  <dt>Console</dt><dd className="mono" style={{ fontSize: 11 }}>https://console.{clusterName(request)}…</dd>
-                  <dt>Version</dt><dd>OpenShift 4.16.7</dd>
+                  <dt>API URL</dt><dd className="mono" style={{ fontSize: 11 }}>{apiUrl}</dd>
+                  <dt>Console URL</dt><dd className="mono" style={{ fontSize: 11 }}>{consoleUrl}</dd>
+                  <dt>OpenShift Version</dt><dd>{ocpVersion}</dd>
                 </dl>
                 <button
                   type="button"

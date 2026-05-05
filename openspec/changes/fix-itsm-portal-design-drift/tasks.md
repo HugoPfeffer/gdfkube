@@ -53,12 +53,12 @@
 
 ## 8. RequestDetail header + pipeline header
 
-- [ ] 8.1 Render a `.page-head` row containing StatusPill + mono request id + actions row (Back / Open in Gitea / Approve / Download kubeconfig).
-- [ ] 8.2 Compose the title as "Cluster {clusterName} · {orgName}" with subtitle "Submitted by {requester.fullName}".
-- [ ] 8.3 Add the Pipeline section header: title "Provisioning Pipeline", a status pill (Live / Completed / Failed; hidden when `approval`), and an overall `progress-bar` showing `r.progress`%.
-- [ ] 8.4 Gate the Cluster Access panel by `status === "ready"`: when not ready, do not render the panel at all (no disabled placeholder).
-- [ ] 8.5 When ready, render the Cluster Access content as a `<dl>` with API URL / Console URL / OpenShift Version rows. Synthesize fallbacks if the request lacks the values.
-- [ ] 8.6 Update `RequestDetail.test.tsx` for the new header, pipeline header, and gated Cluster Access (test both branches: not-ready hides; ready renders dl rows).
+- [x] 8.1 Render a `.page-head` row containing StatusPill + mono request id + actions row (Back / Open in Gitea / Approve / Download kubeconfig).
+- [x] 8.2 Compose the title as "Cluster {clusterName} · {orgName}" with subtitle "Submitted by {requester.fullName}".
+- [x] 8.3 Add the Pipeline section header: title "Provisioning Pipeline", a status pill (Live / Completed / Failed; hidden when `approval`), and an overall `progress-bar` showing `r.progress`%.
+- [x] 8.4 Gate the Cluster Access panel by `status === "ready"`: when not ready, do not render the panel at all (no disabled placeholder).
+- [x] 8.5 When ready, render the Cluster Access content as a `<dl>` with API URL / Console URL / OpenShift Version rows. Synthesize fallbacks if the request lacks the values.
+- [x] 8.6 Update `RequestDetail.test.tsx` for the new header, pipeline header, and gated Cluster Access (test both branches: not-ready hides; ready renders dl rows).
 
 ## 9. Approvals page-head + queue row + reject guard
 

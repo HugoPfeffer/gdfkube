@@ -58,7 +58,7 @@ export function Pipeline({ request, pipelineSpeed }: PipelineProps) {
         </div>
         <div className="row">
           <span style={{ fontSize: 12, color: 'var(--ink-500)' }}>Overall</span>
-          <div className="progress" style={{ width: 180 }}><div style={{ width: `${progress}%` }} /></div>
+          <div className="progress" style={{ width: 180 }}><div className="progress-bar" style={{ width: `${progress}%` }} /></div>
           <span className="mono" style={{ fontSize: 12, color: 'var(--ink-700)' }}>{progress}%</span>
         </div>
       </div>

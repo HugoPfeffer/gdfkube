@@ -374,4 +374,173 @@ describe('RequestDetail', () => {
     );
     expect(screen.getByText(/not found/i)).toBeInTheDocument();
   });
+
+  it('renders the page-head title as "Cluster {clusterName} · {orgName}" using ORGS.fullName', () => {
+    const navigate = vi.fn();
+    const req = makeRequest('REQ0010247', 'provisioning', 4, {
+      vars: { clusterName: 'vacinacao', environment: 'production', nodeCount: 3 },
+      requesterGroupName: 'saude',
+    });
+    const { container } = render(
+      withProvider(
+        makeState(req),
+        <RequestDetail id="REQ0010247" navigate={navigate} tweaks={DEFAULT_TWEAKS} />,
+      ),
+    );
+    const title = container.querySelector('.page-head .page-title');
+    expect(title).not.toBeNull();
+    // ORGS seed for "saude" has fullName "Department of Health".
+    expect(title!.textContent).toBe('Cluster vacinacao · Department of Health');
+  });
+
+  it('renders the page-head subtitle as "Submitted by {requester.fullName}"', () => {
+    const navigate = vi.fn();
+    const req = makeRequest('REQ0010247', 'provisioning', 4, {
+      requester: makeUser({ fullName: 'Maria Costa' }),
+    });
+    const { container } = render(
+      withProvider(
+        makeState(req),
+        <RequestDetail id="REQ0010247" navigate={navigate} tweaks={DEFAULT_TWEAKS} />,
+      ),
+    );
+    const sub = container.querySelector('.page-head .page-sub');
+    expect(sub).not.toBeNull();
+    expect(sub!.textContent).toBe('Submitted by Maria Costa');
+  });
+
+  it('shows "Live" pill in pipeline header and progress-bar inline width when provisioning', () => {
+    const navigate = vi.fn();
+    const req = makeRequest('REQ0010247', 'provisioning', 4, { progress: 58 });
+    const { container } = render(
+      withProvider(
+        makeState(req),
+        <RequestDetail id="REQ0010247" navigate={navigate} tweaks={DEFAULT_TWEAKS} />,
+      ),
+    );
+    const head = container.querySelector('.pipe-head') as HTMLElement | null;
+    expect(head).not.toBeNull();
+    expect(head!.textContent).toMatch(/Live/);
+    const bar = container.querySelector('.progress-bar') as HTMLElement | null;
+    expect(bar).not.toBeNull();
+    expect(bar!.getAttribute('style') ?? '').toContain('width: 58%');
+  });
+
+  it('shows "Completed" pill in pipeline header when ready, "Failed" when failed', () => {
+    const navigate = vi.fn();
+    const ready = makeRequest('REQ-READY', 'ready', 7);
+    const r1 = render(
+      withProvider(
+        makeState(ready),
+        <RequestDetail id="REQ-READY" navigate={navigate} tweaks={DEFAULT_TWEAKS} />,
+      ),
+    );
+    expect(
+      (r1.container.querySelector('.pipe-head') as HTMLElement).textContent,
+    ).toMatch(/Completed/);
+    r1.unmount();
+
+    const failed = makeRequest('REQ-FAIL', 'failed', 5);
+    const r2 = render(
+      withProvider(
+        makeState(failed),
+        <RequestDetail id="REQ-FAIL" navigate={navigate} tweaks={DEFAULT_TWEAKS} />,
+      ),
+    );
+    expect(
+      (r2.container.querySelector('.pipe-head') as HTMLElement).textContent,
+    ).toMatch(/Failed/);
+  });
+
+  it('renders the Approve action button only for admin role AND status === "approval"', () => {
+    const navigate = vi.fn();
+    const reqApproval = makeRequest('REQ-APV', 'approval', 0);
+
+    // operator + approval: no Approve button.
+    const r1 = render(
+      withProvider(
+        makeState(reqApproval),
+        <RequestDetail
+          id="REQ-APV"
+          navigate={navigate}
+          tweaks={DEFAULT_TWEAKS}
+          role="operator"
+        />,
+      ),
+    );
+    expect(
+      Array.from(r1.container.querySelectorAll('.page-head button')).find((b) =>
+        /Approve/i.test(b.textContent ?? ''),
+      ),
+    ).toBeUndefined();
+    r1.unmount();
+
+    // admin + provisioning: no Approve button.
+    const reqProv = makeRequest('REQ-PROV', 'provisioning', 4);
+    const r2 = render(
+      withProvider(
+        makeState(reqProv),
+        <RequestDetail
+          id="REQ-PROV"
+          navigate={navigate}
+          tweaks={DEFAULT_TWEAKS}
+          role="admin"
+        />,
+      ),
+    );
+    expect(
+      Array.from(r2.container.querySelectorAll('.page-head button')).find((b) =>
+        /Approve/i.test(b.textContent ?? ''),
+      ),
+    ).toBeUndefined();
+    r2.unmount();
+
+    // admin + approval: Approve button visible and navigates to approvals.
+    const r3 = render(
+      withProvider(
+        makeState(reqApproval),
+        <RequestDetail
+          id="REQ-APV"
+          navigate={navigate}
+          tweaks={DEFAULT_TWEAKS}
+          role="admin"
+        />,
+      ),
+    );
+    const approveBtn = Array.from(
+      r3.container.querySelectorAll('.page-head button'),
+    ).find((b) => /Approve/i.test(b.textContent ?? '')) as HTMLButtonElement | undefined;
+    expect(approveBtn).not.toBeUndefined();
+    approveBtn!.click();
+    expect(navigate).toHaveBeenCalledWith('approvals', { id: 'REQ-APV' });
+  });
+
+  it('renders Cluster Access dl rows with API URL / Console URL / OpenShift Version when ready', () => {
+    const navigate = vi.fn();
+    const req = makeRequest('REQ-READY', 'ready', 7, {
+      vars: {
+        clusterName: 'vacinacao',
+        environment: 'production',
+        nodeCount: 3,
+        apiUrl: 'https://api.demo:6443',
+      },
+    });
+    const { container } = render(
+      withProvider(
+        makeState(req),
+        <RequestDetail id="REQ-READY" navigate={navigate} tweaks={DEFAULT_TWEAKS} />,
+      ),
+    );
+    const access = container.querySelector(
+      '[data-testid="cluster-access"]',
+    ) as HTMLElement | null;
+    expect(access).not.toBeNull();
+    const dts = Array.from(access!.querySelectorAll('dt')).map(
+      (el) => el.textContent ?? '',
+    );
+    expect(dts).toContain('API URL');
+    expect(dts).toContain('Console URL');
+    expect(dts).toContain('OpenShift Version');
+    expect(access!.textContent).toContain('https://api.demo:6443');
+  });
 });
