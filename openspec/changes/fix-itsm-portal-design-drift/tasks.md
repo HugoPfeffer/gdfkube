@@ -20,11 +20,11 @@
 
 ## 4. GenericRequest functional fixes
 
-- [ ] 4.1 Compute `seedDefaults(fields)` and pass to initial `useState`: select → first parsed option's `value`; number → `field.min ?? ''`; checkbox → `false`; text/textarea → `''`.
-- [ ] 4.2 Change submit-handler default for `env` from `'production'` to `'development'` when no `environment` field exists.
-- [ ] 4.3 Drop the hardcoded `'saude'` group fallback. Use only `user.group ?? user.username + '-default'`.
-- [ ] 4.4 Render `validateField(field, values[field.key])` output below each invalid field as `<small className="field-error">`.
-- [ ] 4.5 Update `GenericRequest.test.tsx` to cover: seed defaults visible in PayloadPreview at first render; inline error appears below an invalid field; env defaults to development when no environment field exists.
+- [x] 4.1 Compute `seedDefaults(fields)` and pass to initial `useState`: select → first parsed option's `value`; number → `field.min ?? ''`; checkbox → `false`; text/textarea → `''`.
+- [x] 4.2 Change submit-handler default for `env` from `'production'` to `'development'` when no `environment` field exists.
+- [x] 4.3 Drop the hardcoded `'saude'` group fallback. Use only `user.group ?? user.username + '-default'`.
+- [x] 4.4 Render `validateField(field, values[field.key])` output below each invalid field as `<small className="field-error">`.
+- [x] 4.5 Update `GenericRequest.test.tsx` to cover: seed defaults visible in PayloadPreview at first render; inline error appears below an invalid field; env defaults to development when no environment field exists.
 
 ## 5. Dashboard restoration
 

@@ -48,6 +48,29 @@ function partitionByBucket(fields: Field[], values: FormValues) {
   return { meta, vars };
 }
 
+// Seed initial form values from each field's schema so the live preview
+// reflects the schema's intent at first paint:
+//   select   -> first parsed option's `value` (or '' if none)
+//   number   -> field.min if defined, else ''
+//   checkbox -> false
+//   else     -> ''
+function seedDefaults(fields: Field[]): FormValues {
+  const out: FormValues = {};
+  for (const f of fields) {
+    if (f.type === 'select') {
+      const options = parseSelectOptions(f.options ?? '');
+      out[f.key] = options[0]?.value ?? '';
+    } else if (f.type === 'number') {
+      out[f.key] = typeof f.min === 'number' ? f.min : '';
+    } else if (f.type === 'checkbox') {
+      out[f.key] = false;
+    } else {
+      out[f.key] = '';
+    }
+  }
+  return out;
+}
+
 function genId(): string {
   // Deterministic-shaped synthetic id; collisions are not a concern for the demo.
   const n = Math.floor(Math.random() * 9_000_000 + 1_000_000);
@@ -72,7 +95,7 @@ export function GenericRequest({
   );
   const formDef = forms.find((f) => f.id === formId);
 
-  const [values, setValues] = useState<FormValues>({});
+  const [values, setValues] = useState<FormValues>(() => seedDefaults(fields));
 
   const stringValues = useMemo(() => asStringMap(values), [values]);
   const { meta, vars } = useMemo(
@@ -94,7 +117,7 @@ export function GenericRequest({
     if (!isValid) return;
     const id = genId();
     const submittedAt = new Date().toISOString();
-    const env: Env = (values.environment as Env) || 'production';
+    const env: Env = (values.environment as Env) || 'development';
     const justification =
       typeof values.justification === 'string' && values.justification.length > 0
         ? values.justification
@@ -118,7 +141,9 @@ export function GenericRequest({
       env,
       requester: user,
       requesterGroupName:
-        (values.requesterGroupName as string) || user.group || 'saude',
+        (values.requesterGroupName as string) ||
+        user.group ||
+        `${user.username}-default`,
       status: 'approval',
       stage: 0,
       submittedAt,
@@ -215,6 +240,8 @@ export function GenericRequest({
       ? interpolateTokens(field.help, stringValues)
       : null;
 
+    const fieldError = validateField(field, raw);
+
     return (
       <div className="field" key={field.key}>
         <label htmlFor={inputId}>
@@ -222,6 +249,7 @@ export function GenericRequest({
           {field.required && <span className="req">*</span>}
         </label>
         {control}
+        {fieldError && <small className="field-error">{fieldError}</small>}
         {helpText && (
           <div className="help" id={helpId}>
             {helpText}

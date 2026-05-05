@@ -6,7 +6,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { GdfDataProvider, type DataState } from '../../state/dataContext';
+import {
+  GdfDataProvider,
+  useGdfData,
+  type DataState,
+} from '../../state/dataContext';
 import type { Field, FormDef, User } from '../../types';
 import { GenericRequest } from '../GenericRequest';
 
@@ -23,6 +27,16 @@ function makeUser(overrides: Partial<User> = {}): User {
   };
 }
 
+function RequestsSpy({
+  onState,
+}: {
+  onState: (state: DataState) => void;
+}) {
+  const state = useGdfData();
+  onState(state);
+  return null;
+}
+
 function renderWithFields(
   formId: string,
   fields: Field[],
@@ -31,6 +45,7 @@ function renderWithFields(
     user?: User;
     navigate?: ReturnType<typeof vi.fn>;
     setToast?: ReturnType<typeof vi.fn>;
+    onState?: (state: DataState) => void;
   } = {},
 ) {
   const form: FormDef = {
@@ -59,6 +74,7 @@ function renderWithFields(
         user={user}
         role="operator"
       />
+      {options.onState && <RequestsSpy onState={options.onState} />}
     </GdfDataProvider>
   );
   return { ...render(ui), navigate, setToast, user };
@@ -180,17 +196,18 @@ describe('GenericRequest', () => {
     ];
     const { container } = renderWithFields('cluster-request', fields);
 
-    // Initially the sibling is unset, so the prefix shows the literal token.
-    expect(container.querySelector('.input-prefix .pre')!.textContent).toBe(
-      'hc-{requesterGroupName}-',
-    );
-
-    // Set the sibling.
-    const dept = screen.getByLabelText(/Department/) as HTMLSelectElement;
-    fireEvent.change(dept, { target: { value: 'saude' } });
-
+    // The select seeds its first parsed option (`saude`), so the prefix
+    // interpolates immediately on first render.
     expect(container.querySelector('.input-prefix .pre')!.textContent).toBe(
       'hc-saude-',
+    );
+
+    // Switch the sibling to a different value.
+    const dept = screen.getByLabelText(/Department/) as HTMLSelectElement;
+    fireEvent.change(dept, { target: { value: 'educacao' } });
+
+    expect(container.querySelector('.input-prefix .pre')!.textContent).toBe(
+      'hc-educacao-',
     );
   });
 
@@ -374,5 +391,96 @@ describe('GenericRequest', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
     expect(navigate).toHaveBeenCalledWith('catalog');
+  });
+
+  it('seeds default values from the schema on first render', () => {
+    const fields: Field[] = [
+      {
+        key: 'environment',
+        label: 'Environment',
+        type: 'select',
+        bucket: 'vars',
+        options: 'development|Development; staging|Staging; production|Production',
+      },
+      {
+        key: 'nodes',
+        label: 'Nodes',
+        type: 'number',
+        bucket: 'vars',
+        min: 3,
+      },
+      {
+        key: 'autoscale',
+        label: 'Autoscale',
+        type: 'checkbox',
+        bucket: 'vars',
+      },
+      {
+        key: 'clusterName',
+        label: 'Cluster name',
+        type: 'text',
+        bucket: 'vars',
+      },
+    ];
+    const { container } = renderWithFields('cluster-request', fields);
+
+    const pre = container.querySelector('pre.payload-preview');
+    expect(pre).not.toBeNull();
+    const text = pre!.textContent ?? '';
+    expect(text).toContain('"environment": "development"');
+    expect(text).toContain('"nodes": 3');
+    expect(text).toContain('"autoscale": false');
+  });
+
+  it('renders an inline field-error below an invalid required field', () => {
+    const fields: Field[] = [
+      {
+        key: 'clusterName',
+        label: 'Cluster name',
+        type: 'text',
+        required: true,
+        bucket: 'vars',
+        validation: '^[a-z][a-z0-9-]{2,30}$',
+      },
+    ];
+    const { container } = renderWithFields('cluster-request', fields);
+
+    fireEvent.change(screen.getByLabelText(/Cluster name/), {
+      target: { value: 'X' },
+    });
+
+    const err = container.querySelector('small.field-error');
+    expect(err).not.toBeNull();
+    const errText = err!.textContent ?? '';
+    expect(
+      errText.startsWith('Invalid format') || errText.startsWith('Must match'),
+    ).toBe(true);
+  });
+
+  it('env defaults to development when no environment field exists', () => {
+    let latestState: DataState | undefined;
+    const fields: Field[] = [
+      {
+        key: 'clusterName',
+        label: 'Cluster name',
+        type: 'text',
+        required: true,
+        bucket: 'vars',
+      },
+    ];
+    renderWithFields('cluster-request', fields, {
+      onState: (s) => {
+        latestState = s;
+      },
+    });
+
+    fireEvent.change(screen.getByLabelText(/Cluster name/), {
+      target: { value: 'vacinacao' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+
+    expect(latestState).toBeDefined();
+    expect(latestState!.requests).toHaveLength(1);
+    expect(latestState!.requests[0]!.env).toBe('development');
   });
 });
