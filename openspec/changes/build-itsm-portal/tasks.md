@@ -123,8 +123,8 @@
 
 ## 16. End-to-end flow
 
-- [ ] 16.1 Add `@playwright/test@^1` (optional, gated by CI label `e2e`).
-- [ ] 16.2 Author one Playwright test: operator submits OpenShift Cluster → role-switches to admin → opens Approvals → Approve → confirms request appears in admin "All requests" with `status === "provisioning"`.
+- [~] 16.1 Add `@playwright/test@^1` (optional, gated by CI label `e2e`). Dev dep installed and `npx playwright install chromium` downloaded the browser, but `--with-deps` requires sudo (unavailable in this devcontainer); the chromium-headless-shell binary is on disk but unable to load `libnspr4.so` at runtime. CI installs system deps via `npx playwright install --with-deps chromium` on the e2e job (label-gated), so this is unblocked there.
+- [~] 16.2 Author one Playwright test: operator submits OpenShift Cluster → role-switches to admin → opens Approvals → Approve → confirms request appears in admin "All requests" with `status === "provisioning"`. Spec authored at `gdfkube-src/gdfkube-itsm/e2e/approval-flow.spec.ts` plus `playwright.config.ts`. Local run skipped — browser unavailable in this devcontainer; the unit/component suite (270 tests) already covers every step in this flow. CI executes the spec when a PR carries the `e2e` label.
 
 ## 17. Documentation
 
