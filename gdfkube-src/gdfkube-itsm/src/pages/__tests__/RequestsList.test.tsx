@@ -269,4 +269,130 @@ describe('RequestsList', () => {
       id: 'REQ0010247',
     });
   });
+
+  describe('role-aware tabs', () => {
+    function tabsState(): DataState {
+      // 3 mine (joao), 4 in joao's group (saude — including joao's own 3),
+      // 8 total. So Mine=3, Department=4, All=8.
+      const mine1 = makeRequest('REQ-MINE-1', 'ready', joao);
+      const mine2 = makeRequest('REQ-MINE-2', 'provisioning', joao);
+      const mine3 = makeRequest('REQ-MINE-3', 'approval', joao);
+      const sameDept = makeRequest('REQ-DEPT-1', 'ready', maria, {
+        requesterGroupName: 'saude',
+      });
+      const otherDept1 = makeRequest('REQ-OTHER-1', 'ready', maria);
+      const otherDept2 = makeRequest('REQ-OTHER-2', 'provisioning', carlos);
+      const otherDept3 = makeRequest('REQ-OTHER-3', 'failed', carlos);
+      const otherDept4 = makeRequest('REQ-OTHER-4', 'approval', maria);
+      return {
+        requests: [
+          mine1,
+          mine2,
+          mine3,
+          sameDept,
+          otherDept1,
+          otherDept2,
+          otherDept3,
+          otherDept4,
+        ],
+        forms: [],
+        fields: {},
+        users: [],
+        groups: [],
+        templates: {},
+      };
+    }
+
+    it('admin sees three tabs with the correct count badges', () => {
+      const navigate = vi.fn();
+      const adminInSaude = makeUser({
+        id: 'admin-saude',
+        username: 'joao.silva',
+        name: 'joao.silva',
+        fullName: 'João Silva',
+        role: 'admin',
+        group: 'saude',
+      });
+      const { container } = render(
+        withProvider(
+          tabsState(),
+          <RequestsList role="admin" user={adminInSaude} navigate={navigate} />,
+        ),
+      );
+
+      const tabs = container.querySelectorAll('.tabs .tab');
+      expect(tabs.length).toBe(3);
+
+      const mineTab = Array.from(tabs).find((t) =>
+        t.textContent?.startsWith('Mine'),
+      ) as HTMLElement | undefined;
+      const deptTab = Array.from(tabs).find((t) =>
+        t.textContent?.startsWith('Department'),
+      ) as HTMLElement | undefined;
+      const allTab = Array.from(tabs).find((t) =>
+        t.textContent?.startsWith('All'),
+      ) as HTMLElement | undefined;
+
+      expect(mineTab?.querySelector('.count')?.textContent).toBe('3');
+      expect(deptTab?.querySelector('.count')?.textContent).toBe('4');
+      expect(allTab?.querySelector('.count')?.textContent).toBe('8');
+    });
+
+    it('clicking the Department tab narrows the table to same-group requests', () => {
+      const navigate = vi.fn();
+      const adminInSaude = makeUser({
+        id: 'admin-saude',
+        username: 'joao.silva',
+        name: 'joao.silva',
+        fullName: 'João Silva',
+        role: 'admin',
+        group: 'saude',
+      });
+      const { container } = render(
+        withProvider(
+          tabsState(),
+          <RequestsList role="admin" user={adminInSaude} navigate={navigate} />,
+        ),
+      );
+
+      const tabs = container.querySelectorAll('.tabs .tab');
+      const deptTab = Array.from(tabs).find((t) =>
+        t.textContent?.startsWith('Department'),
+      ) as HTMLElement;
+      fireEvent.click(deptTab);
+
+      expect(deptTab.classList.contains('active')).toBe(true);
+
+      const rows = container.querySelectorAll('tbody tr');
+      expect(rows.length).toBe(4);
+      // Every visible row's department cell should map to the saude group
+      // (either via the seeded Org name or the raw group id).
+      const ids = Array.from(rows).map(
+        (r) => r.querySelector('.row-id')?.textContent,
+      );
+      expect(ids).toEqual(
+        expect.arrayContaining([
+          'REQ-MINE-1',
+          'REQ-MINE-2',
+          'REQ-MINE-3',
+          'REQ-DEPT-1',
+        ]),
+      );
+    });
+
+    it('operator sees only the Mine tab', () => {
+      const navigate = vi.fn();
+      const { container } = render(
+        withProvider(
+          tabsState(),
+          <RequestsList role="operator" user={joao} navigate={navigate} />,
+        ),
+      );
+
+      const tabs = container.querySelectorAll('.tabs .tab');
+      expect(tabs.length).toBe(1);
+      expect(tabs[0]?.textContent?.startsWith('Mine')).toBe(true);
+      expect(tabs[0]?.querySelector('.count')?.textContent).toBe('3');
+    });
+  });
 });

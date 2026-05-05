@@ -21,6 +21,7 @@ interface RequestsListProps {
 }
 
 type ChipValue = 'all' | RequestStatus;
+type TabValue = 'mine' | 'department' | 'all';
 
 const CHIPS: { value: ChipValue; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -45,28 +46,61 @@ function ownsRequest(req: Request, user: User): boolean {
   return false;
 }
 
+function inDepartment(req: Request, user: User): boolean {
+  return Boolean(user.group) && req.requesterGroupName === user.group;
+}
+
 export function RequestsList({ role, user, navigate }: RequestsListProps) {
   const { requests } = useGdfData();
   const [activeChip, setActiveChip] = useState<ChipValue>('all');
-
   const isAdmin = role === 'admin';
+  const [activeTab, setActiveTab] = useState<TabValue>(isAdmin ? 'all' : 'mine');
+
   const title = isAdmin ? 'All Requests' : 'My Requests';
   const subtitle = 'Cluster provisioning requests submitted through the IT service portal.';
 
+  const mineCount = useMemo(
+    () => requests.filter((r) => ownsRequest(r, user)).length,
+    [requests, user],
+  );
+  const departmentCount = useMemo(
+    () => requests.filter((r) => inDepartment(r, user)).length,
+    [requests, user],
+  );
+  const allCount = requests.length;
+
+  const tabs: { value: TabValue; label: string; count: number }[] = isAdmin
+    ? [
+        { value: 'mine', label: 'Mine', count: mineCount },
+        { value: 'department', label: 'Department', count: departmentCount },
+        { value: 'all', label: 'All', count: allCount },
+      ]
+    : [{ value: 'mine', label: 'Mine', count: mineCount }];
+
+  const tabScoped = useMemo(() => {
+    if (!isAdmin) {
+      return requests.filter((r) => ownsRequest(r, user));
+    }
+    if (activeTab === 'mine') {
+      return requests.filter((r) => ownsRequest(r, user));
+    }
+    if (activeTab === 'department') {
+      return requests.filter((r) => inDepartment(r, user));
+    }
+    return requests;
+  }, [requests, isAdmin, user, activeTab]);
+
   const visible = useMemo(() => {
-    const scoped = isAdmin
-      ? requests
-      : requests.filter((r) => ownsRequest(r, user));
     const filtered =
       activeChip === 'all'
-        ? scoped
-        : scoped.filter((r) => r.status === activeChip);
+        ? tabScoped
+        : tabScoped.filter((r) => r.status === activeChip);
     return [...filtered].sort((a, b) =>
       a.submittedAt < b.submittedAt ? 1 : -1,
     );
-  }, [requests, isAdmin, user, activeChip]);
+  }, [tabScoped, activeChip]);
 
-  const totalCount = (isAdmin ? requests : requests.filter((r) => ownsRequest(r, user))).length;
+  const totalCount = tabScoped.length;
 
   return (
     <div className="page">
@@ -90,6 +124,25 @@ export function RequestsList({ role, user, navigate }: RequestsListProps) {
       </div>
 
       <div className="card" data-testid="requests-list">
+        <div className="tabs" role="tablist">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.value;
+            const className = `tab${active ? ' active' : ''}`;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={className}
+                onClick={() => setActiveTab(tab.value)}
+              >
+                {tab.label}
+                <span className="count">{tab.count}</span>
+              </button>
+            );
+          })}
+        </div>
         <div className="filters">
           <span style={{ color: 'var(--ink-500)' }}><Icons.filter /></span>
           {CHIPS.map((chip) => {

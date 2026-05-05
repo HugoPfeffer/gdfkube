@@ -44,12 +44,12 @@
 
 ## 7. RequestsList restoration
 
-- [ ] 7.1 Add three tabs ("Mine" / "Department" / "All") with count badges. Operator sees only "Mine".
-- [ ] 7.2 Add a toolbar above the table: "Export CSV" ghost (decorative info toast) + "New request" primary (→ `catalog`).
-- [ ] 7.3 Expand the table from 5 to 9 columns: Number, Cluster (`vars.clusterName ?? formLabel`), Department, Environment (color-coded), Nodes, Requester, Status, Submitted (time only), Open chevron link.
-- [ ] 7.4 Add a `<Icons.filter>` icon adjacent to the chips and a "Showing X of Y" counter to the right.
-- [ ] 7.5 Color-code the Environment cell (production red, staging amber, development green).
-- [ ] 7.6 Update `RequestsList.test.tsx` for tabs, toolbar, full column set, env color, counter.
+- [x] 7.1 Add three tabs ("Mine" / "Department" / "All") with count badges. Operator sees only "Mine".
+- [x] 7.2 Add a toolbar above the table: "Export CSV" ghost (decorative info toast) + "New request" primary (→ `catalog`).
+- [x] 7.3 Expand the table from 5 to 9 columns: Number, Cluster (`vars.clusterName ?? formLabel`), Department, Environment (color-coded), Nodes, Requester, Status, Submitted (time only), Open chevron link.
+- [x] 7.4 Add a `<Icons.filter>` icon adjacent to the chips and a "Showing X of Y" counter to the right.
+- [x] 7.5 Color-code the Environment cell (production red, staging amber, development green).
+- [x] 7.6 Update `RequestsList.test.tsx` for tabs, toolbar, full column set, env color, counter.
 
 ## 8. RequestDetail header + pipeline header
 
