@@ -33,7 +33,7 @@ function iconFor(name: string | undefined) {
 
 export function Pipeline({ request, pipelineSpeed }: PipelineProps) {
   const safeSpeed = pipelineSpeed > 0 ? pipelineSpeed : 1;
-  const duration = `${4 / safeSpeed}s`;
+  const duration = `${1.4 / safeSpeed}s`;
 
   const isProvisioning = request.status === 'provisioning';
   const isFailed = request.status === 'failed';

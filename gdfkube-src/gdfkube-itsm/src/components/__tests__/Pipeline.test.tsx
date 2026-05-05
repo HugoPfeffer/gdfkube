@@ -44,8 +44,26 @@ describe('Pipeline', () => {
     );
     const active = container.querySelector('.stage.stage-active') as HTMLElement;
     expect(active).not.toBeNull();
-    // 4 / 0.5 = 8s
-    expect(active.getAttribute('style') ?? '').toContain('8s');
+    // 1.4 / 0.5 = 2.8s
+    expect(active.getAttribute('style') ?? '').toContain('2.8s');
+  });
+
+  it('uses 1.4s baseline at pipelineSpeed=1', () => {
+    const { container } = render(
+      <Pipeline request={makeRequest('provisioning', 4)} pipelineSpeed={1} />,
+    );
+    const active = container.querySelector('.stage.stage-active') as HTMLElement;
+    expect(active).not.toBeNull();
+    expect(active.getAttribute('style') ?? '').toContain('1.4s');
+  });
+
+  it('halves duration to 0.7s at pipelineSpeed=2', () => {
+    const { container } = render(
+      <Pipeline request={makeRequest('provisioning', 4)} pipelineSpeed={2} />,
+    );
+    const active = container.querySelector('.stage.stage-active') as HTMLElement;
+    expect(active).not.toBeNull();
+    expect(active.getAttribute('style') ?? '').toContain('0.7s');
   });
 
   it('does not set --anim-duration on non-active stages', () => {

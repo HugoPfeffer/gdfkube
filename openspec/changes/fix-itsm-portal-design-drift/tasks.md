@@ -7,9 +7,9 @@
 
 ## 2. Pulse animation duration baseline
 
-- [ ] 2.1 Update `styles.css:567` `--anim-duration` fallback from `4s` to `1.4s`.
-- [ ] 2.2 Update `Pipeline.tsx` to set `--anim-duration: ${1.4 / pipelineSpeed}s` (currently `4 / pipelineSpeed`).
-- [ ] 2.3 Update `Pipeline.test.tsx` and `RequestDetail.test.tsx` to assert the new values: `1.4s` at speed 1, `0.7s` at speed 2.
+- [x] 2.1 Update `styles.css:567` `--anim-duration` fallback from `4s` to `1.4s`.
+- [x] 2.2 Update `Pipeline.tsx` to set `--anim-duration: ${1.4 / pipelineSpeed}s` (currently `4 / pipelineSpeed`).
+- [x] 2.3 Update `Pipeline.test.tsx` and `RequestDetail.test.tsx` to assert the new values: `1.4s` at speed 1, `0.7s` at speed 2.
 
 ## 3. StatusPill realignment
 

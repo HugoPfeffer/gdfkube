@@ -2,7 +2,7 @@
 //
 // Covers the spec scenarios for `itsm-request-detail`:
 //   - 7-stage pipeline class mapping for provisioning / failed
-//   - active stage's --anim-duration scales with pipelineSpeed (4 / speed)
+//   - active stage's --anim-duration scales with pipelineSpeed (1.4 / speed)
 //   - Cluster Access kubeconfig button disabled until status === "ready"
 //   - No "Generated Manifests" / "Pipeline Activity" elements
 //   - Not-found message when the id doesn't resolve
@@ -179,7 +179,7 @@ describe('RequestDetail', () => {
     expect(states).toEqual(Array(7).fill('pending'));
   });
 
-  it('active stage --anim-duration is 4s at pipelineSpeed=1 and 2s at pipelineSpeed=2', () => {
+  it('active stage --anim-duration is 1.4s at pipelineSpeed=1, 0.7s at pipelineSpeed=2, 2.8s at pipelineSpeed=0.5', () => {
     const navigate = vi.fn();
     const req = makeRequest('REQ0010247', 'provisioning', 4);
 
@@ -195,7 +195,7 @@ describe('RequestDetail', () => {
     expect(active1).not.toBeNull();
     const style1 = active1!.getAttribute('style') ?? '';
     expect(style1).toContain('--anim-duration');
-    expect(style1).toContain('4s');
+    expect(style1).toContain('1.4s');
     first.unmount();
 
     const second = render(
@@ -214,7 +214,26 @@ describe('RequestDetail', () => {
     expect(active2).not.toBeNull();
     const style2 = active2!.getAttribute('style') ?? '';
     expect(style2).toContain('--anim-duration');
-    expect(style2).toContain('2s');
+    expect(style2).toContain('0.7s');
+    second.unmount();
+
+    const third = render(
+      withProvider(
+        makeState(req),
+        <RequestDetail
+          id="REQ0010247"
+          navigate={navigate}
+          tweaks={{ ...DEFAULT_TWEAKS, pipelineSpeed: 0.5 }}
+        />,
+      ),
+    );
+    const active3 = third.container.querySelector(
+      '.stage.stage-active',
+    ) as HTMLElement | null;
+    expect(active3).not.toBeNull();
+    const style3 = active3!.getAttribute('style') ?? '';
+    expect(style3).toContain('--anim-duration');
+    expect(style3).toContain('2.8s');
   });
 
   it('cluster access section is hidden when status is provisioning', () => {
