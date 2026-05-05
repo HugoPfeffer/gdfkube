@@ -1,19 +1,7 @@
-// Request Detail page — renders the seven-stage CDC pipeline visualization
-// plus three side panels for a single request:
-//
-//   1. Request Details: id, requester, cluster, environment, nodes, submitted
-//      timestamp, current status pill.
-//   2. Approvals: the approvalChain entries (actor, action, optional comment).
-//   3. Cluster Access: a kubeconfig download button, disabled until the
-//      request reaches `status === "ready"`.
-//
-// Per spec the page does NOT render a "Generated Manifests" card or any
-// "Pipeline Activity" log. Manifests live in Git only; the activity log was
-// part of the design bundle's prototype and was pruned for the production
-// portal.
-
 import { Pipeline } from '../components/Pipeline';
 import { StatusPill } from '../components/StatusPill';
+import { ORGS } from '../data/seeds';
+import { Icons } from '../icons/Icons';
 import type { Navigate } from '../router';
 import { useGdfData } from '../state/dataContext';
 import type { ApprovalDecision, Request, Tweaks } from '../types';
@@ -22,14 +10,8 @@ interface RequestDetailProps {
   id: string | undefined;
   navigate: Navigate;
   tweaks: Tweaks;
+  role?: 'operator' | 'admin' | 'approver' | 'service';
 }
-
-const GRID_STYLE = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-  gap: 16,
-  marginTop: 18,
-} as const;
 
 function requesterName(req: Request): string {
   const r = req.requester;
@@ -63,7 +45,7 @@ const ACTION_LABEL: Record<ApprovalDecision['action'], string> = {
   requested_changes: 'requested changes',
 };
 
-export function RequestDetail({ id, navigate, tweaks }: RequestDetailProps) {
+export function RequestDetail({ id, navigate, tweaks, role }: RequestDetailProps) {
   const { requests } = useGdfData();
   const request = id ? requests.find((r) => r.id === id) : undefined;
 
@@ -89,78 +71,101 @@ export function RequestDetail({ id, navigate, tweaks }: RequestDetailProps) {
 
   const chain = request.approvalChain ?? [];
   const ready = request.status === 'ready';
+  const orgName = ORGS.find((o) => o.id === request.requesterGroupName)?.name ?? request.requesterGroupName;
 
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title mono">{request.id}</h1>
-        <p className="page-sub">{request.formLabel ?? request.formId}</p>
+        <div className="page-head-row">
+          <div>
+            <div className="row" style={{ gap: 10, marginBottom: 6 }}>
+              <span className="row-id" style={{ fontSize: 14 }}>{request.id}</span>
+              <StatusPill status={request.status} />
+            </div>
+            <h1 className="page-title">Cluster {clusterName(request)} · {orgName}</h1>
+            <p className="page-sub">Submitted {request.submittedAt} by {requesterName(request)}</p>
+          </div>
+          <div className="row">
+            <button type="button" className="btn ghost" onClick={() => navigate('requests')}>← Back</button>
+            <button type="button" className="btn"><Icons.link /> Open in Gitea</button>
+            {role === 'admin' && request.status === 'approval' && (
+              <button type="button" className="btn primary"><Icons.check /> Approve</button>
+            )}
+            {ready && <button type="button" className="btn"><Icons.download /> kubeconfig</button>}
+          </div>
+        </div>
       </div>
 
       <Pipeline request={request} pipelineSpeed={tweaks.pipelineSpeed} />
 
-      <div className="detail-grid" style={GRID_STYLE}>
-        <section className="card" data-testid="request-details">
-          <div className="card-head"><h2 className="card-title">Request Details</h2></div>
-          <div className="card-body">
-            <dl className="kv">
-              <dt>ID</dt><dd className="mono">{request.id}</dd>
-              <dt>Requester</dt><dd>{requesterName(request)}</dd>
-              <dt>Cluster</dt><dd className="mono">{clusterName(request)}</dd>
-              <dt>Environment</dt><dd>{request.env}</dd>
-              <dt>Nodes</dt><dd>{nodeCount(request)}</dd>
-              <dt>Submitted</dt><dd className="muted">{request.submittedAt}</dd>
-              <dt>Status</dt><dd><StatusPill status={request.status} /></dd>
-            </dl>
-          </div>
-        </section>
+      <div className="detail-grid" style={{ marginTop: 18 }}>
+        <div className="col">
+          <section className="card" data-testid="request-details">
+            <div className="card-head"><h2 className="card-title">Request Details</h2></div>
+            <div className="card-body">
+              <dl className="dl">
+                <dt>Number</dt><dd className="row-id">{request.id}</dd>
+                <dt>ULID</dt><dd className="mono" style={{ fontSize: 11 }}>{request.requestId ?? '—'}</dd>
+                <dt>Form</dt><dd className="mono">{request.formLabel ?? request.formId}</dd>
+                <dt>Department</dt><dd>{orgName} <span className="muted">({request.requesterGroupName})</span></dd>
+                <dt>Cluster</dt><dd><strong>{clusterName(request)}</strong></dd>
+                <dt>Namespace</dt><dd className="mono">hc-{request.requesterGroupName}-{String(request.vars.clusterName ?? '')}</dd>
+                <dt>Environment</dt><dd><span className="pill blue">{request.env}</span></dd>
+                <dt>Nodes</dt><dd>{nodeCount(request)} × KubeVirt</dd>
+                <dt>Requester</dt><dd>{requesterName(request)}</dd>
+                <dt>Submitted</dt><dd className="mono" style={{ fontSize: 12 }}>{request.submittedAt}</dd>
+              </dl>
+            </div>
+          </section>
 
-        <section className="card" data-testid="approval-chain">
-          <div className="card-head"><h2 className="card-title">Approvals</h2></div>
-          <div className="card-body">
-            {chain.length === 0 ? (
-              <p className="muted" style={{ fontSize: 13 }}>
-                No approval decisions recorded yet.
-              </p>
-            ) : (
-              <ul className="approval-chain">
-                {chain.map((entry, idx) => (
-                  <li key={`${entry.actor}-${entry.at}-${idx}`} className="approval-step">
-                    <div className="approval-step-head">
-                      <strong>{entry.actor}</strong>
-                      <span className={`pill ${ACTION_TONE[entry.action]}`}>
-                        {ACTION_LABEL[entry.action]}
-                      </span>
-                      <span className="muted approval-step-at">{entry.at}</span>
-                    </div>
-                    {entry.comment && (
-                      <p className="muted approval-step-comment">{entry.comment}</p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </section>
+          <section className="card" data-testid="approval-chain">
+            <div className="card-head"><h2 className="card-title">Approvals</h2></div>
+            <div className="card-body">
+              {chain.length === 0 ? (
+                <p className="muted" style={{ fontSize: 13 }}>
+                  No approval decisions recorded yet.
+                </p>
+              ) : (
+                <ul className="approval-chain">
+                  {chain.map((entry, idx) => (
+                    <li key={`${entry.actor}-${entry.at}-${idx}`} className="approval-step">
+                      <div className="approval-step-head">
+                        <strong>{entry.actor}</strong>
+                        <span className={`pill ${ACTION_TONE[entry.action]}`}>
+                          {ACTION_LABEL[entry.action]}
+                        </span>
+                        <span className="muted approval-step-at">{entry.at}</span>
+                      </div>
+                      {entry.comment && (
+                        <p className="muted approval-step-comment">{entry.comment}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
 
-        <section className="card" data-testid="cluster-access">
-          <div className="card-head"><h2 className="card-title">Cluster Access</h2></div>
-          <div className="card-body">
-            <p className="muted" style={{ fontSize: 12.5, margin: '0 0 10px' }}>
-              {ready
-                ? 'Cluster is ready. Download the kubeconfig to authenticate.'
-                : 'Kubeconfig will become available once the cluster reaches the ready state.'}
-            </p>
-            <button
-              type="button"
-              className="btn primary"
-              disabled={!ready}
-              aria-disabled={!ready}
-            >
-              Download kubeconfig
-            </button>
-          </div>
-        </section>
+          {ready && (
+            <section className="card" data-testid="cluster-access">
+              <div className="card-head"><h2 className="card-title">Cluster Access</h2></div>
+              <div className="card-body">
+                <dl className="dl">
+                  <dt>API</dt><dd className="mono" style={{ fontSize: 11 }}>https://api.{clusterName(request)}.{request.requesterGroupName}.gov.local:6443</dd>
+                  <dt>Console</dt><dd className="mono" style={{ fontSize: 11 }}>https://console.{clusterName(request)}…</dd>
+                  <dt>Version</dt><dd>OpenShift 4.16.7</dd>
+                </dl>
+                <button
+                  type="button"
+                  className="btn primary"
+                  style={{ width: '100%', marginTop: 12, justifyContent: 'center' }}
+                >
+                  <Icons.download /> Download kubeconfig
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
       </div>
     </div>
   );

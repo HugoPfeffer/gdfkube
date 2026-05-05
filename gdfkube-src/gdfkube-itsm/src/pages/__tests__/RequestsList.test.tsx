@@ -151,29 +151,29 @@ describe('RequestsList', () => {
       ),
     );
 
-    const provChip = container.querySelector(
-      '.filters .filter-chip:nth-of-type(3)',
+    const chips = container.querySelectorAll('.filters .filter-chip');
+    const provChip = Array.from(chips).find(
+      (el) => el.textContent === 'Provisioning',
     ) as HTMLElement | null;
     expect(provChip).not.toBeNull();
-    expect(provChip!.textContent).toBe('Provisioning');
     fireEvent.click(provChip!);
 
     expect(provChip!.classList.contains('active')).toBe(true);
 
-    // The "All" chip should no longer be active.
-    const allChip = container.querySelector(
-      '.filters .filter-chip:nth-of-type(1)',
+    const allChip = Array.from(chips).find(
+      (el) => el.textContent === 'All',
     ) as HTMLElement | null;
     expect(allChip).not.toBeNull();
-    expect(allChip!.textContent).toBe('All');
     expect(allChip!.classList.contains('active')).toBe(false);
 
     const rows = container.querySelectorAll('tbody tr');
     expect(rows.length).toBe(1);
     expect(rows[0]?.querySelector('.row-id')?.textContent).toBe('REQ0010247');
+    expect(rows.length).toBe(1);
+    expect(rows[0]?.querySelector('.row-id')?.textContent).toBe('REQ0010247');
   });
 
-  it('provisioning row shows an inline progress indicator with percent and stage label', () => {
+  it('provisioning row shows an inline progress bar', () => {
     const navigate = vi.fn();
     const { container } = render(
       withProvider(
@@ -187,13 +187,11 @@ describe('RequestsList', () => {
     ) as HTMLElement | undefined;
     expect(provRow).toBeDefined();
 
-    const bar = provRow!.querySelector('.progress .progress-bar') as HTMLElement | null;
+    const progressDiv = provRow!.querySelector('.progress') as HTMLElement | null;
+    expect(progressDiv).not.toBeNull();
+    const bar = progressDiv!.querySelector('div') as HTMLElement | null;
     expect(bar).not.toBeNull();
     expect(bar!.getAttribute('style') ?? '').toContain('width: 58%');
-
-    expect(provRow!.textContent).toContain('58%');
-    // Stage 4 maps to "Camel" per PIPELINE_STAGES.
-    expect(provRow!.textContent).toContain('Camel');
   });
 
   it('non-provisioning rows do not render the progress indicator', () => {
@@ -212,7 +210,7 @@ describe('RequestsList', () => {
     expect(readyRow!.querySelector('.progress')).toBeNull();
   });
 
-  it('page title is "My requests" for operator', () => {
+  it('page title is "My Requests" for operator', () => {
     const navigate = vi.fn();
     render(
       withProvider(
@@ -220,10 +218,10 @@ describe('RequestsList', () => {
         <RequestsList role="operator" user={joao} navigate={navigate} />,
       ),
     );
-    expect(screen.getByText('My requests')).toBeInTheDocument();
+    expect(screen.getByText('My Requests')).toBeInTheDocument();
   });
 
-  it('page title is "All requests" for admin', () => {
+  it('page title is "All Requests" for admin', () => {
     const navigate = vi.fn();
     render(
       withProvider(
@@ -231,7 +229,7 @@ describe('RequestsList', () => {
         <RequestsList role="admin" user={adminUser} navigate={navigate} />,
       ),
     );
-    expect(screen.getByText('All requests')).toBeInTheDocument();
+    expect(screen.getByText('All Requests')).toBeInTheDocument();
   });
 
   it('clicking a row navigates to request-detail with that id', () => {

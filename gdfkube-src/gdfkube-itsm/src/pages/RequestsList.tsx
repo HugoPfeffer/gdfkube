@@ -8,7 +8,8 @@
 
 import { useMemo, useState } from 'react';
 import { StatusPill } from '../components/StatusPill';
-import { PIPELINE_STAGES } from '../data/seeds';
+import { ORGS } from '../data/seeds';
+import { Icons } from '../icons/Icons';
 import type { Navigate } from '../router';
 import { useGdfData } from '../state/dataContext';
 import type { Request, RequestStatus, Role, User } from '../types';
@@ -23,8 +24,8 @@ type ChipValue = 'all' | RequestStatus;
 
 const CHIPS: { value: ChipValue; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'approval', label: 'Approval' },
   { value: 'provisioning', label: 'Provisioning' },
+  { value: 'approval', label: 'Awaiting approval' },
   { value: 'ready', label: 'Ready' },
   { value: 'failed', label: 'Failed' },
 ];
@@ -49,10 +50,8 @@ export function RequestsList({ role, user, navigate }: RequestsListProps) {
   const [activeChip, setActiveChip] = useState<ChipValue>('all');
 
   const isAdmin = role === 'admin';
-  const title = isAdmin ? 'All requests' : 'My requests';
-  const subtitle = isAdmin
-    ? 'Every request submitted across all departments.'
-    : 'Requests you submitted, across every department you operate.';
+  const title = isAdmin ? 'All Requests' : 'My Requests';
+  const subtitle = 'Cluster provisioning requests submitted through the IT service portal.';
 
   const visible = useMemo(() => {
     const scoped = isAdmin
@@ -67,15 +66,32 @@ export function RequestsList({ role, user, navigate }: RequestsListProps) {
     );
   }, [requests, isAdmin, user, activeChip]);
 
+  const totalCount = (isAdmin ? requests : requests.filter((r) => ownsRequest(r, user))).length;
+
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title">{title}</h1>
-        <p className="page-sub">{subtitle}</p>
+        <div className="page-head-row">
+          <div>
+            <h1 className="page-title">{title}</h1>
+            <p className="page-sub">{subtitle}</p>
+          </div>
+          <div className="row">
+            <button type="button" className="btn ghost"><Icons.download /> CSV</button>
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => navigate('new-request', { formId: 'cluster-request' })}
+            >
+              <Icons.plus /> New request
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="card" data-testid="requests-list">
         <div className="filters">
+          <span style={{ color: 'var(--ink-500)' }}><Icons.filter /></span>
           {CHIPS.map((chip) => {
             const active = activeChip === chip.value;
             const className = `filter-chip${active ? ' active' : ''}`;
@@ -90,25 +106,30 @@ export function RequestsList({ role, user, navigate }: RequestsListProps) {
               </button>
             );
           })}
+          <span className="spacer" />
+          <span style={{ fontSize: 12, color: 'var(--ink-500)' }}>Showing {visible.length} of {totalCount}</span>
         </div>
-
         <div className="table-wrap">
           <table className="list">
             <thead>
               <tr>
-                <th>Number</th>
-                <th>Form</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Submitted</th>
+                <th style={{ width: 110 }}>Number</th>
+                <th>Cluster</th>
+                <th style={{ width: 130 }}>Department</th>
+                <th style={{ width: 110 }}>Environment</th>
+                <th style={{ width: 80 }}>Nodes</th>
+                <th style={{ width: 130 }}>Requester</th>
+                <th style={{ width: 160 }}>Status</th>
+                <th style={{ width: 150 }}>Submitted</th>
+                <th style={{ width: 40 }} />
               </tr>
             </thead>
             <tbody>
               {visible.map((r) => {
-                const stage = PIPELINE_STAGES[r.stage];
-                const stageLabel = stage?.label ?? '';
                 const progress = r.progress ?? 0;
                 const isProvisioning = r.status === 'provisioning';
+                const envColor = r.env === 'production' ? 'var(--red-700)' : r.env === 'staging' ? 'var(--amber-700)' : 'var(--green-700)';
+                const requesterFull = r.requester?.fullName || r.requester?.name || '';
                 return (
                   <tr
                     key={r.id}
@@ -125,37 +146,29 @@ export function RequestsList({ role, user, navigate }: RequestsListProps) {
                     <td>
                       <span className="row-id">{r.id}</span>
                     </td>
-                    <td>{r.formLabel ?? r.formId}</td>
-                    <td>{r.requesterGroupName}</td>
+                    <td><strong>{String(r.vars.clusterName ?? '')}</strong></td>
+                    <td className="muted">{ORGS.find((o) => o.id === r.requesterGroupName)?.name ?? r.requesterGroupName}</td>
+                    <td>
+                      <span className="mono" style={{ color: envColor }}>{r.env}</span>
+                    </td>
+                    <td className="mono">{String(r.vars.nodeCount ?? '—')}</td>
+                    <td className="muted">{requesterFull}</td>
                     <td>
                       <StatusPill status={r.status} />
                       {isProvisioning && (
-                        <div
-                          className="progress-row"
-                          style={{ marginTop: 6, minWidth: 160 }}
-                        >
-                          <div className="progress">
-                            <div
-                              className="progress-bar"
-                              style={{ width: `${progress}%` }}
-                            />
-                          </div>
-                          <span
-                            className="muted"
-                            style={{ fontSize: 12, marginTop: 2, display: 'block' }}
-                          >
-                            {progress}% · {stageLabel}
-                          </span>
+                        <div className="progress" style={{ marginTop: 6, width: 100 }}>
+                          <div style={{ width: `${progress}%` }} />
                         </div>
                       )}
                     </td>
-                    <td className="muted">{r.submittedAt}</td>
+                    <td className="muted mono">{r.submittedAt}</td>
+                    <td><span style={{ color: 'var(--ink-400)' }}><Icons.chevronRight /></span></td>
                   </tr>
                 );
               })}
               {visible.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="empty">
+                  <td colSpan={9} className="empty">
                     No requests match the current filter.
                   </td>
                 </tr>

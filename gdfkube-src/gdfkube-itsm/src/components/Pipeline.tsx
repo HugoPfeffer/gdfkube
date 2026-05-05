@@ -1,22 +1,9 @@
-// Pipeline visualization — renders the seven-stage CDC pipeline for a single
-// request. The `state` per stage is derived from `request.status` and
-// `request.stage`:
-//
-//   - status === "ready"        → every stage "done"
-//   - status === "approval"     → every stage "pending"
-//   - status === "provisioning" → idx < stage "done", idx === stage "active",
-//                                  idx > stage "pending"
-//   - status === "failed"       → idx < stage "done", idx === stage "failed",
-//                                  idx > stage "pending"
-//
-// The active stage receives an inline `--anim-duration` CSS variable computed
-// from `pipelineSpeed` (4 / pipelineSpeed seconds, baseline 4s at speed 1) so
-// the pulse animation visibly accelerates when the tweak is increased.
-
 import type { CSSProperties } from 'react';
 import { PIPELINE_STAGES } from '../data/seeds';
 import { Icons } from '../icons/Icons';
 import type { Request } from '../types';
+
+const TOTAL_STAGES = PIPELINE_STAGES.length;
 
 interface PipelineProps {
   request: Request;
@@ -37,7 +24,6 @@ function stageState(
   return 'pending';
 }
 
-// Type-safe access to the icon map without `any`.
 type IconMap = typeof Icons;
 function iconFor(name: string | undefined) {
   if (!name) return Icons.form;
@@ -46,14 +32,35 @@ function iconFor(name: string | undefined) {
 }
 
 export function Pipeline({ request, pipelineSpeed }: PipelineProps) {
-  // Avoid divide-by-zero or negative durations from a stale persisted tweak.
   const safeSpeed = pipelineSpeed > 0 ? pipelineSpeed : 1;
   const duration = `${4 / safeSpeed}s`;
 
+  const isProvisioning = request.status === 'provisioning';
+  const isFailed = request.status === 'failed';
+  const isReady = request.status === 'ready';
+  const progress = request.progress ?? (isReady ? 100 : 0);
+  const failedStage = isFailed ? PIPELINE_STAGES[request.stage] : undefined;
+
   return (
-    <div className="card pipeline" data-testid="pipeline">
+    <div className="card pipeline" data-testid="pipeline" style={{ marginBottom: 18 }}>
       <div className="pipe-head">
-        <h3>Provisioning Pipeline</h3>
+        <div className="row" style={{ gap: 14 }}>
+          <h3>Provisioning Pipeline</h3>
+          {isProvisioning && (
+            <span className="pill blue"><span className="dot" />Live · stage {Math.min(request.stage + 1, TOTAL_STAGES)} of {TOTAL_STAGES}</span>
+          )}
+          {isReady && (
+            <span className="pill green"><Icons.check size={11} /> Completed</span>
+          )}
+          {isFailed && (
+            <span className="pill red"><Icons.alert size={11} /> Failed at {failedStage?.label}</span>
+          )}
+        </div>
+        <div className="row">
+          <span style={{ fontSize: 12, color: 'var(--ink-500)' }}>Overall</span>
+          <div className="progress" style={{ width: 180 }}><div style={{ width: `${progress}%` }} /></div>
+          <span className="mono" style={{ fontSize: 12, color: 'var(--ink-700)' }}>{progress}%</span>
+        </div>
       </div>
       <div className="pipe-stages stages">
         {PIPELINE_STAGES.map((stage, index) => {

@@ -217,48 +217,49 @@ describe('RequestDetail', () => {
     expect(style2).toContain('2s');
   });
 
-  it('kubeconfig download button is disabled when status is provisioning', () => {
+  it('cluster access section is hidden when status is provisioning', () => {
     const navigate = vi.fn();
     const req = makeRequest('REQ0010247', 'provisioning', 4);
-    render(
+    const { container } = render(
       withProvider(
         makeState(req),
         <RequestDetail id="REQ0010247" navigate={navigate} tweaks={DEFAULT_TWEAKS} />,
       ),
     );
 
-    const btn = screen.getByRole('button', { name: /kubeconfig/i });
-    expect(btn).toBeDisabled();
+    expect(container.querySelector('[data-testid="cluster-access"]')).toBeNull();
   });
 
-  it('kubeconfig download button is disabled when status is approval', () => {
+  it('cluster access section is hidden when status is approval', () => {
     const navigate = vi.fn();
     const req = makeRequest('REQ0010238', 'approval', 0);
-    render(
+    const { container } = render(
       withProvider(
         makeState(req),
         <RequestDetail id="REQ0010238" navigate={navigate} tweaks={DEFAULT_TWEAKS} />,
       ),
     );
 
-    const btn = screen.getByRole('button', { name: /kubeconfig/i });
-    expect(btn).toBeDisabled();
+    expect(container.querySelector('[data-testid="cluster-access"]')).toBeNull();
   });
 
-  it('kubeconfig download button is enabled when status is ready', () => {
+  it('kubeconfig download button is shown and enabled when status is ready', () => {
     const navigate = vi.fn();
     const req = makeRequest('REQ0010244', 'ready', 7);
-    render(
+    const { container } = render(
       withProvider(
         makeState(req),
         <RequestDetail id="REQ0010244" navigate={navigate} tweaks={DEFAULT_TWEAKS} />,
       ),
     );
 
-    const btn = screen.getByRole('button', { name: /kubeconfig/i });
-    expect(btn).not.toBeDisabled();
+    const accessCard = container.querySelector('[data-testid="cluster-access"]') as HTMLElement;
+    expect(accessCard).not.toBeNull();
+    const btn = accessCard.querySelector('button');
+    expect(btn).not.toBeNull();
+    expect(btn!.textContent).toMatch(/kubeconfig/i);
+    expect(btn!).not.toBeDisabled();
   });
-
   it('does not render a "Generated Manifests" element', () => {
     const navigate = vi.fn();
     const req = makeRequest('REQ0010247', 'provisioning', 4);
