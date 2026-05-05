@@ -6,6 +6,8 @@
 //   - clicking a tile navigates to `new-request` with `formId`
 //   - an unknown form id falls back to generic chrome (icon + description copy)
 //   - no filter chips and no Knowledge Base section render
+//   - each tile renders a `.meta` row with a clock icon + duration string
+//   - empty state renders when no active forms exist
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -136,5 +138,76 @@ describe('Catalog', () => {
     expect(container.querySelector('.chip')).toBeNull();
     expect(container.querySelector('.filter-chip')).toBeNull();
     expect(screen.queryByText(/Knowledge Base/i)).toBeNull();
+  });
+
+  it('renders a `.meta` row with a clock icon and per-id duration string on each tile', () => {
+    const navigate = vi.fn();
+    const state = makeState([
+      makeForm({ id: 'cluster-request', name: 'OpenShift Cluster Request' }),
+      makeForm({ id: 'namespace-request', name: 'Namespace Onboarding' }),
+      makeForm({ id: 'scale-request', name: 'Cluster Scale Change' }),
+      makeForm({ id: 'secret-rotation-v2', name: 'Secret Rotation v2' }),
+    ]);
+
+    const { container } = render(
+      withProvider(state, <Catalog navigate={navigate} />),
+    );
+
+    const tiles = Array.from(
+      container.querySelectorAll<HTMLElement>('.cat-tile'),
+    );
+    expect(tiles).toHaveLength(4);
+
+    const expected: Record<string, string> = {
+      'OpenShift Cluster Request': '~3 min',
+      'Namespace Onboarding': '~30 sec',
+      'Cluster Scale Change': '~1 min',
+      'Secret Rotation v2': 'Self-service · varies',
+    };
+
+    for (const tile of tiles) {
+      const meta = tile.querySelector('.meta');
+      expect(meta).not.toBeNull();
+      // The meta row contains a clock icon (svg).
+      expect(meta!.querySelector('svg')).not.toBeNull();
+
+      const matchingName = Object.keys(expected).find((name) =>
+        tile.textContent?.includes(name),
+      );
+      expect(matchingName).toBeDefined();
+      expect(meta!.textContent).toContain(expected[matchingName!]);
+    }
+  });
+
+  it('renders an empty-state block (and no tiles) when no active forms exist', () => {
+    const navigate = vi.fn();
+    const state = makeState([
+      makeForm({
+        id: 'cluster-request',
+        name: 'OpenShift Cluster Request',
+        status: 'disabled',
+      }),
+    ]);
+
+    const { container } = render(
+      withProvider(state, <Catalog navigate={navigate} />),
+    );
+
+    expect(container.querySelector('.cat-tile')).toBeNull();
+    expect(
+      screen.getByText(/No active forms\. Create a form in the admin portal/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the empty state when state.forms is empty', () => {
+    const navigate = vi.fn();
+    const state = makeState([]);
+
+    const { container } = render(
+      withProvider(state, <Catalog navigate={navigate} />),
+    );
+
+    expect(container.querySelector('.cat-tile')).toBeNull();
+    expect(screen.getByText(/No active forms/i)).toBeInTheDocument();
   });
 });

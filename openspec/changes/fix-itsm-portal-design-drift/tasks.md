@@ -38,9 +38,9 @@
 
 ## 6. Catalog restoration
 
-- [ ] 6.1 Add `.meta` row to each tile with `<Icons.clock>` + a duration string (cluster: "~3 min", namespace: "~30 sec", scale: "~1 min", unknown: "Self-service · varies").
-- [ ] 6.2 Add an empty-state block (32px form icon + "No active forms.") when no active forms exist.
-- [ ] 6.3 Update `Catalog.test.tsx` for the meta row presence and the empty state.
+- [x] 6.1 Add `.meta` row to each tile with `<Icons.clock>` + a duration string (cluster: "~3 min", namespace: "~30 sec", scale: "~1 min", unknown: "Self-service · varies").
+- [x] 6.2 Add an empty-state block (32px form icon + "No active forms.") when no active forms exist.
+- [x] 6.3 Update `Catalog.test.tsx` for the meta row presence and the empty state.
 
 ## 7. RequestsList restoration
 

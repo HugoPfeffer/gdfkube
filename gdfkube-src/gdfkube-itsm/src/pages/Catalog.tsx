@@ -5,6 +5,9 @@
 // modifier class). Tiles route to `new-request` with the form id as a param.
 //
 // Per spec the catalog has no filter chips and no Knowledge Base section.
+// Each tile renders a `.meta` row with a clock icon plus a per-form duration
+// string. When no forms are active an empty-state block is rendered instead
+// of the tile grid.
 
 import type { ComponentType } from 'react';
 import { Icons } from '../icons/Icons';
@@ -40,6 +43,14 @@ const TILE_META: Record<string, TileMeta> = {
   },
 };
 
+const DURATION_FALLBACK = 'Self-service · varies';
+
+const TILE_DURATION: Record<string, string> = {
+  'cluster-request': '~3 min',
+  'namespace-request': '~30 sec',
+  'scale-request': '~1 min',
+};
+
 function metaFor(form: FormDef): TileMeta {
   return (
     TILE_META[form.id] ?? {
@@ -49,9 +60,33 @@ function metaFor(form: FormDef): TileMeta {
   );
 }
 
+function durationFor(form: FormDef): string {
+  return TILE_DURATION[form.id] ?? DURATION_FALLBACK;
+}
+
 export function Catalog({ navigate }: CatalogProps) {
   const { forms } = useGdfData();
   const active = forms.filter((f) => f.status === 'active');
+
+  if (active.length === 0) {
+    return (
+      <div className="page">
+        <div className="page-head">
+          <h1 className="page-title">Service Catalog</h1>
+          <p className="page-sub">
+            Self-service request forms backed by the platform's GitOps pipeline.
+          </p>
+        </div>
+
+        <div className="catalog-empty">
+          <Icons.form size={32} />
+          <p>
+            No active forms. Create a form in the admin portal to get started.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -65,6 +100,7 @@ export function Catalog({ navigate }: CatalogProps) {
       <div className="catalog-grid">
         {active.map((form) => {
           const { icon: Icon, description } = metaFor(form);
+          const duration = durationFor(form);
           const featured = form.id === 'cluster-request';
           const className = `cat-tile${featured ? ' featured' : ''}`;
           return (
@@ -86,6 +122,10 @@ export function Catalog({ navigate }: CatalogProps) {
               </div>
               <h3>{form.name}</h3>
               <p>{description}</p>
+              <div className="meta">
+                <Icons.clock />
+                <span>{duration}</span>
+              </div>
             </div>
           );
         })}
