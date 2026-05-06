@@ -71,9 +71,9 @@
 
 ## 10. NewRequest "What happens next" sidebar + Kafka topic
 
-- [ ] 10.1 Add a sidebar block below `PayloadPreview` titled "What happens next". For `cluster-request`: 6 numbered steps (Submit → MongoDB → Debezium → Kafka → Camel → Git → ArgoCD). For other forms: 5 steps (omitting MongoDB-Debezium intermediate).
-- [ ] 10.2 Add a footer row with `<Icons.shield>` and the text "Routed via Kafka topic dbz.gdfkube.requests".
-- [ ] 10.3 Update `GenericRequest.test.tsx` for the sidebar's existence and step count.
+- [x] 10.1 Add a sidebar block below `PayloadPreview` titled "What happens next". For `cluster-request`: 6 numbered steps (Submit → MongoDB → Debezium → Kafka → Camel → Git → ArgoCD). For other forms: 5 steps (omitting MongoDB-Debezium intermediate).
+- [x] 10.2 Add a footer row with `<Icons.shield>` and the text "Routed via Kafka topic dbz.gdfkube.requests".
+- [x] 10.3 Update `GenericRequest.test.tsx` for the sidebar's existence and step count.
 
 ## 11. Admin Forms restoration
 

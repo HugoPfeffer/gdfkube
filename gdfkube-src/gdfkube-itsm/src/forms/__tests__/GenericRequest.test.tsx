@@ -457,6 +457,64 @@ describe('GenericRequest', () => {
     ).toBe(true);
   });
 
+  it('renders a "What happens next" sidebar with 6 numbered steps for cluster-request', () => {
+    const fields: Field[] = [
+      {
+        key: 'clusterName',
+        label: 'Cluster name',
+        type: 'text',
+        bucket: 'vars',
+      },
+    ];
+    const { container } = renderWithFields('cluster-request', fields);
+
+    const sidebar = container.querySelector('aside.next-steps');
+    expect(sidebar).not.toBeNull();
+    expect(sidebar!.textContent).toContain('What happens next');
+
+    const steps = sidebar!.querySelectorAll('ol > li');
+    expect(steps.length).toBe(6);
+  });
+
+  it('renders a 5-step "What happens next" sidebar for non-cluster forms', () => {
+    const fields: Field[] = [
+      {
+        key: 'namespaceName',
+        label: 'Namespace name',
+        type: 'text',
+        bucket: 'vars',
+      },
+    ];
+    const { container } = renderWithFields('namespace-request', fields);
+
+    const sidebar = container.querySelector('aside.next-steps');
+    expect(sidebar).not.toBeNull();
+    const steps = sidebar!.querySelectorAll('ol > li');
+    expect(steps.length).toBe(5);
+  });
+
+  it('renders a Kafka topic footer with shield icon and topic text', () => {
+    const fields: Field[] = [
+      {
+        key: 'clusterName',
+        label: 'Cluster name',
+        type: 'text',
+        bucket: 'vars',
+      },
+    ];
+    const { container } = renderWithFields('cluster-request', fields);
+
+    const sidebar = container.querySelector('aside.next-steps');
+    expect(sidebar).not.toBeNull();
+
+    const footer = sidebar!.querySelector('.kafka-topic');
+    expect(footer).not.toBeNull();
+    expect(footer!.textContent).toContain(
+      'Routed via Kafka topic dbz.gdfkube.requests',
+    );
+    expect(footer!.querySelector('svg')).not.toBeNull();
+  });
+
   it('env defaults to development when no environment field exists', () => {
     let latestState: DataState | undefined;
     const fields: Field[] = [

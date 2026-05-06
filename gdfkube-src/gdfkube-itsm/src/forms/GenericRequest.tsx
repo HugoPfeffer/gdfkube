@@ -6,6 +6,7 @@
 // triggers an info toast, and navigates to request-detail.
 
 import { useMemo, useState, type ChangeEvent } from 'react';
+import { Icons } from '../icons/Icons';
 import type { Navigate } from '../router';
 import type { Toast } from '../shell/ToastStack';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
@@ -16,6 +17,30 @@ import { PayloadPreview } from './PayloadPreview';
 import { PrefixedInput } from './PrefixedInput';
 import { RadioCards } from './RadioCards';
 import { validateField } from './validate';
+
+// "What happens next" narrative steps. Cluster requests cross MongoDB +
+// Debezium so the sidebar lists 6 steps; other forms collapse those into
+// a 5-step list to keep the footprint compact.
+const CLUSTER_NEXT_STEPS = [
+  'Form submitted',
+  'MongoDB document created',
+  'Debezium captured CDC event',
+  'Kafka topic published',
+  'Camel route reconciled',
+  'ArgoCD synced cluster manifests',
+] as const;
+
+const GENERIC_NEXT_STEPS = [
+  'Form submitted',
+  'MongoDB document created',
+  'Camel route reconciled',
+  'Git PR opened',
+  'ArgoCD synced manifests',
+] as const;
+
+function getNextSteps(formId: string): readonly string[] {
+  return formId === 'cluster-request' ? CLUSTER_NEXT_STEPS : GENERIC_NEXT_STEPS;
+}
 
 interface GenericRequestProps {
   formId: string;
@@ -313,6 +338,40 @@ export function GenericRequest({
             Live payload
           </h3>
           <PayloadPreview meta={meta} vars={vars} />
+
+          <aside className="next-steps" style={{ marginTop: 18 }}>
+            <h3
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--ink-500)',
+                textTransform: 'uppercase',
+                letterSpacing: 0.4,
+                margin: '0 0 8px',
+              }}
+            >
+              What happens next
+            </h3>
+            <ol>
+              {getNextSteps(formId).map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            <div
+              className="kafka-topic"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                marginTop: 12,
+                fontSize: 12,
+                color: 'var(--ink-500)',
+              }}
+            >
+              <Icons.shield />
+              <span>Routed via Kafka topic dbz.gdfkube.requests</span>
+            </div>
+          </aside>
         </aside>
       </div>
     </div>
