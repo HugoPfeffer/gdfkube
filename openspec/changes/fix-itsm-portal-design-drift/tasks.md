@@ -108,8 +108,8 @@
 
 ## 14. nodepool template rename
 
-- [ ] 14.1 In `defaultTemplates.ts`, rename the `scale-request` template's filename from `nodepool.yaml` to `nodepool-patch.yaml`.
-- [ ] 14.2 Update any test or doc reference to the old filename.
+- [x] 14.1 In `defaultTemplates.ts`, rename the `scale-request` template's filename from `nodepool.yaml` to `nodepool-patch.yaml`.
+- [x] 14.2 Update any test or doc reference to the old filename.
 
 ## 15. Foundations cleanup
 

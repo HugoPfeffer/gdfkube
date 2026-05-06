@@ -105,7 +105,7 @@ spec:
 };
 
 const SCALE_NODEPOOL: TemplateFile = {
-  name: 'nodepool.yaml',
+  name: 'nodepool-patch.yaml',
   content: `# Patch applied to the existing NodePool.
 apiVersion: hypershift.openshift.io/v1beta1
 kind: NodePool
