@@ -119,9 +119,9 @@
 
 ## 16. Spec deltas
 
-- [ ] 16.1 Verify each delta spec under `openspec/changes/fix-itsm-portal-design-drift/specs/<capability>/spec.md` validates via `openspec validate fix-itsm-portal-design-drift`.
+- [x] 16.1 Verify each delta spec under `openspec/changes/fix-itsm-portal-design-drift/specs/<capability>/spec.md` validates via `openspec validate fix-itsm-portal-design-drift`.
 
 ## 17. Verify and finishing
 
-- [ ] 17.1 Produce `verify.md` after all tasks complete (all `- [x]`); confirm `npm run typecheck && npm run test && npm run lint && npm run build` are green; confirm `openspec validate --all --json` returns valid.
+- [x] 17.1 Produce `verify.md` after all tasks complete (all `- [x]`); confirm `npm run typecheck && npm run test && npm run lint && npm run build` are green; confirm `openspec validate --all --json` returns valid.
 - [ ] 17.2 Run `superpowers:finishing-a-development-branch` to merge / PR / cleanup the worktree.
