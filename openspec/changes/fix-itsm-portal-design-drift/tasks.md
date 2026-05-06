@@ -100,11 +100,11 @@
 
 ## 13. TweaksPanel a11y
 
-- [ ] 13.1 In `TweaksPanel.tsx`, focus the first form control (theme `<select>`) on open via `useEffect` + `useRef`.
-- [ ] 13.2 Trap Tab cycling within the panel: capture Tab and Shift+Tab in a `keydown` handler scoped to the panel; if focus would leave the panel, redirect to the first/last focusable element.
-- [ ] 13.3 Capture and restore the `document.activeElement` from before open; on close call `previousFocus.current?.focus()`.
-- [ ] 13.4 Add an Escape `keydown` listener on the panel that calls `onClose()`.
-- [ ] 13.5 Update `TweaksPanel.test.tsx` to cover the first-control-focus, escape-closes, and return-focus paths.
+- [x] 13.1 In `TweaksPanel.tsx`, focus the first form control (theme `<select>`) on open via `useEffect` + `useRef`.
+- [x] 13.2 Trap Tab cycling within the panel: capture Tab and Shift+Tab in a `keydown` handler scoped to the panel; if focus would leave the panel, redirect to the first/last focusable element.
+- [x] 13.3 Capture and restore the `document.activeElement` from before open; on close call `previousFocus.current?.focus()`.
+- [x] 13.4 Add an Escape `keydown` listener on the panel that calls `onClose()`.
+- [x] 13.5 Update `TweaksPanel.test.tsx` to cover the first-control-focus, escape-closes, and return-focus paths.
 
 ## 14. nodepool template rename
 

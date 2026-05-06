@@ -7,7 +7,14 @@
 //
 // The panel only mutates state passed in via props; the App's existing
 // `data-theme` effect picks up theme changes automatically.
+//
+// Accessibility:
+//   - On open, focus moves to the theme `<select>` (first interactive control)
+//   - Captures the previously focused element and restores focus on close
+//   - Escape closes the panel via `onClose`
+//   - Tab / Shift+Tab cycle is trapped within the panel
 
+import { useEffect, useRef } from 'react';
 import { Icons } from '../icons/Icons';
 import type { Navigate } from '../router';
 import type { Role, Tweaks } from '../types';
@@ -23,6 +30,9 @@ interface TweaksPanelProps {
   navigate: Navigate;
 }
 
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [tabindex]:not([tabindex="-1"]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
+
 export function TweaksPanel({
   open,
   tweaks,
@@ -32,17 +42,77 @@ export function TweaksPanel({
   setRole,
   navigate,
 }: TweaksPanelProps) {
+  const panelRef = useRef<HTMLElement | null>(null);
+  const themeSelectRef = useRef<HTMLSelectElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // On open: capture previously focused element, focus theme select.
+  // On close (open transitions back to false): restore focus to previous.
+  useEffect(() => {
+    if (open) {
+      previousFocusRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      themeSelectRef.current?.focus();
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [open]);
+
+  // Window-scoped Escape key handler while open.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const switchTo: Role = role === 'admin' ? 'operator' : 'admin';
   const switchLabel =
     switchTo === 'admin' ? 'Switch to Admin' : 'Switch to Operator';
 
+  // Focus trap: redirect Tab / Shift+Tab if focus would leave the panel.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key !== 'Tab') return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const focusables = Array.from(
+      panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0]!;
+    const last = focusables[focusables.length - 1]!;
+    const active = document.activeElement;
+    if (e.shiftKey) {
+      if (active === first || !panel.contains(active)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (active === last || !panel.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  };
+
   return (
     <aside
+      ref={panelRef}
       role="dialog"
       aria-label="Tweaks"
+      aria-modal="true"
       className="tweaks-panel"
+      onKeyDown={handleKeyDown}
       style={{
         position: 'fixed',
         top: 0,
@@ -96,6 +166,7 @@ export function TweaksPanel({
         <div className="field" style={{ marginBottom: 10 }}>
           <label htmlFor="tweaks-theme">Theme</label>
           <select
+            ref={themeSelectRef}
             id="tweaks-theme"
             value={tweaks.theme}
             onChange={(e) => {
