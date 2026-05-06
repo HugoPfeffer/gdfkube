@@ -113,9 +113,9 @@
 
 ## 15. Foundations cleanup
 
-- [ ] 15.1 Add **full visual styling per the reference** in `styles.css` for the audit-flagged "unstyled" landmark classes the implementation emits: `.page-placeholder`, `.payload-preview`, `.fields-table`, `.cell-input`, `.drag-handle`, `.template-tabs`, `.vars-panel`, `.vars-group`, `.kv`, `.subtabs`, `.approval-step-head`, `.approval-chain`, `.new-form-page`, `.new-user-page`, `.new-group-page`, `.new-request-page`, `.sessions`, `.row-form-id`, `.row-group-id`, `.row-source-form-id`, `.menu-check`, `.toast-icon`, `.toast-close`, `.user-banner`, `.field-error`. Inspect `/.tmp/handoff/gdfkube-remix/project/styles.css` (or whichever path the reference handoff is extracted to) for each class and replicate its rules. Where the reference defines the class with surrounding-context-dependent rules, adapt to the impl's DOM structure. Aim for visual parity, not blind copy.
-- [ ] 15.2 Remove the duplicate `@keyframes pulse` at `styles.css:834` (kept the one at `:570`).
-- [ ] 15.3 Confirm no other call sites reference the dead `pill-<status>` class names.
+- [x] 15.1 Add **full visual styling per the reference** in `styles.css` for the audit-flagged "unstyled" landmark classes the implementation emits: `.page-placeholder`, `.payload-preview`, `.fields-table`, `.cell-input`, `.drag-handle`, `.template-tabs`, `.vars-panel`, `.vars-group`, `.kv`, `.subtabs`, `.approval-step-head`, `.approval-chain`, `.new-form-page`, `.new-user-page`, `.new-group-page`, `.new-request-page`, `.sessions`, `.row-form-id`, `.row-group-id`, `.row-source-form-id`, `.menu-check`, `.toast-icon`, `.toast-close`, `.user-banner`, `.field-error`. Inspect `/.tmp/handoff/gdfkube-remix/project/styles.css` (or whichever path the reference handoff is extracted to) for each class and replicate its rules. Where the reference defines the class with surrounding-context-dependent rules, adapt to the impl's DOM structure. Aim for visual parity, not blind copy.
+- [x] 15.2 Remove the duplicate `@keyframes pulse` at `styles.css:834` (kept the one at `:570`).
+- [x] 15.3 Confirm no other call sites reference the dead `pill-<status>` class names.
 
 ## 16. Spec deltas
 

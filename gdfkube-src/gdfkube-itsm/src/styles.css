@@ -831,10 +831,6 @@ table.list tbody tr:last-child td { border-bottom: none; }
   background: var(--civic-500);
   animation: pulse 1.4s ease-in-out infinite;
 }
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.7); }
-}
 
 /* Modal */
 .modal-backdrop {
@@ -872,3 +868,329 @@ table.list tbody tr:last-child td { border-bottom: none; }
 .main::-webkit-scrollbar, .nav::-webkit-scrollbar, .log::-webkit-scrollbar { width: 8px; height: 8px; }
 .main::-webkit-scrollbar-thumb, .log::-webkit-scrollbar-thumb { background: var(--ink-300); border-radius: 4px; }
 .nav::-webkit-scrollbar-thumb { background: var(--navy-700); border-radius: 4px; }
+
+/* === Landmark classes restored by fix-itsm-portal-design-drift ===
+ * Replicates the inline-style visuals used by the reference handoff bundle
+ * (gdfkube-remix/project) for landmark hooks the impl emits. Where the
+ * reference inlined styles, those declarations are hoisted here under the
+ * impl's class. Where the reference has no equivalent (impl-only hooks like
+ * `.field-error`, `.next-steps`, `.kafka-topic`, `.with-banner`), the rules
+ * are minimal and use the existing palette / typography tokens.
+ * ================================================================== */
+
+/* App: extra top padding when the demo banner is rendered above pages.
+   Impl-only hook; reference rendered the banner inside the .page area. */
+.app.with-banner .main { padding-top: 0; }
+
+/* Generic page placeholder used while routes (T7-T14) are stubbed.
+   No reference equivalent — minimal centred message. */
+.page-placeholder {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ink-500);
+  font-size: 13px;
+}
+
+/* New-* page wrappers — no special rule in reference; reference relied on
+   the inline `padding: "18px 0 24px"` already applied at the call-site.
+   Use the existing `.page` rule for layout; these classes act as anchors
+   for tests / future scoped overrides. */
+.new-form-page,
+.new-user-page,
+.new-group-page { /* anchor only — inline padding applied by caller */ }
+.new-request-page { /* anchor for the cluster/namespace/scale request page */ }
+
+/* PayloadPreview — reference inlined this as a dark code block under a card.
+   styles.css:252 of the reference: padding 14, dark navy bg, mono font. */
+.payload-preview {
+  margin: 0;
+  padding: 14px;
+  background: var(--ink-900);
+  color: #d0d8e6;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* FieldsTable wrapper — reference wrapped its <table.list> in
+   `border 1px solid var(--ink-200); border-radius var(--radius); overflow hidden`
+   (admin.jsx:633). Apply that to the inner .table-wrap so the rounded border
+   surrounds the rows. */
+.fields-table .table-wrap {
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Inline cell editors inside FieldsTable rows. Reference style at
+   admin.jsx:662/668/682/691/694/697/706: small mono inputs. */
+.cell-input {
+  height: 26px;
+  padding: 0 6px;
+  font-size: 11.5px;
+  border: 1px solid var(--ink-200);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink-700);
+  width: 100%;
+  outline: none;
+}
+.cell-input:focus {
+  border-color: var(--civic-500);
+  box-shadow: 0 0 0 2px var(--civic-100);
+}
+.cell-input[type="number"] { font-variant-numeric: tabular-nums; }
+select.cell-input { padding: 0 4px; font-size: 12px; }
+
+/* Drag handle column — reference: `cursor: grab`, muted mono glyphs. */
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  text-align: center;
+}
+.drag-handle:active { cursor: grabbing; }
+
+/* TemplateEditor sub-tab strip — reference admin.jsx:277 used a pill-style
+   segmented control inside a light track; we keep our `.template-tabs` as
+   the file-tab strip (admin.jsx:239) with the bottom-border layout. */
+.template-tabs {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--ink-200);
+  margin-bottom: 0;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+/* Available variables panel — sidebar to the right of the template editor.
+   Reference admin.jsx:320: bordered scrollable list of var rows. */
+.vars-panel {
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--paper);
+  max-height: 420px;
+  overflow-y: auto;
+}
+.vars-group {
+  padding: 8px;
+}
+.vars-group + .vars-group-head,
+.vars-panel .vars-group:not(:last-child) {
+  border-bottom: 1px solid var(--ink-200);
+}
+.vars-group-head {
+  padding: 8px 10px 4px;
+  background: var(--ink-50);
+  border-bottom: 1px solid var(--ink-100);
+  position: sticky; top: 0; z-index: 1;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Two-column key/value list used in detail panes. Used for vars/meta
+   summaries; mirrors the reference `dl` styling at smaller scale. */
+.kv {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.4fr) 1fr;
+  gap: 6px 12px;
+  font-size: 12.5px;
+}
+.kv dt, .kv > .k {
+  font-size: 11.5px;
+  color: var(--ink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.kv dd, .kv > .v {
+  margin: 0;
+  color: var(--ink-800);
+}
+
+/* Sub-tabs (FormEditor / NewFormPage). Reference admin.jsx:575 used inline
+   `display:flex; gap:4; border-bottom:1px solid var(--ink-200); margin-bottom:18`.
+   Tabs themselves reuse the existing `.tab` rule. */
+.subtabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--ink-200);
+  margin-bottom: 18px;
+}
+.subtab {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px 9px;
+  font-size: 13px;
+  color: var(--ink-600);
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+.subtab:hover { color: var(--ink-800); }
+.subtab.active {
+  color: var(--navy-700);
+  border-bottom-color: var(--civic-500);
+  font-weight: 600;
+}
+
+/* Approval-chain (RequestDetail.tsx:148): vertical list of approval-step
+   entries inside a card. Each step has a head row and optional comment. */
+.approval-chain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.approval-step-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink-800);
+}
+.approval-step-head strong { font-weight: 600; }
+.approval-step-at {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+}
+.approval-step-comment {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--ink-600);
+}
+
+/* Recent-sessions block in UserEditor (admin.jsx:1266). */
+.sessions {
+  margin-top: 22px;
+  padding: 14px;
+  background: var(--ink-50);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+}
+.sessions .row + .row {
+  border-top: 1px solid var(--ink-200);
+}
+
+/* User banner (admin.jsx:1191): avatar + name + meta header strip. */
+.user-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--ink-50);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  margin-bottom: 22px;
+}
+.user-banner-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+.user-banner-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+/* Mono row identifiers used in admin tables (Forms / Users / source-form
+   foreign keys). All variations share the same civic-blue mono treatment. */
+.row-form-id,
+.row-group-id,
+.row-source-form-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--civic-500);
+  font-weight: 500;
+}
+.row-source-form-id { color: var(--ink-500); }
+
+/* Topbar dropdown menu check icon (Topbar.tsx:137 / shell.jsx:107). */
+.menu-check {
+  margin-left: auto;
+  color: var(--green-700);
+}
+
+/* Toast affordances (ToastStack.tsx). Reference inlined the icon wrapper
+   with `flexShrink: 0; marginTop: 1` and a colour matching the toast kind.
+   The close button is impl-only (reference auto-dismissed only). */
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--civic-500);
+}
+.toast.success .toast-icon { color: var(--green-700); }
+.toast.warn .toast-icon { color: var(--amber-700); }
+.toast.error .toast-icon { color: var(--red-700); }
+.toast-close {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-left: 8px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-500);
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toast-close:hover { background: var(--ink-100); color: var(--ink-800); }
+
+/* Inline form-field error (impl-only — reference never showed inline
+   validation; it relied on disabling the submit button). */
+.field-error {
+  display: block;
+  font-size: 11.5px;
+  color: var(--red-700);
+  margin-top: 2px;
+}
+
+/* "What happens next" sidebar in NewRequest (impl-only — reference rendered
+   each step inside a card-body row; we use a plain <ol>). */
+.next-steps {
+  background: var(--paper);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.next-steps h3 { margin: 0 0 8px; }
+.next-steps ol {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--ink-700);
+  line-height: 1.6;
+}
+.next-steps li + li { margin-top: 4px; }
+
+/* Footer hint surfacing the Kafka topic the request lands on. */
+.kafka-topic {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ink-200);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-500);
+}
+.kafka-topic strong {
+  color: var(--ink-700);
+  font-weight: 500;
+}
