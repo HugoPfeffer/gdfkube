@@ -54,6 +54,16 @@ The FieldsTable MUST render an "Add field" button at the bottom of the table. Cl
 - **THEN** an element with text "MongoDB document shape" is present
 - **AND** below it a `<pre>` element contains the substring `"clusterName"` (one of the seeded field keys)
 
+### Requirement: TemplateEditor tab strip layout and button alignment
+
+The TemplateEditor's `.template-tabs` container MUST be styled purely via CSS (flexbox with `border-bottom`, `flex-wrap`) — it MUST NOT use inline styles for `display`, `borderBottom`, or `flexWrap`. The "+ Add manifest" button inside the tab strip MUST be vertically centered via `.template-tabs > .btn { align-self: center; }`.
+
+#### Scenario: template-tabs has no inline styles
+
+- **WHEN** the TemplateEditor renders its tab strip (`role="tablist"`)
+- **THEN** the element has no `style` attribute for display, border, or flex-wrap properties
+- **AND** the tab strip's layout comes from its `.template-tabs` CSS class
+
 ### Requirement: TemplateEditor Camel/Git info banner, line counter, Download all
 
 The TemplateEditor MUST render an info banner above the file tabs reading "Templates are reconciled by Camel and committed to Git on approval." The active file's editor MUST display a line-count caption to the right of the file's name (e.g. "37 lines"). A "Download all" ghost button MUST be present in the editor header that triggers a synthesized blob download of all the form's templates as a single text file with `--- {filename} ---` separators.
@@ -68,3 +78,19 @@ The TemplateEditor MUST render an info banner above the file tabs reading "Templ
 - **GIVEN** the active template file has 37 newline characters
 - **WHEN** the editor renders
 - **THEN** an element with text matching `38 lines` is present near the file tab (count is `\n.length + 1`)
+
+### Requirement: AvailableVariablesPanel grid layout and copy feedback
+
+The variables panel's `.var-row` elements MUST use CSS Grid layout (`grid-template-columns: 1fr auto`) so that the copy button sits inline to the right of the variable token and description. When the user clicks the copy button, the button MUST provide visual feedback by switching its icon to a checkmark character ("✓") with a `.copied` class (triggering `color: var(--green-600)`) for approximately 1200ms before reverting to the default copy icon ("⧉").
+
+#### Scenario: copy button shows checkmark feedback
+
+- **GIVEN** the AvailableVariablesPanel is visible with a variable `{{ vars.clusterName }}`
+- **WHEN** the user clicks the copy button for that variable
+- **THEN** the button text changes to "✓" and the button has class `copied`
+- **AND** after ~1200ms the button reverts to "⧉" without the `copied` class
+
+#### Scenario: var-row uses grid layout
+
+- **WHEN** the AvailableVariablesPanel renders variable rows
+- **THEN** each `.var-row` element uses CSS Grid with the copy button in a fixed-width column to the right

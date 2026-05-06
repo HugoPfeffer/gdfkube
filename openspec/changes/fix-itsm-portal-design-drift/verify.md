@@ -25,7 +25,7 @@ No items failed.
 
 - [x] All `- [ ]` have been changed to `- [x]` (with two documented exceptions for the verify/finishing steps below).
 
-Counts: 75 `- [x]`, 2 `- [ ]` remaining (both are this verify pass and the subsequent finishing-a-development-branch invocation, which by definition cannot be ticked from inside the verify step).
+Counts: 82 `- [x]`, 1 `- [ ]` remaining (the subsequent finishing-a-development-branch invocation, which by definition cannot be ticked from inside the verify step).
 
 | Task | Reason | Blocks archive? |
 |---|---|---|

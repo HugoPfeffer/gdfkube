@@ -251,7 +251,7 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
             <div className="card-head">
               <h2 className="card-title">Pending queue</h2>
             </div>
-            <div className="filters" style={{ padding: '10px 18px 0' }}>
+            <div className="filters">
               {CHIPS.map((c) => {
                 const active = chip === c.value;
                 return (

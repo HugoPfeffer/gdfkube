@@ -82,6 +82,29 @@ body {
 
 button { font-family: inherit; cursor: pointer; }
 input, select, textarea { font-family: inherit; font-size: inherit; }
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+select {
+  height: var(--row-h);
+  border: 1px solid var(--ink-300);
+  border-radius: var(--radius);
+  padding: 0 10px;
+  background: var(--paper);
+  color: var(--ink-900);
+  outline: none;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+select:focus {
+  border-color: var(--civic-500);
+  box-shadow: 0 0 0 3px var(--civic-100);
+}
 
 /* App shell */
 .app {
@@ -161,8 +184,10 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
 .nav-section { padding: 14px 16px 4px; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #7a92b3; font-weight: 600; }
 .nav-item {
   display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
   padding: 7px 16px; cursor: pointer;
   color: #cdd9eb; font-size: 13px;
+  background: none; border: none;
   border-left: 3px solid transparent;
   position: relative;
 }
@@ -244,6 +269,15 @@ input, select, textarea { font-family: inherit; font-size: inherit; }
   position: relative;
 }
 .icon-btn:hover { background: var(--ink-100); }
+.icon-btn.copied { color: var(--green-600); }
+.var-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+}
+.var-row .icon-btn { grid-row: 1 / 3; grid-column: 2; }
 .var-row:hover { background: var(--ink-50); }
 .icon-btn .pip { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; background: var(--red-500); border-radius: 50%; border: 1.5px solid var(--paper); }
 
@@ -397,6 +431,8 @@ table.list tbody tr:last-child td { border-bottom: none; }
   font-size: 13px;
   color: var(--ink-600);
   cursor: pointer;
+  background: none;
+  border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   font-weight: 500;
@@ -412,6 +448,23 @@ table.list tbody tr:last-child td { border-bottom: none; }
   border-bottom: 1px solid var(--ink-200);
   background: var(--ink-50);
 }
+.filters input[type="search"],
+.filters select {
+  height: 30px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  padding: 0 10px;
+  background: var(--paper);
+  color: var(--ink-900);
+  outline: none;
+  font-size: 12px;
+}
+.filters input[type="search"]:focus,
+.filters select:focus {
+  border-color: var(--civic-500);
+  box-shadow: 0 0 0 3px var(--civic-100);
+}
+
 .filter-chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 4px 10px;
@@ -434,7 +487,10 @@ table.list tbody tr:last-child td { border-bottom: none; }
 .field label .req { color: var(--red-500); }
 .field .help { font-size: 12px; color: var(--ink-500); margin-top: -2px; }
 .field input[type="text"],
+.field input[type="email"],
+.field input[type="password"],
 .field input[type="number"],
+.field input[type="search"],
 .field select,
 .field textarea {
   height: 36px;
@@ -472,11 +528,17 @@ table.list tbody tr:last-child td { border-bottom: none; }
 
 .radio-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .radio-card {
+  appearance: none;
   border: 1px solid var(--ink-300);
   border-radius: var(--radius);
   padding: 10px 12px;
   cursor: pointer;
   background: var(--paper);
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  text-align: left;
+  line-height: inherit;
   transition: 120ms;
 }
 .radio-card:hover { border-color: var(--ink-400); }
@@ -607,8 +669,10 @@ table.list tbody tr:last-child td { border-bottom: none; }
 }
 .menu-item {
   display: flex; align-items: center; gap: 8px;
+  width: 100%; text-align: left;
   padding: 7px 10px; font-size: 13px;
   color: var(--ink-800); cursor: pointer;
+  background: none; border: none;
   border-radius: 3px;
 }
 .menu-item:hover { background: var(--ink-100); }
@@ -963,6 +1027,10 @@ select.cell-input { padding: 0 4px; font-size: 12px; }
   margin-bottom: 0;
   gap: 0;
   flex-wrap: wrap;
+}
+.template-tabs > .btn {
+  align-self: center;
+  margin-left: 4px;
 }
 
 /* Available variables panel — sidebar to the right of the template editor.

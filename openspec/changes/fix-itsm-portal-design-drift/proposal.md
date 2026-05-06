@@ -65,10 +65,10 @@ A post-merge audit against the original Claude Design handoff bundle (`UM8oI594J
 - Impact: 1-2 new tests in `TweaksPanel.test.tsx`
 
 **Foundations**
-- From: dead JSX class names without CSS (`page-placeholder`, `payload-preview`, `fields-table`, `cell-input`, `drag-handle`, `template-tabs`, `vars-panel`, `vars-group`, `kv`, `subtabs`, `approval-step-head`, `approval-chain`, `new-form-page`, `new-user-page`, `new-group-page`, `new-request-page`, `sessions`, `row-form-id`, `row-group-id`, `row-source-form-id`, `menu-check`, `toast-icon`, `toast-close`)
-- To: either add minimal rules in `styles.css` or rename to existing class hooks. Triage per-class.
-- Reason: keeps the visual landmarks the audit listed; keeps `styles.css` honest
-- Impact: cosmetic only
+- From: dead JSX class names without CSS (`page-placeholder`, `payload-preview`, `fields-table`, `cell-input`, `drag-handle`, `template-tabs`, `vars-panel`, `vars-group`, `kv`, `subtabs`, `approval-step-head`, `approval-chain`, `new-form-page`, `new-user-page`, `new-group-page`, `new-request-page`, `sessions`, `row-form-id`, `row-group-id`, `row-source-form-id`, `menu-check`, `toast-icon`, `toast-close`); `<button>` elements used for nav/menu/tab/radio-card without resets rendering with native chrome; missing `input[type="email/password/search"]` selectors; inline styles for layout properties that belong in CSS classes; `.var-row` lacking grid structure
+- To: add full CSS rules for landmark classes; apply button resets to `.nav-item`, `.menu-item`, `.tab`, `.radio-card`; expand input selectors; move inline styles to class rules (`.template-tabs`, `.filters`); add `.var-row` grid layout with copy-feedback state
+- Reason: keeps the visual landmarks the audit listed; keeps `styles.css` honest; eliminates inline style drift; ensures density overrides work uniformly
+- Impact: cosmetic only; +68 lines in `styles.css`
 
 **`scale-request` template filename**
 - From: `nodepool.yaml`

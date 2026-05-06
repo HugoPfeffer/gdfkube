@@ -81,6 +81,12 @@ The user resolved the following audit-vs-spec conflicts via AskUserQuestion befo
 | My Requests badge derived → hardcoded `3` | Keep derived | Real-time, consistent with Approvals |
 | `nodepool.yaml` → `nodepool-patch.yaml` | Revert to ref | Cosmetic; user chose ref alignment |
 
+### D8b. CSS foundations: button resets, input selectors, layout-from-class
+- **Choice**: All interactive elements rendered as `<button>` (nav items, menu items, tabs, radio-cards) apply CSS resets to eliminate native button chrome. Input field selectors explicitly list all used `type` attributes (`text`, `email`, `password`, `number`, `search`). Layout properties that were previously inline (`display: flex`, `border-bottom`, `padding`) are moved into class-based rules (`.template-tabs`, `.filters`). The `.var-row` uses CSS Grid with copy-button feedback.
+- **Why**: Inline styles drift silently because they bypass the CSS class contract. Button elements without resets break in every browser upgrade. Missing input selectors cause inconsistent styling for email/password/search fields across the portal.
+- **Consequence**: Density overrides via `[data-density="compact"]` selectors now apply uniformly because all spacing lives in CSS. New pages that reuse `.filters` or `.template-tabs` inherit correct spacing without redeclaring inline styles.
+- **Trade-off**: Slightly larger `styles.css` (68 added lines); justified by eliminating per-component inline style maintenance.
+
 ### D9. Test churn pattern
 - **Choice**: When a fix changes observable behavior (e.g. StatusPill class output, env default, header text), update its tests in the *same commit* as the fix. Do not split fix and test update.
 - **Why**: Keeps history bisectable. A red commit in between would block git-bisect and confuse reviewers.

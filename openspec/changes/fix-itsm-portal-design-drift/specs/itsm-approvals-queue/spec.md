@@ -26,6 +26,15 @@ Each pending-queue row MUST render: a failing-checks badge (only when `r.policyC
 - **WHEN** the row renders
 - **THEN** an element with text matching `1 failing` (or `2 failing` etc.) is present in the row
 
+### Requirement: Filter bar uses class-based spacing
+
+The Approvals page's `.filters` container MUST derive its padding from the `.filters` CSS class rule — it MUST NOT use inline `style` attributes for padding. This ensures spacing is consistent across all pages that reuse the `.filters` class (Approvals, RequestsList) and allows density-aware overrides via a single CSS source.
+
+#### Scenario: filters element has no inline padding
+
+- **WHEN** the Approvals page renders its filter chip bar
+- **THEN** the `.filters` element has no `style` attribute containing `padding`
+
 ### Requirement: Reject button requires comment
 
 The Reject button on the DecisionPanel MUST be disabled while the comment textarea is empty (after `String.prototype.trim()`). Clicking Reject without a comment MUST NOT dispatch any state change and MUST NOT close the override modal.

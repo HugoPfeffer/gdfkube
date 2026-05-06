@@ -116,6 +116,13 @@
 - [x] 15.1 Add **full visual styling per the reference** in `styles.css` for the audit-flagged "unstyled" landmark classes the implementation emits: `.page-placeholder`, `.payload-preview`, `.fields-table`, `.cell-input`, `.drag-handle`, `.template-tabs`, `.vars-panel`, `.vars-group`, `.kv`, `.subtabs`, `.approval-step-head`, `.approval-chain`, `.new-form-page`, `.new-user-page`, `.new-group-page`, `.new-request-page`, `.sessions`, `.row-form-id`, `.row-group-id`, `.row-source-form-id`, `.menu-check`, `.toast-icon`, `.toast-close`, `.user-banner`, `.field-error`. Inspect `/.tmp/handoff/gdfkube-remix/project/styles.css` (or whichever path the reference handoff is extracted to) for each class and replicate its rules. Where the reference defines the class with surrounding-context-dependent rules, adapt to the impl's DOM structure. Aim for visual parity, not blind copy.
 - [x] 15.2 Remove the duplicate `@keyframes pulse` at `styles.css:834` (kept the one at `:570`).
 - [x] 15.3 Confirm no other call sites reference the dead `pill-<status>` class names.
+- [x] 15.4 Apply button resets to `.nav-item` (`width:100%; text-align:left; background:none; border:none`), `.menu-item` (same), `.tab` (`background:none; border:none`), `.radio-card` (`appearance:none; font:inherit; text-align:left; color:inherit`).
+- [x] 15.5 Expand `.field input` selector to cover `input[type="email"]`, `input[type="password"]`, `input[type="search"]`; add base input styles for standalone inputs outside `.field` wrappers.
+- [x] 15.6 Add `.var-row` CSS Grid layout (`grid-template-columns: 1fr auto`) with `.icon-btn` grid placement; add `.icon-btn.copied` color state.
+- [x] 15.7 Add `.template-tabs > .btn` vertical centering rule; remove redundant inline styles from `TemplateEditor.tsx`.
+- [x] 15.8 Remove inline `style={{ padding: '10px 18px 0' }}` from `Approvals.tsx` `.filters` element (padding comes from the class).
+- [x] 15.9 Add `.filters input[type="search"]` and `.filters select` styling for filter bar inputs.
+- [x] 15.10 Add copy feedback (checkmark + `.copied` class with timeout) to `VarRow` component in `AvailableVariablesPanel.tsx`.
 
 ## 16. Spec deltas
 

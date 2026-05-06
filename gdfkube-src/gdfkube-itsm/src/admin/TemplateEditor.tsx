@@ -144,7 +144,7 @@ export function TemplateEditor({ formId, value, onChange }: TemplateEditorProps)
         </button>
       </div>
 
-      <div className="template-tabs" role="tablist" aria-label="Template files" style={{ display: 'flex', borderBottom: '1px solid var(--ink-200)', flexWrap: 'wrap' }}>
+      <div className="template-tabs" role="tablist" aria-label="Template files">
         {files.map((f, i) => (
           <span
             key={`${f.name}-${i}`}

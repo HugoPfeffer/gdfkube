@@ -3,6 +3,7 @@
 // `{{ bucket.key }}`. Copy goes through `copyToClipboard` so the textarea
 // + execCommand fallback fires when navigator.clipboard rejects.
 
+import { useCallback, useState } from 'react';
 import { useGdfData } from '../state/dataContext';
 import { copyToClipboard } from '../utils/clipboard';
 
@@ -18,11 +19,21 @@ const SYSTEM_VARS: { token: string; desc: string }[] = [
 ];
 
 function VarRow({ token, desc }: { token: string; desc: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    void copyToClipboard(token);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  }, [token]);
+
   return (
     <div className="var-row">
       <div className="mono">{token}</div>
       <div className="muted" style={{ fontSize: 11 }}>{desc}</div>
-      <button type="button" className="icon-btn" title={`Copy ${token}`} aria-label={`Copy ${token}`} onClick={() => { void copyToClipboard(token); }}>⧉</button>
+      <button type="button" className={`icon-btn${copied ? ' copied' : ''}`} title={`Copy ${token}`} aria-label={`Copy ${token}`} onClick={handleCopy}>
+        {copied ? '✓' : '⧉'}
+      </button>
     </div>
   );
 }
