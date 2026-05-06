@@ -89,14 +89,14 @@
 
 ## 12. Admin Users restoration
 
-- [ ] 12.1 In `UserEditor.tsx`, render a `.user-banner` block at the top with initials avatar + fullName + `username · email`.
-- [ ] 12.2 Convert the role and status inputs to radio-cards (operator / approver / admin / service for role; active / disabled for status). Keyboard activatable.
-- [ ] 12.3 Add a red "Disable account" ghost button at the bottom of the UserEditor.
-- [ ] 12.4 In `NewUserPage.tsx`, add a role-description info banner.
-- [ ] 12.5 In `NewUserPage.tsx`, add an "Initial credentials" subsection with the "Send invite email" toggle (default checked) and help text.
-- [ ] 12.6 Convert the ManagedClusterSet input in `NewGroupPage.tsx` to a `<select>` with options `default`, `production`, `staging`, `internal`.
-- [ ] 12.7 Update the "Resources that will be created" preview to four lines: Keycloak group / AppProject / ManagedClusterSetBinding / Git repo.
-- [ ] 12.8 Update `Users.test.tsx`, `UserEditor.test.tsx`, `NewUserPage.test.tsx`, `NewGroupPage.test.tsx` accordingly.
+- [x] 12.1 In `UserEditor.tsx`, render a `.user-banner` block at the top with initials avatar + fullName + `username · email`.
+- [x] 12.2 Convert the role and status inputs to radio-cards (operator / approver / admin / service for role; active / disabled for status). Keyboard activatable.
+- [x] 12.3 Add a red "Disable account" ghost button at the bottom of the UserEditor.
+- [x] 12.4 In `NewUserPage.tsx`, add a role-description info banner.
+- [x] 12.5 In `NewUserPage.tsx`, add an "Initial credentials" subsection with the "Send invite email" toggle (default checked) and help text.
+- [x] 12.6 Convert the ManagedClusterSet input in `NewGroupPage.tsx` to a `<select>` with options `default`, `production`, `staging`, `internal`.
+- [x] 12.7 Update the "Resources that will be created" preview to four lines: Keycloak group / AppProject / ManagedClusterSetBinding / Git repo.
+- [x] 12.8 Update `Users.test.tsx`, `UserEditor.test.tsx`, `NewUserPage.test.tsx`, `NewGroupPage.test.tsx` accordingly.
 
 ## 13. TweaksPanel a11y
 

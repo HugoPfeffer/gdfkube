@@ -1,12 +1,14 @@
 // Component tests for the New Group creation page.
 //
-// Covers spec scenarios from `itsm-admin-users`:
+// Covers spec scenarios from `itsm-admin-users` (incl. fix-itsm-portal-design-drift):
 //   - Typing into the id input auto-populates Git repo as `gdfkube-{id}`.
 //   - Manual edit of Git repo persists; subsequent id changes do NOT
 //     overwrite once the user has edited the repo (dirty flag).
-//   - Live preview block renders Keycloak group, Git repo, AppProject and
-//     ManagedClusterSet binding lines.
+//   - Live preview block renders four lines: Keycloak group, AppProject,
+//     ManagedClusterSetBinding, Git repo.
 //   - Create disabled until id and displayName are non-empty.
+//   - ManagedClusterSet is a `<select>` with seeded options
+//     `default`, `production`, `staging`, `internal`.
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -64,20 +66,28 @@ describe('NewGroupPage', () => {
     expect(repoInput.value).toBe('custom-repo');
   });
 
-  it('live preview shows Keycloak group, repo, AppProject, and binding lines', () => {
+  it('ManagedClusterSet is a <select> with seeded options', () => {
+    render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
+    const select = screen.getByLabelText(/managedclusterset/i) as HTMLSelectElement;
+    expect(select.tagName).toBe('SELECT');
+    const optionValues = Array.from(select.options).map((o) => o.value);
+    expect(optionValues).toEqual(
+      expect.arrayContaining(['default', 'production', 'staging', 'internal']),
+    );
+  });
+
+  it('preview block renders four lines: Keycloak group / AppProject / ManagedClusterSetBinding / Git repo', () => {
     render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
     const idInput = screen.getByLabelText(/^id$/i) as HTMLInputElement;
-    const bindingInput = screen.getByLabelText(
-      /managedclusterset/i,
-    ) as HTMLInputElement;
+    const select = screen.getByLabelText(/managedclusterset/i) as HTMLSelectElement;
     fireEvent.change(idInput, { target: { value: 'cultura' } });
-    fireEvent.change(bindingInput, { target: { value: 'tier-a' } });
+    fireEvent.change(select, { target: { value: 'staging' } });
 
     const preview = screen.getByTestId('group-preview');
     expect(preview.textContent).toMatch(/Keycloak group:\s*gdf-cultura/);
+    expect(preview.textContent).toMatch(/AppProject:\s*cultura-apps/);
+    expect(preview.textContent).toMatch(/ManagedClusterSetBinding:\s*staging\s*→\s*cultura/);
     expect(preview.textContent).toMatch(/Git repo:\s*gdfkube-cultura/);
-    expect(preview.textContent).toMatch(/AppProject:\s*appproj-cultura/);
-    expect(preview.textContent).toMatch(/Binding:\s*tier-a/);
   });
 
   it('Create disabled until id and displayName are non-empty', () => {

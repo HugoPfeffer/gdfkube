@@ -11,6 +11,7 @@ import { NewGroupPage } from '../../admin/NewGroupPage';
 import { NewUserPage } from '../../admin/NewUserPage';
 import { UserEditor } from '../../admin/UserEditor';
 import type { Navigate } from '../../router';
+import type { Toast } from '../../shell/ToastStack';
 import { useGdfData } from '../../state/dataContext';
 import type { Group, Role, User } from '../../types';
 
@@ -22,7 +23,13 @@ function avatar(user: User): string {
   return user.name.split(/\s+/).map((n) => n[0] ?? '').join('').slice(0, 2).toUpperCase();
 }
 
-export function Users({ navigate: _navigate }: { navigate: Navigate }) {
+export function Users({
+  navigate: _navigate,
+  setToast,
+}: {
+  navigate: Navigate;
+  setToast?: (t: Toast) => void;
+}) {
   void _navigate;
   const data = useGdfData();
   const [tab, setTab] = useState<Tab>('users');
@@ -45,7 +52,7 @@ export function Users({ navigate: _navigate }: { navigate: Navigate }) {
 
   if (creatingUser) return <div className="page admin-users"><NewUserPage onClose={() => setCreatingUser(false)} /></div>;
   if (creatingGroup) return <div className="page admin-users"><NewGroupPage onClose={() => setCreatingGroup(false)} /></div>;
-  if (editingUser) return <div className="page admin-users"><UserEditor user={editingUser} onClose={() => setEditingUser(null)} /></div>;
+  if (editingUser) return <div className="page admin-users"><UserEditor user={editingUser} onClose={() => setEditingUser(null)} setToast={setToast} /></div>;
   if (editingGroup) return <div className="page admin-users"><GroupEditor group={editingGroup} onClose={() => setEditingGroup(null)} /></div>;
 
   return (

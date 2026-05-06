@@ -2,9 +2,11 @@
 //
 // Form for id, display name, full name, mapped Git repo (auto-suggested
 // from id when the repo has not been edited manually), ManagedClusterSet
-// binding, and an auto-provision toggle. A live preview block shows what
-// the platform will create on save (Keycloak group, Git repo, AppProject,
-// binding). Create disabled until id and display name are non-empty.
+// binding (seeded select: default / production / staging / internal), and
+// an auto-provision toggle. A "Resources that will be created" preview
+// block lists the four artifacts the platform will provision in order:
+// Keycloak group, AppProject, ManagedClusterSetBinding, Git repo.
+// Create disabled until id and display name are non-empty.
 
 import { useState } from 'react';
 import { useGdfDispatch } from '../state/dataContext';
@@ -14,6 +16,8 @@ interface NewGroupPageProps {
   onClose: () => void;
 }
 
+const MANAGED_CLUSTER_SETS = ['default', 'production', 'staging', 'internal'] as const;
+
 export function NewGroupPage({ onClose }: NewGroupPageProps) {
   const dispatch = useGdfDispatch();
 
@@ -22,7 +26,7 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
   const [fullName, setFullName] = useState('');
   const [repo, setRepo] = useState('');
   const [repoDirty, setRepoDirty] = useState(false);
-  const [binding, setBinding] = useState('');
+  const [managedClusterSet, setManagedClusterSet] = useState<typeof MANAGED_CLUSTER_SETS[number]>('default');
   const [autoProvision, setAutoProvision] = useState(true);
 
   const onIdChange = (next: string) => {
@@ -55,6 +59,9 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
     dispatch({ type: 'ADD_GROUP', group });
     onClose();
   };
+
+  const idDisplay = trimmedId || '{id}';
+  const repoDisplay = repo || `gdfkube-${idDisplay}`;
 
   return (
     <div className="new-group-page" style={{ padding: '18px 0 24px' }}>
@@ -93,10 +100,19 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
           <div className="help">Auto-suggested from id; edit to override.</div>
         </div>
         <div className="field">
-          <label htmlFor="new-group-binding">ManagedClusterSet binding</label>
-          <input id="new-group-binding" type="text" value={binding}
-            onChange={(e) => setBinding(e.target.value)}
-            placeholder="e.g. tier-a" />
+          <label htmlFor="new-group-mcs">ManagedClusterSet</label>
+          <select
+            id="new-group-mcs"
+            name="managedClusterSet"
+            value={managedClusterSet}
+            onChange={(e) =>
+              setManagedClusterSet(e.target.value as typeof MANAGED_CLUSTER_SETS[number])
+            }
+          >
+            {MANAGED_CLUSTER_SETS.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
         </div>
         <div className="field">
           <label htmlFor="new-group-auto">Auto-provision</label>
@@ -109,12 +125,12 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
       </div>
 
       <div className="card" data-testid="group-preview" style={{ marginTop: 18 }}>
-        <h3 style={{ margin: 0, fontSize: 14 }}>Preview</h3>
+        <h3 style={{ margin: 0, fontSize: 14 }}>Resources that will be created</h3>
         <ul className="mono" style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', fontSize: 13 }}>
-          <li>Keycloak group: gdf-{trimmedId || '{id}'}</li>
-          <li>Git repo: {repo || `gdfkube-${trimmedId || '{id}'}`}</li>
-          <li>AppProject: appproj-{trimmedId || '{id}'}</li>
-          <li>Binding: {binding || '—'}</li>
+          <li>Keycloak group: gdf-{idDisplay}</li>
+          <li>AppProject: {idDisplay}-apps</li>
+          <li>ManagedClusterSetBinding: {managedClusterSet} → {idDisplay}</li>
+          <li>Git repo: {repoDisplay}</li>
         </ul>
       </div>
     </div>

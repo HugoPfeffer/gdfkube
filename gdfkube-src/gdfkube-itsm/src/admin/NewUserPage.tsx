@@ -1,10 +1,12 @@
 // New User creation page.
 //
-// Inputs: name, username, email, group, role, status, MFA, optional
-// invite-email toggle. Create disabled until name, username, email, group,
-// and role are non-empty. On Create dispatches ADD_USER and calls onClose.
+// Inputs: name, username, email, group, role (radio-cards), status, MFA, and
+// an "Initial credentials" subsection with the "Send invite email" toggle.
+// An info banner above the form fields summarizes what each role does.
+// Create disabled until name, username, email, group, and role are non-empty.
+// On Create dispatches ADD_USER and calls onClose.
 
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
 import type { Role, User } from '../types';
 
@@ -13,6 +15,13 @@ interface NewUserPageProps {
 }
 
 const ROLES: Role[] = ['operator', 'approver', 'admin', 'service'];
+
+const ROLE_DESCRIPTIONS: Record<Role, string> = {
+  operator: 'Operator submits requests',
+  approver: 'Approver reviews and approves',
+  admin: 'Admin manages forms and users',
+  service: 'Service is for automation accounts',
+};
 
 export function NewUserPage({ onClose }: NewUserPageProps) {
   const { groups } = useGdfData();
@@ -52,6 +61,13 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
     onClose();
   };
 
+  const onRoleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, r: Role) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setRole(r);
+    }
+  };
+
   return (
     <div className="new-user-page" style={{ padding: '18px 0 24px' }}>
       <div className="row" style={{ marginBottom: 14, alignItems: 'center', gap: 8 }}>
@@ -61,6 +77,22 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
         <button type="button" className="btn primary sm" disabled={!canCreate} onClick={handleCreate}>
           Create user
         </button>
+      </div>
+
+      <div
+        className="info-banner banner-info"
+        data-testid="role-info-banner"
+        role="note"
+        style={{
+          padding: '8px 12px',
+          marginBottom: 14,
+          border: '1px solid var(--ink-200)',
+          borderRadius: 'var(--radius)',
+          background: 'var(--paper)',
+          fontSize: 12,
+        }}
+      >
+        Operator submits requests · Approver reviews and approves · Admin manages forms and users · Service is for automation accounts
       </div>
 
       <div className="form-grid">
@@ -89,13 +121,30 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
             {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="new-user-role">Role</label>
-          <select id="new-user-role" value={role}
-            onChange={(e) => setRole(e.target.value as Role | '')}>
-            <option value="">— Select a role —</option>
-            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
+        <div className="field" style={{ gridColumn: '1 / -1' }}>
+          <span className="field-label">Role</span>
+          <div className="radio-group" role="radiogroup" aria-label="Role">
+            {ROLES.map((r) => {
+              const selected = role === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  aria-label={r.charAt(0).toUpperCase() + r.slice(1)}
+                  className={'radio-card' + (selected ? ' selected' : '')}
+                  onClick={() => setRole(r)}
+                  onKeyDown={(e) => onRoleKeyDown(e, r)}
+                >
+                  <div className="rc-title">
+                    <span>{r.charAt(0).toUpperCase() + r.slice(1)}</span>
+                  </div>
+                  <div className="rc-sub">{ROLE_DESCRIPTIONS[r]}</div>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="field">
           <label htmlFor="new-user-status">Status</label>
@@ -114,15 +163,23 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
             <option value="webauthn">WebAuthn</option>
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="new-user-invite">Invite email</label>
-          <label className="row" style={{ height: 36, alignItems: 'center', gap: 8 }}>
-            <input id="new-user-invite" type="checkbox" checked={invite}
-              onChange={(e) => setInvite(e.target.checked)} />
-            <span>Send Keycloak invitation email</span>
-          </label>
-        </div>
       </div>
+
+      <section className="card" style={{ marginTop: 18 }} data-testid="initial-credentials">
+        <h3 style={{ margin: 0, fontSize: 14 }}>Initial credentials</h3>
+        <label className="row" style={{ height: 36, alignItems: 'center', gap: 8, marginTop: 8 }}>
+          <input
+            id="new-user-invite"
+            type="checkbox"
+            checked={invite}
+            onChange={(e) => setInvite(e.target.checked)}
+          />
+          <span>Send invite email</span>
+        </label>
+        <p className="muted" style={{ margin: '6px 0 0', fontSize: 12 }}>
+          When checked, the user receives an email with a one-time link to set their password.
+        </p>
+      </section>
     </div>
   );
 }

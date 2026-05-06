@@ -1,17 +1,21 @@
 // Per-user editor.
 //
-// Renders inputs for every editable user attribute (name, username, email,
-// group, role, status, password, MFA) and a read-only "Recent sessions"
-// list synthesized deterministically from the user's id so the demo has
-// content without needing real session storage.
+// Renders a `.user-banner` block (initials avatar + fullName + username · email)
+// at the top, then inputs for every editable user attribute. Role and status
+// are radio-cards (button[role=radio], aria-checked, keyboard-activatable via
+// Enter/Space). A red ghost "Disable account" button at the footer sets the
+// user to `disabled` and emits a confirmation toast. A "Recent sessions"
+// list synthesized deterministically from the user's id provides demo content.
 
-import { useMemo } from 'react';
+import { useMemo, type KeyboardEvent } from 'react';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
+import type { Toast } from '../shell/ToastStack';
 import type { Role, User } from '../types';
 
 interface UserEditorProps {
   user: User;
   onClose: () => void;
+  setToast?: (t: Toast) => void;
 }
 
 type Session = { at: string; ip: string; device: string };
@@ -28,8 +32,44 @@ function synthesizeSessions(user: User): Session[] {
 }
 
 const ROLES: Role[] = ['operator', 'approver', 'admin', 'service'];
+const STATUSES: Array<'active' | 'disabled'> = ['active', 'disabled'];
 
-export function UserEditor({ user: initial, onClose }: UserEditorProps) {
+function initials(name: string): string {
+  return name.split(/\s+/).map((n) => n[0] ?? '').join('').slice(0, 2).toUpperCase();
+}
+
+interface RadioCardProps<T extends string> {
+  value: T;
+  label: string;
+  selected: boolean;
+  onSelect: (next: T) => void;
+}
+
+function RadioCard<T extends string>({ value, label, selected, onSelect }: RadioCardProps<T>) {
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect(value);
+    }
+  };
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      aria-label={label}
+      className={'radio-card' + (selected ? ' selected' : '')}
+      onClick={() => onSelect(value)}
+      onKeyDown={onKeyDown}
+    >
+      <div className="rc-title">
+        <span>{label}</span>
+      </div>
+    </button>
+  );
+}
+
+export function UserEditor({ user: initial, onClose, setToast }: UserEditorProps) {
   const { groups, users } = useGdfData();
   const dispatch = useGdfDispatch();
   // Read the live user from state so dispatched edits round-trip into the
@@ -40,11 +80,40 @@ export function UserEditor({ user: initial, onClose }: UserEditorProps) {
   const patch = (p: Partial<User>) =>
     dispatch({ type: 'UPDATE_USER', id: user.id, patch: p });
 
+  const handleDisable = () => {
+    patch({ status: 'disabled', active: false });
+    setToast?.({
+      id: `user-disabled-${user.id}-${Date.now()}`,
+      kind: 'info',
+      title: 'Account disabled',
+      body: `${user.fullName ?? user.name} can no longer sign in.`,
+    });
+  };
+
+  const fullName = user.fullName ?? user.name;
+  const status = user.status ?? 'active';
+
   return (
     <div className="user-editor" style={{ padding: '18px 0 24px' }}>
       <div className="row" style={{ marginBottom: 14, alignItems: 'center', gap: 8 }}>
         <button type="button" className="btn ghost sm" onClick={onClose}>← All users</button>
         <span className="spacer" />
+      </div>
+
+      <div className="user-banner" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <span
+          className="avatar"
+          aria-hidden="true"
+          style={{ width: 32, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          {initials(fullName)}
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <strong className="user-banner-name">{fullName}</strong>
+          <span className="muted mono user-banner-meta" style={{ fontSize: 12 }}>
+            {(user.username ?? '—')} · {user.email}
+          </span>
+        </div>
       </div>
 
       <div className="form-grid">
@@ -71,20 +140,33 @@ export function UserEditor({ user: initial, onClose }: UserEditorProps) {
             {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="user-role">Role</label>
-          <select id="user-role" value={user.role}
-            onChange={(e) => patch({ role: e.target.value as Role })}>
-            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
+        <div className="field" style={{ gridColumn: '1 / -1' }}>
+          <span className="field-label">Role</span>
+          <div className="radio-group" role="radiogroup" aria-label="Role">
+            {ROLES.map((r) => (
+              <RadioCard
+                key={r}
+                value={r}
+                label={r.charAt(0).toUpperCase() + r.slice(1)}
+                selected={user.role === r}
+                onSelect={(next) => patch({ role: next })}
+              />
+            ))}
+          </div>
         </div>
-        <div className="field">
-          <label htmlFor="user-status">Status</label>
-          <select id="user-status" value={user.status ?? 'active'}
-            onChange={(e) => patch({ status: e.target.value as 'active' | 'disabled' })}>
-            <option value="active">active</option>
-            <option value="disabled">disabled</option>
-          </select>
+        <div className="field" style={{ gridColumn: '1 / -1' }}>
+          <span className="field-label">Status</span>
+          <div className="radio-group" role="radiogroup" aria-label="Status">
+            {STATUSES.map((s) => (
+              <RadioCard
+                key={s}
+                value={s}
+                label={s.charAt(0).toUpperCase() + s.slice(1)}
+                selected={status === s}
+                onSelect={(next) => patch({ status: next, active: next === 'active' })}
+              />
+            ))}
+          </div>
         </div>
         <div className="field">
           <label htmlFor="user-password">Password</label>
@@ -112,6 +194,17 @@ export function UserEditor({ user: initial, onClose }: UserEditorProps) {
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="row" style={{ marginTop: 18, alignItems: 'center', justifyContent: 'flex-end' }}>
+        <button
+          type="button"
+          className="btn ghost sm danger"
+          onClick={handleDisable}
+          disabled={status === 'disabled'}
+        >
+          Disable account
+        </button>
       </div>
     </div>
   );

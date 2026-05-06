@@ -158,7 +158,7 @@ function App() {
     ) : route === 'admin-forms' ? (
       <AdminForms navigate={navigate} setToast={setToast} />
     ) : route === 'admin-users' ? (
-      <AdminUsers navigate={navigate} />
+      <AdminUsers navigate={navigate} setToast={setToast} />
     ) : (
       <div className="page-placeholder">{route}</div>
     );
