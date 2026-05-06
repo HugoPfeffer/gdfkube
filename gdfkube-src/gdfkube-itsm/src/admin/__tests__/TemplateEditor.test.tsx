@@ -205,6 +205,44 @@ describe('TemplateEditor', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders an info banner reading "reconciled by Camel" above the file tabs', () => {
+    render(
+      withProvider(
+        makeState([{ name: 'a.yaml', content: '' }]),
+        <TemplateEditor formId="cluster-request" />,
+      ),
+    );
+    const banner = screen.getByTestId('template-info-banner');
+    expect(banner.textContent).toMatch(/reconciled by Camel/i);
+  });
+
+  it('renders a line counter caption near the active file name', () => {
+    // 37 newline characters → 38 lines (newlines + 1).
+    const content = `${'line\n'.repeat(37)}line`;
+    expect(content.split('\n').length).toBe(38);
+    render(
+      withProvider(
+        makeState([{ name: 'a.yaml', content }]),
+        <TemplateEditor formId="cluster-request" />,
+      ),
+    );
+    const counter = screen.getByTestId('template-line-count');
+    expect(counter.textContent).toMatch(/38\s*lines/);
+  });
+
+  it('renders a "Download all" ghost button in the editor header', () => {
+    render(
+      withProvider(
+        makeState([
+          { name: 'a.yaml', content: 'one' },
+          { name: 'b.yaml', content: 'two' },
+        ]),
+        <TemplateEditor formId="cluster-request" />,
+      ),
+    );
+    expect(screen.getByRole('button', { name: /download all/i })).toBeInTheDocument();
+  });
+
   it('copy via fallback path: navigator.clipboard.writeText rejects → document.execCommand("copy") fires', async () => {
     const writeText = vi.fn().mockRejectedValue(new Error('denied'));
     Object.defineProperty(navigator, 'clipboard', {

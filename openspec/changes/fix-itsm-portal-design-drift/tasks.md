@@ -77,15 +77,15 @@
 
 ## 11. Admin Forms restoration
 
-- [ ] 11.1 Promote `NewFormPage.tsx` to expose Definition / Fields / Template sub-tabs (matching FormEditor). On Create, dispatch ADD_FORM, then UPDATE_FIELD per draft field, then UPDATE_TEMPLATES for draft templates.
-- [ ] 11.2 Add a "Submissions" column to `Forms.tsx` (Forms tab table). Sort numerically when clicked.
-- [ ] 11.3 Add "Reload from Git" ghost + "Save changes" primary buttons in `FormEditor.tsx` header. Both wire info toasts ("Reloaded from Git (demo)" / "Saved (demo)").
-- [ ] 11.4 Add an "Add field" button at the bottom of `FieldsTable.tsx`. Clicking appends a new editable field row.
-- [ ] 11.5 Add a "MongoDB document shape (preview)" block below `FieldsTable.tsx` showing JSON of `{vars, meta}` derived from the current field set.
-- [ ] 11.6 Add an info banner in `TemplateEditor.tsx` reading "Templates are reconciled by Camel and committed to Git on approval."
-- [ ] 11.7 Add a line-count caption next to each file's name in `TemplateEditor.tsx`.
-- [ ] 11.8 Add a "Download all" ghost button in the editor header that triggers a synthesized blob download with `--- {filename} ---` separators.
-- [ ] 11.9 Update `Forms.test.tsx`, `FormEditor.test.tsx`, `FieldsTable.test.tsx`, `TemplateEditor.test.tsx`, `NewFormPage.test.tsx` accordingly.
+- [x] 11.1 Promote `NewFormPage.tsx` to expose Definition / Fields / Template sub-tabs (matching FormEditor). On Create, dispatch ADD_FORM, then UPDATE_FIELD per draft field, then UPDATE_TEMPLATES for draft templates.
+- [x] 11.2 Add a "Submissions" column to `Forms.tsx` (Forms tab table). Sort numerically when clicked.
+- [x] 11.3 Add "Reload from Git" ghost + "Save changes" primary buttons in `FormEditor.tsx` header. Both wire info toasts ("Reloaded from Git (demo)" / "Saved (demo)").
+- [x] 11.4 Add an "Add field" button at the bottom of `FieldsTable.tsx`. Clicking appends a new editable field row.
+- [x] 11.5 Add a "MongoDB document shape (preview)" block below `FieldsTable.tsx` showing JSON of `{vars, meta}` derived from the current field set.
+- [x] 11.6 Add an info banner in `TemplateEditor.tsx` reading "Templates are reconciled by Camel and committed to Git on approval."
+- [x] 11.7 Add a line-count caption next to each file's name in `TemplateEditor.tsx`.
+- [x] 11.8 Add a "Download all" ghost button in the editor header that triggers a synthesized blob download with `--- {filename} ---` separators.
+- [x] 11.9 Update `Forms.test.tsx`, `FormEditor.test.tsx`, `FieldsTable.test.tsx`, `TemplateEditor.test.tsx`, `NewFormPage.test.tsx` accordingly.
 
 ## 12. Admin Users restoration
 

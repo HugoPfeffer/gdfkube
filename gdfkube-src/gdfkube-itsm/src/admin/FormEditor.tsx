@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
+import type { Toast } from '../shell/ToastStack';
 import { FieldsTable } from './FieldsTable';
 import { TemplateEditor } from './TemplateEditor';
 
@@ -14,9 +15,10 @@ type SubTab = 'definition' | 'fields' | 'template';
 interface FormEditorProps {
   formId: string;
   onClose: () => void;
+  setToast?: (t: Toast) => void;
 }
 
-export function FormEditor({ formId, onClose }: FormEditorProps) {
+export function FormEditor({ formId, onClose, setToast }: FormEditorProps) {
   const { forms, fields } = useGdfData();
   const dispatch = useGdfDispatch();
   const form = forms.find((f) => f.id === formId);
@@ -55,6 +57,34 @@ export function FormEditor({ formId, onClose }: FormEditorProps) {
           ← All forms
         </button>
         <span className="spacer" />
+        <button
+          type="button"
+          className="btn ghost sm"
+          onClick={() =>
+            setToast?.({
+              id: `reload-${Date.now()}`,
+              kind: 'info',
+              title: 'Reloaded from Git (demo)',
+              body: 'No changes were fetched in the demo environment.',
+            })
+          }
+        >
+          Reload from Git
+        </button>
+        <button
+          type="button"
+          className="btn primary sm"
+          onClick={() =>
+            setToast?.({
+              id: `save-${Date.now()}`,
+              kind: 'info',
+              title: 'Saved (demo)',
+              body: 'Changes are persisted in-memory for the demo session.',
+            })
+          }
+        >
+          Save changes
+        </button>
       </div>
 
       <div role="tablist" aria-label="Form editor sub-tabs" className="subtabs">

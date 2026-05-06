@@ -7,6 +7,10 @@
 // the `⋮⋮` handle and dispatches REORDER_FIELDS on drop. Visual feedback:
 // dragged row at 50% opacity; drop target gets a 2px civic-blue border on
 // the side that indicates the insertion position.
+//
+// Controlled / draft mode: when `value` and `onChange` are supplied, the
+// table operates entirely on local state without touching the data
+// context. NewFormPage uses this to author draft fields before Create.
 
 import { useState, type DragEvent } from 'react';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
@@ -85,17 +89,77 @@ function AdvancedRow({ f, patch }: { f: Field; patch: (p: Partial<Field>) => voi
   );
 }
 
-export function FieldsTable({ formId }: { formId: string }) {
-  const { fields } = useGdfData();
-  const dispatch = useGdfDispatch();
-  const list = fields[formId] ?? [];
+function mintFieldKey(existing: Field[]): string {
+  if (!existing.some((f) => f.key === 'newField')) return 'newField';
+  let i = 2;
+  while (existing.some((f) => f.key === `newField${i}`)) i += 1;
+  return `newField${i}`;
+}
+
+function mongoShape(fields: Field[]): string {
+  const vars: Record<string, string> = {};
+  const meta: Record<string, string> = {};
+  fields.forEach((f) => {
+    const target = f.bucket === 'meta' ? meta : vars;
+    target[f.key] = `<${f.type}>`;
+  });
+  return JSON.stringify({ vars, meta }, null, 2);
+}
+
+interface FieldsTableProps {
+  formId: string;
+  // Optional controlled mode: when provided, the table reads/writes via
+  // these props instead of the data context.
+  value?: Field[];
+  onChange?: (next: Field[]) => void;
+}
+
+export function FieldsTable({ formId, value, onChange }: FieldsTableProps) {
+  const ctxData = useGdfData();
+  const ctxDispatch = useGdfDispatch();
+  const controlled = value !== undefined && onChange !== undefined;
+  const list = controlled ? value : (ctxData.fields[formId] ?? []);
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
 
-  const patch = (key: string, p: Partial<Field>) =>
-    dispatch({ type: 'UPDATE_FIELD', formId, key, patch: p });
+  const patch = (key: string, p: Partial<Field>) => {
+    if (controlled) {
+      onChange!(list.map((f) => (f.key === key ? { ...f, ...p } : f)));
+    } else {
+      ctxDispatch({ type: 'UPDATE_FIELD', formId, key, patch: p });
+    }
+  };
+
+  const reorder = (from: number, to: number) => {
+    if (controlled) {
+      const next = list.slice();
+      const [moved] = next.splice(from, 1);
+      if (!moved) return;
+      next.splice(to, 0, moved);
+      onChange!(next);
+    } else {
+      ctxDispatch({ type: 'REORDER_FIELDS', formId, from, to });
+    }
+  };
+
+  const addField = () => {
+    const newKey = mintFieldKey(list);
+    const f: Field = {
+      key: newKey,
+      label: 'New field',
+      type: 'text',
+      bucket: 'vars',
+      required: false,
+    };
+    if (controlled) {
+      onChange!([...list, f]);
+    } else {
+      ctxDispatch({ type: 'UPDATE_FIELD', formId, key: newKey, patch: f });
+    }
+    setEditingKey(newKey);
+  };
 
   const dragProps = (i: number) => ({
     draggable: true,
@@ -112,9 +176,7 @@ export function FieldsTable({ formId }: { formId: string }) {
     onDragLeave: () => { if (overIdx === i) setOverIdx(null); },
     onDrop: (e: DragEvent<HTMLTableRowElement>) => {
       e.preventDefault();
-      if (dragIdx !== null && dragIdx !== i) {
-        dispatch({ type: 'REORDER_FIELDS', formId, from: dragIdx, to: i });
-      }
+      if (dragIdx !== null && dragIdx !== i) reorder(dragIdx, i);
       setDragIdx(null);
       setOverIdx(null);
     },
@@ -197,6 +259,32 @@ export function FieldsTable({ formId }: { formId: string }) {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="row" style={{ margin: '10px 0', alignItems: 'center' }}>
+        <button type="button" className="btn ghost sm" onClick={addField}>+ Add field</button>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+          MongoDB document shape (preview)
+        </div>
+        <pre
+          data-testid="mongo-shape-preview"
+          className="mono"
+          style={{
+            margin: 0,
+            padding: 12,
+            background: 'var(--paper)',
+            border: '1px solid var(--ink-200)',
+            borderRadius: 'var(--radius)',
+            fontSize: 12,
+            lineHeight: 1.6,
+            overflowX: 'auto',
+          }}
+        >
+          {mongoShape(list)}
+        </pre>
       </div>
     </div>
   );

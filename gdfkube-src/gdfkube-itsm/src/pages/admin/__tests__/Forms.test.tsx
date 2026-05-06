@@ -168,4 +168,29 @@ describe('Forms admin page', () => {
     // Page renders the create form (its specific input shows up).
     expect(screen.getByLabelText(/form id/i)).toBeInTheDocument();
   });
+
+  it('Forms tab renders a Submissions column showing each form\'s count', () => {
+    const navigate = vi.fn();
+    const { container } = render(
+      withProvider(
+        makeState({
+          forms: [
+            makeForm({ id: 'cluster-request', submissions: 12 }),
+          ],
+          fields: { 'cluster-request': [] },
+        }),
+        <Forms navigate={navigate} />,
+      ),
+    );
+    const headers = Array.from(container.querySelectorAll('thead th')).map(
+      (th) => th.textContent?.trim(),
+    );
+    expect(headers).toContain('Submissions');
+
+    const row = container.querySelector('tbody tr')!;
+    const cells = Array.from(row.querySelectorAll('td')).map(
+      (td) => td.textContent?.trim(),
+    );
+    expect(cells).toContain('12');
+  });
 });

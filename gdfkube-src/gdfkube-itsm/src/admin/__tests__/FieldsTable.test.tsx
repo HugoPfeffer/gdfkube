@@ -203,4 +203,41 @@ describe('FieldsTable', () => {
     expect(screen.getByLabelText(/Options for c/i)).toBeInTheDocument();
     expect(screen.getByTestId('validation-na-d')).toBeInTheDocument();
   });
+
+  it('clicking "Add field" appends a new row and brings it into edit mode', () => {
+    const fields = [
+      makeField('a'),
+      makeField('b'),
+      makeField('c'),
+      makeField('d'),
+    ];
+    const { container } = render(
+      withProvider(makeState(fields), <FieldsTable formId="cluster-request" />),
+    );
+
+    const before = container.querySelectorAll('[data-testid^="field-row-"]').length;
+    expect(before).toBe(4);
+
+    fireEvent.click(screen.getByRole('button', { name: /add field/i }));
+
+    const after = container.querySelectorAll('[data-testid^="field-row-"]').length;
+    expect(after).toBe(5);
+    // The new row's key is the synthesized "newField" — its inputs should be visible.
+    expect(screen.getByLabelText(/label for newField/i)).toBeInTheDocument();
+  });
+
+  it('renders a MongoDB document shape preview block with the form\'s field keys', () => {
+    const fields = [
+      makeField('clusterName', { bucket: 'vars' }),
+      makeField('requesterGroupName', { bucket: 'meta' }),
+    ];
+    render(
+      withProvider(makeState(fields), <FieldsTable formId="cluster-request" />),
+    );
+
+    expect(screen.getByText(/MongoDB document shape/i)).toBeInTheDocument();
+    const pre = screen.getByTestId('mongo-shape-preview');
+    expect(pre.textContent).toContain('clusterName');
+    expect(pre.textContent).toContain('requesterGroupName');
+  });
 });

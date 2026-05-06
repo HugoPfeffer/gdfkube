@@ -98,7 +98,10 @@ export function dataReducer(state: DataState, action: DataAction): DataState {
     case 'UPDATE_FIELD': {
       const list = state.fields[action.formId];
       if (!list) return state;
-      const next = list.map((f) => (f.key === action.key ? { ...f, ...action.patch } : f));
+      const exists = list.some((f) => f.key === action.key);
+      const next = exists
+        ? list.map((f) => (f.key === action.key ? { ...f, ...action.patch } : f))
+        : [...list, { key: action.key, label: action.key, type: 'text', bucket: 'vars', ...action.patch } as Field];
       return { ...state, fields: { ...state.fields, [action.formId]: next } };
     }
 

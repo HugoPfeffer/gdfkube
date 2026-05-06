@@ -9,6 +9,7 @@ import { useMemo, useState } from 'react';
 import { FormEditor } from '../../admin/FormEditor';
 import { NewFormPage } from '../../admin/NewFormPage';
 import type { Navigate } from '../../router';
+import type { Toast } from '../../shell/ToastStack';
 import { useGdfData } from '../../state/dataContext';
 import type { Field } from '../../types';
 
@@ -28,7 +29,13 @@ function validationSummary(f: Field): string {
   return f.validation ?? '—';
 }
 
-export function Forms({ navigate: _navigate }: { navigate: Navigate }) {
+export function Forms({
+  navigate: _navigate,
+  setToast,
+}: {
+  navigate: Navigate;
+  setToast?: (t: Toast) => void;
+}) {
   void _navigate;
   const data = useGdfData();
   const [tab, setTab] = useState<Tab>('forms');
@@ -41,7 +48,15 @@ export function Forms({ navigate: _navigate }: { navigate: Navigate }) {
     return <div className="page admin-forms"><NewFormPage onClose={() => setCreating(false)} /></div>;
   }
   if (editingId) {
-    return <div className="page admin-forms"><FormEditor formId={editingId} onClose={() => setEditingId(null)} /></div>;
+    return (
+      <div className="page admin-forms">
+        <FormEditor
+          formId={editingId}
+          onClose={() => setEditingId(null)}
+          setToast={setToast}
+        />
+      </div>
+    );
   }
 
   return (
@@ -75,6 +90,7 @@ export function Forms({ navigate: _navigate }: { navigate: Navigate }) {
                   <th>Name</th>
                   <th>Kafka topic</th>
                   <th style={{ width: 80 }}>Fields</th>
+                  <th style={{ width: 100 }}>Submissions</th>
                   <th style={{ width: 100 }}>Status</th>
                   <th style={{ width: 120 }}>Last edited</th>
                 </tr>
@@ -90,12 +106,13 @@ export function Forms({ navigate: _navigate }: { navigate: Navigate }) {
                       <td><strong>{f.name}</strong></td>
                       <td className="mono muted">{f.topic}</td>
                       <td className="mono">{fieldCount}</td>
+                      <td className="mono">{f.submissions ?? 0}</td>
                       <td>{f.status === 'active' ? <span className="pill green">Active</span> : <span className="pill gray">Disabled</span>}</td>
                       <td className="muted mono">{f.lastEdited ?? f.updated ?? '—'}</td>
                     </tr>
                   );
                 })}
-                {data.forms.length === 0 && <tr><td colSpan={6} className="empty">No forms yet.</td></tr>}
+                {data.forms.length === 0 && <tr><td colSpan={7} className="empty">No forms yet.</td></tr>}
               </tbody>
             </table>
           </div>

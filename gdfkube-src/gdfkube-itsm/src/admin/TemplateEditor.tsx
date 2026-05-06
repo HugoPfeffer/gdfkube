@@ -3,6 +3,17 @@
 // content; a "Rendered preview" toggle replaces `{{ bucket.key }}` tokens
 // with placeholder values for the active file only. The right-hand
 // AvailableVariablesPanel exposes click-to-copy tokens.
+//
+// Affordances:
+//   - Info banner: "Templates are reconciled by Camel and committed to
+//     Git on approval." (rendered above the file tabs).
+//   - Line counter: "{n} lines" caption near the active file's name.
+//   - Download all: ghost button that synthesizes a single text blob with
+//     `--- {filename} ---` separators and triggers a browser download.
+//
+// Controlled / draft mode: when `value` and `onChange` are supplied, the
+// editor operates entirely on local state. NewFormPage uses this to
+// author draft templates before Create.
 
 import { useState } from 'react';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
@@ -33,21 +44,52 @@ const renderPreview = (content: string): string =>
     Object.prototype.hasOwnProperty.call(PLACEHOLDERS, key) ? PLACEHOLDERS[key]! : `<${key}>`,
   );
 
-export function TemplateEditor({ formId }: { formId: string }) {
-  const { templates } = useGdfData();
-  const dispatch = useGdfDispatch();
-  const files: TemplateFile[] =
-    templates[formId] && templates[formId]!.length
-      ? templates[formId]!
-      : [{ name: 'main.yaml', content: '' }];
+function downloadAll(formId: string, files: TemplateFile[]): void {
+  const blob = files
+    .map((f) => `--- ${f.name} ---\n${f.content}`)
+    .join('\n\n');
+  try {
+    const url = URL.createObjectURL(
+      new Blob([blob], { type: 'text/plain;charset=utf-8' }),
+    );
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${formId}-templates.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch {
+    /* jsdom: URL.createObjectURL may not exist; the click is decorative for the demo. */
+  }
+}
+
+interface TemplateEditorProps {
+  formId: string;
+  // Optional controlled mode: when provided, the editor reads/writes via
+  // these props instead of the data context.
+  value?: TemplateFile[];
+  onChange?: (next: TemplateFile[]) => void;
+}
+
+export function TemplateEditor({ formId, value, onChange }: TemplateEditorProps) {
+  const ctxData = useGdfData();
+  const ctxDispatch = useGdfDispatch();
+  const controlled = value !== undefined && onChange !== undefined;
+  const ctxFiles = ctxData.templates[formId];
+  const files: TemplateFile[] = controlled
+    ? (value.length ? value : [{ name: 'main.yaml', content: '' }])
+    : (ctxFiles && ctxFiles.length ? ctxFiles : [{ name: 'main.yaml', content: '' }]);
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const idx = Math.min(activeIdx, files.length - 1);
   const current = files[idx]!;
 
-  const persist = (next: TemplateFile[]) =>
-    dispatch({ type: 'UPDATE_TEMPLATES', formId, templates: next });
+  const persist = (next: TemplateFile[]) => {
+    if (controlled) onChange!(next);
+    else ctxDispatch({ type: 'UPDATE_TEMPLATES', formId, templates: next });
+  };
 
   const updateContent = (content: string) =>
     persist(files.map((f, i) => (i === idx ? { ...f, content } : f)));
@@ -72,8 +114,36 @@ export function TemplateEditor({ formId }: { formId: string }) {
     if (idx >= next.length) setActiveIdx(next.length - 1);
   };
 
+  const lineCount = current.content.split('\n').length;
+
   return (
     <div className="template-editor" style={{ marginTop: 16 }}>
+      <div
+        data-testid="template-info-banner"
+        className="banner-info"
+        style={{
+          padding: '8px 12px',
+          marginBottom: 10,
+          border: '1px solid var(--ink-200)',
+          borderRadius: 'var(--radius)',
+          background: 'var(--paper)',
+          fontSize: 12,
+        }}
+      >
+        Templates are reconciled by Camel and committed to Git on approval.
+      </div>
+
+      <div className="row" style={{ margin: '0 0 8px', alignItems: 'center', gap: 8 }}>
+        <span className="spacer" />
+        <button
+          type="button"
+          className="btn ghost sm"
+          onClick={() => downloadAll(formId, files)}
+        >
+          Download all
+        </button>
+      </div>
+
       <div className="template-tabs" role="tablist" aria-label="Template files" style={{ display: 'flex', borderBottom: '1px solid var(--ink-200)', flexWrap: 'wrap' }}>
         {files.map((f, i) => (
           <span
@@ -111,6 +181,9 @@ export function TemplateEditor({ formId }: { formId: string }) {
           <input type="checkbox" checked={showPreview} onChange={(e) => setShowPreview(e.target.checked)} />
           Rendered preview
         </label>
+        <span data-testid="template-line-count" className="muted" style={{ fontSize: 12 }}>
+          {lineCount} lines
+        </span>
         <span className="spacer" />
         <input type="text" aria-label="Active file name" value={current.name} onChange={(e) => renameActive(e.target.value)} className="mono" style={{ width: 240 }} />
       </div>

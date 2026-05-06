@@ -156,7 +156,7 @@ function App() {
         setToast={setToast}
       />
     ) : route === 'admin-forms' ? (
-      <AdminForms navigate={navigate} />
+      <AdminForms navigate={navigate} setToast={setToast} />
     ) : route === 'admin-users' ? (
       <AdminUsers navigate={navigate} />
     ) : (

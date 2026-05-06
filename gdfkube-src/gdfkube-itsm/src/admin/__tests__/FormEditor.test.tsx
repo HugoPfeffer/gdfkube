@@ -229,4 +229,35 @@ describe('FormEditor', () => {
     fireEvent.click(status);
     expect(status.checked).toBe(false);
   });
+
+  it('header renders "Reload from Git" + "Save changes" buttons that fire info toasts', () => {
+    const setToast = vi.fn();
+    render(
+      withProvider(
+        makeState([makeField('clusterName')]),
+        <FormEditor
+          formId="cluster-request"
+          onClose={vi.fn()}
+          setToast={setToast}
+        />,
+      ),
+    );
+
+    const reload = screen.getByRole('button', { name: /reload from git/i });
+    const save = screen.getByRole('button', { name: /save changes/i });
+    expect(reload).toBeInTheDocument();
+    expect(save).toBeInTheDocument();
+
+    fireEvent.click(save);
+    expect(setToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: expect.stringMatching(/Saved \(demo\)/i) }),
+    );
+
+    fireEvent.click(reload);
+    expect(setToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: expect.stringMatching(/Reloaded from Git \(demo\)/i),
+      }),
+    );
+  });
 });

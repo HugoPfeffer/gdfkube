@@ -144,4 +144,69 @@ describe('NewFormPage', () => {
     const after = observed[observed.length - 1]!.forms.length;
     expect(after).toBe(before);
   });
+
+  it('renders 3 sub-tabs and lands on Definition by default', () => {
+    render(
+      withProvider(makeState(), <NewFormPage onClose={vi.fn()} />),
+    );
+    const definition = screen.getByRole('tab', { name: /Definition/i });
+    const fields = screen.getByRole('tab', { name: /Fields/i });
+    const template = screen.getByRole('tab', { name: /Template/i });
+    expect(definition).toBeInTheDocument();
+    expect(fields).toBeInTheDocument();
+    expect(template).toBeInTheDocument();
+    expect(definition.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('switching to Fields shows the editable list', () => {
+    render(
+      withProvider(makeState(), <NewFormPage onClose={vi.fn()} />),
+    );
+    fireEvent.click(screen.getByRole('tab', { name: /Fields/i }));
+    expect(screen.getByTestId('fields-table')).toBeInTheDocument();
+    // Add field button is visible in the draft Fields tab.
+    expect(screen.getByRole('button', { name: /add field/i })).toBeInTheDocument();
+  });
+
+  it('Create persists drafts via ADD_FORM + UPDATE_FIELD + UPDATE_TEMPLATES', () => {
+    const observed: DataState[] = [];
+    const onClose = vi.fn();
+    render(
+      withProvider(
+        makeState(),
+        <>
+          <NewFormPage onClose={onClose} />
+          <FormsProbe onState={(s) => observed.push(s)} />
+        </>,
+      ),
+    );
+
+    // Definition
+    fireEvent.change(screen.getByLabelText(/form id/i), {
+      target: { value: 'newform' },
+    });
+    fireEvent.change(screen.getByLabelText(/display name/i), {
+      target: { value: 'New Form' },
+    });
+
+    // Fields tab — add 2 draft fields.
+    fireEvent.click(screen.getByRole('tab', { name: /Fields/i }));
+    const addField = screen.getByRole('button', { name: /add field/i });
+    fireEvent.click(addField);
+    fireEvent.click(addField);
+
+    // Template tab — add a draft template (default file already provided; add a new manifest).
+    fireEvent.click(screen.getByRole('tab', { name: /Template/i }));
+    // The template editor renders at least one default file.
+    expect(screen.getByTestId('template-textarea')).toBeInTheDocument();
+
+    // Click Create.
+    fireEvent.click(screen.getByRole('button', { name: /create form/i }));
+
+    const last = observed[observed.length - 1]!;
+    expect(last.forms.map((f) => f.id)).toContain('newform');
+    expect(last.fields['newform']?.length).toBe(2);
+    expect(last.templates['newform']?.length).toBeGreaterThanOrEqual(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
