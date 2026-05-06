@@ -131,4 +131,4 @@
 ## 17. Verify and finishing
 
 - [x] 17.1 Produce `verify.md` after all tasks complete (all `- [x]`); confirm `npm run typecheck && npm run test && npm run lint && npm run build` are green; confirm `openspec validate --all --json` returns valid.
-- [ ] 17.2 Run `superpowers:finishing-a-development-branch` to merge / PR / cleanup the worktree.
+- [x] 17.2 Run `superpowers:finishing-a-development-branch` to merge / PR / cleanup the worktree.
