@@ -62,12 +62,12 @@
 
 ## 9. Approvals page-head + queue row + reject guard
 
-- [ ] 9.1 In `Approvals.tsx` page-head, add three KPI tiles: "In queue" / "Approved today" / "Rejected today".
-- [ ] 9.2 In each pending-queue row, render a failing-checks badge when any `policyChecks.ok === false`, the requester's `fullName ?? username`, and a colored env cell.
-- [ ] 9.3 In `DecisionPanel.tsx`, add a header containing StatusPill + "Cluster {clusterName}" hero. Inline the justification as a `<blockquote>` directly below the payload card; remove any separate "Justification" card.
-- [ ] 9.4 Update the 3-step approval-chain labels to "Department lead → Platform admin (you) → Provisioning pipeline".
-- [ ] 9.5 Disable the Reject button while `comment.trim() === ''`. Update tests.
-- [ ] 9.6 Update `Approvals.test.tsx` for the KPI tiles, queue-row affordances, decision-panel header, chain labels, and reject-comment guard.
+- [x] 9.1 In `Approvals.tsx` page-head, add three KPI tiles: "In queue" / "Approved today" / "Rejected today".
+- [x] 9.2 In each pending-queue row, render a failing-checks badge when any `policyChecks.ok === false`, the requester's `fullName ?? username`, and a colored env cell.
+- [x] 9.3 In `DecisionPanel.tsx`, add a header containing StatusPill + "Cluster {clusterName}" hero. Inline the justification as a `<blockquote>` directly below the payload card; remove any separate "Justification" card.
+- [x] 9.4 Update the 3-step approval-chain labels to "Department lead → Platform admin (you) → Provisioning pipeline".
+- [x] 9.5 Disable the Reject button while `comment.trim() === ''`. Update tests.
+- [x] 9.6 Update `Approvals.test.tsx` for the KPI tiles, queue-row affordances, decision-panel header, chain labels, and reject-comment guard.
 
 ## 10. NewRequest "What happens next" sidebar + Kafka topic
 

@@ -1,15 +1,22 @@
 // DecisionPanel — right-pane detail view for a selected approval request.
 //
 // Renders:
-//   - Request header (id + form label + requester + env)
-//   - Quoted justification (block-quote)
-//   - Payload summary (`vars` + `meta` JSON)
+//   - Header: StatusPill + "Cluster {clusterName}" hero (cluster pulled from
+//     `request.vars.clusterName`); request id + form label + requester + env
+//     subline; submitted timestamp on the right
+//   - Payload summary (`vars` + `meta` JSON), with the requester's
+//     justification rendered inline as a `<blockquote>` directly below the
+//     payload card (no separate "Justification" card)
 //   - Policy / governance checks (PASS or WARN labels)
 //   - Comment textarea
-//   - Primary Approve + Reject buttons; secondary Reassign + Request changes
-//   - 3-step approval-chain visualization derived from approvalChain length
+//   - Primary Approve + Reject buttons (Reject is disabled until the comment
+//     has non-whitespace content); secondary Reassign + Request changes
+//   - 3-step approval-chain visualization: Department lead → Platform admin
+//     (you) → Provisioning pipeline (matching the request's lifecycle, not
+//     the legacy "Operator submitted → Group lead → SETIC" triple)
 
 import { Icons } from '../../icons/Icons';
+import { StatusPill } from '../../components/StatusPill';
 import type { Request } from '../../types';
 
 interface DecisionPanelProps {
@@ -22,11 +29,21 @@ interface DecisionPanelProps {
   onRequestChanges?: () => void;
 }
 
-const APPROVAL_STEPS = ['Operator submitted', 'Group lead', 'SETIC'] as const;
+const APPROVAL_STEPS = [
+  'Department lead',
+  'Platform admin (you)',
+  'Provisioning pipeline',
+] as const;
 
 function requesterName(r: Request): string {
   const u = r.requester;
   return u ? u.fullName || u.name || u.username || u.id || '' : '';
+}
+
+function clusterNameOf(r: Request): string {
+  const cn = r.vars?.clusterName;
+  if (typeof cn === 'string' && cn.trim() !== '') return cn;
+  return r.id;
 }
 
 export function DecisionPanel({
@@ -39,9 +56,11 @@ export function DecisionPanel({
   onRequestChanges,
 }: DecisionPanelProps) {
   const chainLength = request.approvalChain?.length ?? 0;
-  // Step 0 ("Operator submitted") is always done because the request is in
-  // the queue. Each appended decision advances to the next step.
+  // Step 0 ("Department lead") is always done because the request has been
+  // routed to the platform admin queue. Each appended decision advances to
+  // the next step.
   const currentStep = Math.min(chainLength + 1, APPROVAL_STEPS.length - 1);
+  const rejectDisabled = comment.trim() === '';
 
   return (
     <div
@@ -50,10 +69,26 @@ export function DecisionPanel({
     >
       <section className="card approval-header-card">
         <div className="card-body">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-            <div>
-              <h2 className="card-title mono" style={{ marginBottom: 4 }}>
-                {request.id}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 12,
+              alignItems: 'flex-start',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <StatusPill status={request.status} />
+                <span className="mono muted" style={{ fontSize: 12 }}>
+                  {request.id}
+                </span>
+              </div>
+              <h2
+                className="card-title"
+                style={{ fontSize: 20, marginBottom: 4 }}
+              >
+                Cluster {clusterNameOf(request)}
               </h2>
               <div className="muted" style={{ fontSize: 12 }}>
                 {request.formLabel ?? request.formId} ·{' '}
@@ -61,7 +96,7 @@ export function DecisionPanel({
                 {request.env}
               </div>
             </div>
-            <div className="muted" style={{ fontSize: 12 }}>
+            <div className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
               Submitted {request.submittedAt}
             </div>
           </div>
@@ -70,33 +105,6 @@ export function DecisionPanel({
 
       <div className="approval-detail-grid">
         <div className="col">
-          <section className="card">
-            <div className="card-head">
-              <h3 className="card-title">Justification</h3>
-            </div>
-            <div className="card-body">
-              {request.justification ? (
-                <blockquote
-                  data-testid="justification"
-                  style={{
-                    margin: 0,
-                    padding: '8px 12px',
-                    borderLeft: '3px solid var(--civic-300)',
-                    background: 'var(--civic-50)',
-                    fontStyle: 'italic',
-                    color: 'var(--ink-800)',
-                  }}
-                >
-                  {request.justification}
-                </blockquote>
-              ) : (
-                <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                  No justification provided.
-                </p>
-              )}
-            </div>
-          </section>
-
           <section className="card">
             <div className="card-head">
               <h3 className="card-title">Payload</h3>
@@ -121,6 +129,21 @@ export function DecisionPanel({
                   2,
                 )}
               </pre>
+              {request.justification ? (
+                <blockquote
+                  data-testid="justification"
+                  style={{
+                    margin: '12px 0 0',
+                    padding: '8px 12px',
+                    borderLeft: '3px solid var(--civic-300)',
+                    background: 'var(--civic-50)',
+                    fontStyle: 'italic',
+                    color: 'var(--ink-800)',
+                  }}
+                >
+                  {request.justification}
+                </blockquote>
+              ) : null}
             </div>
           </section>
 
@@ -174,7 +197,7 @@ export function DecisionPanel({
                 style={{ display: 'block', fontSize: 12, marginBottom: 6 }}
                 htmlFor="approval-comment"
               >
-                Comment (optional)
+                Comment (required to reject)
               </label>
               <textarea
                 id="approval-comment"
@@ -202,6 +225,7 @@ export function DecisionPanel({
                   type="button"
                   className="btn danger"
                   onClick={onReject}
+                  disabled={rejectDisabled}
                 >
                   Reject
                 </button>

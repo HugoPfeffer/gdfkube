@@ -10,6 +10,14 @@
 //      the queue, appends to the decided-this-session log, and shows a toast.
 //   7. Override modal: failing policy check blocks approval until Confirm.
 //   8. Reject sets status to failed, removes from queue, appends to chain.
+//   9. Page-head KPI tiles: In queue / Approved today / Rejected today
+//      update in real time as decisions are committed.
+//  10. Pending-queue rows show failing-checks badge (when applicable),
+//      requester display name, and color-coded env cell.
+//  11. DecisionPanel header has StatusPill + "Cluster {clusterName}" hero;
+//      justification renders inline as <blockquote> below payload (no
+//      separate Justification card); chain labels match lifecycle.
+//  12. Reject button is disabled while comment.trim() === ''.
 //
 // Operator-redirect from the approvals route is exercised in App.test.tsx.
 
@@ -469,9 +477,18 @@ describe('Approvals', () => {
       ) as HTMLElement,
     );
 
-    const rejectBtn = within(
-      container.querySelector('[data-testid="decision-panel"]') as HTMLElement,
-    ).getByRole('button', { name: /Reject/i });
+    // Reject requires a non-empty comment per the comment-required guard.
+    const panel = container.querySelector(
+      '[data-testid="decision-panel"]',
+    ) as HTMLElement;
+    const textarea = panel.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    fireEvent.change(textarea, {
+      target: { value: 'Insufficient justification.' },
+    });
+
+    const rejectBtn = within(panel).getByRole('button', { name: /Reject/i });
     fireEvent.click(rejectBtn);
 
     // Removed from queue.
@@ -603,6 +620,334 @@ describe('Approvals', () => {
     expect(
       container.querySelector('[data-testid="override-modal"]'),
     ).toBeNull();
+
+    const queue = container.querySelector(
+      '[data-testid="approval-queue"]',
+    ) as HTMLElement;
+    expect(
+      queue.querySelector('.approval-row[data-id="REQ0010238"]'),
+    ).not.toBeNull();
+  });
+
+  it('page-head renders three KPI tiles (In queue / Approved today / Rejected today) reflecting initial pending count', () => {
+    const requests = [
+      makeRequest('REQ0010238'),
+      makeRequest('REQ0010249'),
+      makeRequest('REQ0010251'),
+      makeRequest('REQ0010260', { status: 'ready', stage: 7 }),
+    ];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    const head = container.querySelector('.approvals-page .page-head') as HTMLElement;
+    expect(head).not.toBeNull();
+    const tiles = head.querySelectorAll('.kpi');
+    expect(tiles.length).toBe(3);
+    const labels = Array.from(tiles).map(
+      (t) => t.querySelector('.kpi-label')?.textContent?.trim() ?? '',
+    );
+    expect(labels).toEqual(['In queue', 'Approved today', 'Rejected today']);
+
+    const valueByLabel = (lbl: string) =>
+      Array.from(tiles).find(
+        (t) => t.querySelector('.kpi-label')?.textContent?.trim() === lbl,
+      )?.querySelector('.kpi-value')?.textContent?.trim();
+
+    expect(valueByLabel('In queue')).toBe('3');
+    expect(valueByLabel('Approved today')).toBe('0');
+    expect(valueByLabel('Rejected today')).toBe('0');
+  });
+
+  it('approving updates the In-queue and Approved-today KPI tiles in real time', () => {
+    const requests = [
+      makeRequest('REQ0010238'),
+      makeRequest('REQ0010249'),
+    ];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '.approval-row[data-id="REQ0010238"]',
+      ) as HTMLElement,
+    );
+    fireEvent.click(
+      within(
+        container.querySelector(
+          '[data-testid="decision-panel"]',
+        ) as HTMLElement,
+      ).getByRole('button', { name: /Approve/i }),
+    );
+
+    const valueByLabel = (lbl: string) => {
+      const tiles = container.querySelectorAll('.approvals-page .page-head .kpi');
+      return Array.from(tiles).find(
+        (t) => t.querySelector('.kpi-label')?.textContent?.trim() === lbl,
+      )?.querySelector('.kpi-value')?.textContent?.trim();
+    };
+
+    expect(valueByLabel('In queue')).toBe('1');
+    expect(valueByLabel('Approved today')).toBe('1');
+    expect(valueByLabel('Rejected today')).toBe('0');
+  });
+
+  it('rejecting updates the In-queue and Rejected-today KPI tiles in real time', () => {
+    const requests = [makeRequest('REQ0010251')];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '.approval-row[data-id="REQ0010251"]',
+      ) as HTMLElement,
+    );
+
+    const panel = container.querySelector(
+      '[data-testid="decision-panel"]',
+    ) as HTMLElement;
+    const textarea = panel.querySelector('textarea') as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: 'No.' } });
+    fireEvent.click(within(panel).getByRole('button', { name: /Reject/i }));
+
+    const tiles = container.querySelectorAll('.approvals-page .page-head .kpi');
+    const valueByLabel = (lbl: string) =>
+      Array.from(tiles).find(
+        (t) => t.querySelector('.kpi-label')?.textContent?.trim() === lbl,
+      )?.querySelector('.kpi-value')?.textContent?.trim();
+
+    expect(valueByLabel('In queue')).toBe('0');
+    expect(valueByLabel('Approved today')).toBe('0');
+    expect(valueByLabel('Rejected today')).toBe('1');
+  });
+
+  it('queue row shows failing-checks badge when one or more policy checks fail', () => {
+    const requests = [
+      makeRequest('REQ0010238', {
+        policyChecks: [
+          { id: 'rhacm', label: 'RHACM governance baseline', ok: true },
+          { id: 'window', label: 'Production change window', ok: false },
+          { id: 'naming', label: 'Naming convention', ok: false },
+        ],
+      }),
+      makeRequest('REQ0010249', {
+        policyChecks: [
+          { id: 'rhacm', label: 'RHACM governance baseline', ok: true },
+        ],
+      }),
+    ];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    const failingRow = container.querySelector(
+      '.approval-row[data-id="REQ0010238"]',
+    ) as HTMLElement;
+    expect(failingRow.textContent).toMatch(/2 failing/i);
+
+    const cleanRow = container.querySelector(
+      '.approval-row[data-id="REQ0010249"]',
+    ) as HTMLElement;
+    expect(cleanRow.textContent).not.toMatch(/failing/i);
+  });
+
+  it('queue row renders requester display name (fullName ?? username)', () => {
+    const requests = [
+      makeRequest('REQ0010238', {
+        requester: makeRequester('joao.silva', 'João Silva'),
+      }),
+      makeRequest('REQ0010249', {
+        requester: {
+          id: 'pedro',
+          username: 'pedro.rocha',
+          name: 'pedro.rocha',
+          email: 'p@x.gov',
+          role: 'operator',
+        },
+      }),
+    ];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    const row1 = container.querySelector(
+      '.approval-row[data-id="REQ0010238"]',
+    ) as HTMLElement;
+    expect(row1.textContent).toContain('João Silva');
+
+    const row2 = container.querySelector(
+      '.approval-row[data-id="REQ0010249"]',
+    ) as HTMLElement;
+    expect(row2.textContent).toContain('pedro.rocha');
+  });
+
+  it('queue row env cell is color-coded (production red / staging amber / development green)', () => {
+    const requests = [
+      makeRequest('REQ0010238', { env: 'production' }),
+      makeRequest('REQ0010249', { env: 'staging' }),
+      makeRequest('REQ0010251', { env: 'development' }),
+    ];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    const envCell = (id: string) =>
+      container.querySelector(
+        `.approval-row[data-id="${id}"] [data-testid="row-env"]`,
+      ) as HTMLElement;
+
+    expect(envCell('REQ0010238')?.getAttribute('style') ?? '').toContain(
+      'var(--red-700)',
+    );
+    expect(envCell('REQ0010249')?.getAttribute('style') ?? '').toContain(
+      'var(--amber-700)',
+    );
+    expect(envCell('REQ0010251')?.getAttribute('style') ?? '').toContain(
+      'var(--green-700)',
+    );
+  });
+
+  it('DecisionPanel header renders StatusPill ("Awaiting approval") + "Cluster {clusterName}" hero', () => {
+    const requests = [
+      makeRequest('REQ0010238', {
+        vars: { clusterName: 'vacinacao', environment: 'production', nodeCount: 3 },
+      }),
+    ];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '.approval-row[data-id="REQ0010238"]',
+      ) as HTMLElement,
+    );
+
+    const panel = container.querySelector(
+      '[data-testid="decision-panel"]',
+    ) as HTMLElement;
+
+    const pill = panel.querySelector('.pill');
+    expect(pill).not.toBeNull();
+    expect(pill!.textContent).toMatch(/Awaiting approval/i);
+
+    expect(panel.textContent).toContain('Cluster vacinacao');
+  });
+
+  it('DecisionPanel renders justification inline as <blockquote> below the payload card with no separate Justification card', () => {
+    const requests = [
+      makeRequest('REQ0010238', {
+        justification: 'Pilot for new tax-collection API.',
+      }),
+    ];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '.approval-row[data-id="REQ0010238"]',
+      ) as HTMLElement,
+    );
+
+    const panel = container.querySelector(
+      '[data-testid="decision-panel"]',
+    ) as HTMLElement;
+
+    const cardTitles = Array.from(panel.querySelectorAll('.card-title')).map(
+      (n) => n.textContent?.trim() ?? '',
+    );
+    expect(cardTitles).not.toContain('Justification');
+
+    const quote = panel.querySelector(
+      '[data-testid="justification"]',
+    ) as HTMLElement | null;
+    expect(quote).not.toBeNull();
+    expect(quote!.tagName.toLowerCase()).toBe('blockquote');
+    expect(quote!.textContent).toContain('Pilot for new tax-collection API.');
+  });
+
+  it('DecisionPanel approval-chain labels are "Department lead → Platform admin (you) → Provisioning pipeline"', () => {
+    const requests = [makeRequest('REQ0010238')];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '.approval-row[data-id="REQ0010238"]',
+      ) as HTMLElement,
+    );
+
+    const chain = container.querySelector(
+      '[data-testid="approval-chain-steps"]',
+    ) as HTMLElement;
+    const labels = Array.from(chain.querySelectorAll('.approval-step')).map(
+      (s) => s.textContent ?? '',
+    );
+    expect(labels.length).toBe(3);
+    expect(labels[0]).toContain('Department lead');
+    expect(labels[1]).toContain('Platform admin (you)');
+    expect(labels[2]).toContain('Provisioning pipeline');
+  });
+
+  it('Reject button is disabled while comment is empty (after trim) and enables once typed', () => {
+    const requests = [makeRequest('REQ0010238')];
+    const { container } = render(
+      withProvider(makeState(requests), <Approvals {...defaultProps()} />),
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '.approval-row[data-id="REQ0010238"]',
+      ) as HTMLElement,
+    );
+
+    const panel = container.querySelector(
+      '[data-testid="decision-panel"]',
+    ) as HTMLElement;
+    const rejectBtn = within(panel).getByRole('button', {
+      name: /Reject/i,
+    }) as HTMLButtonElement;
+    expect(rejectBtn.disabled).toBe(true);
+
+    const textarea = panel.querySelector('textarea') as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: '   ' } });
+    expect(rejectBtn.disabled).toBe(true);
+
+    fireEvent.change(textarea, { target: { value: 'Insufficient justification' } });
+    expect(rejectBtn.disabled).toBe(false);
+  });
+
+  it('clicking Reject without a comment is a no-op (no toast, request stays pending)', () => {
+    const requests = [makeRequest('REQ0010238')];
+    const setToast = vi.fn();
+    const { container } = render(
+      withProvider(
+        makeState(requests),
+        <Approvals {...defaultProps({ setToast })} />,
+      ),
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '.approval-row[data-id="REQ0010238"]',
+      ) as HTMLElement,
+    );
+
+    const panel = container.querySelector(
+      '[data-testid="decision-panel"]',
+    ) as HTMLElement;
+    const rejectBtn = within(panel).getByRole('button', {
+      name: /Reject/i,
+    }) as HTMLButtonElement;
+
+    // Force-click the disabled button to assert no state change.
+    fireEvent.click(rejectBtn);
+
+    expect(setToast).not.toHaveBeenCalled();
 
     const queue = container.querySelector(
       '[data-testid="approval-queue"]',

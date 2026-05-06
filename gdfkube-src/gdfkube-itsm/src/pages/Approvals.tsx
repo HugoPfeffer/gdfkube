@@ -9,7 +9,7 @@
 // The page reads requests from the GdfData reducer and dispatches
 // UPDATE_REQUEST_STATUS on Approve/Reject. The decided-this-session log is
 // kept in local state so the row stays visible after the request leaves the
-// pending queue.
+// pending queue, and so the page-head KPI tiles can compute counts.
 
 import { useMemo, useState } from 'react';
 import type { Toast } from '../shell/ToastStack';
@@ -20,6 +20,7 @@ import {
 } from '../state/dataContext';
 import type {
   ApprovalDecision,
+  Env,
   Request,
   Role,
   User,
@@ -35,6 +36,11 @@ interface ApprovalsProps {
 }
 
 type ChipValue = 'all' | 'production' | 'scale';
+
+type DecidedEntry = {
+  id: string;
+  action: 'approved' | 'rejected';
+};
 
 const CHIPS: { value: ChipValue; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -57,6 +63,18 @@ function formatNow(): string {
   return new Date().toISOString();
 }
 
+function envColor(env: Env): string {
+  if (env === 'production') return 'var(--red-700)';
+  if (env === 'staging') return 'var(--amber-700)';
+  return 'var(--green-700)';
+}
+
+function requesterDisplayName(req: Request): string {
+  const u = req.requester;
+  if (!u) return '';
+  return u.fullName ?? u.username ?? u.name ?? u.id ?? '';
+}
+
 export function Approvals({ user, setToast }: ApprovalsProps) {
   const { requests } = useGdfData();
   const dispatch = useGdfDispatch();
@@ -64,7 +82,9 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
   const [chip, setChip] = useState<ChipValue>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [comment, setComment] = useState('');
-  const [decidedThisSession, setDecidedThisSession] = useState<string[]>([]);
+  const [decidedThisSession, setDecidedThisSession] = useState<DecidedEntry[]>(
+    [],
+  );
   const [overrideOpen, setOverrideOpen] = useState(false);
 
   const pending = useMemo(
@@ -89,10 +109,17 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
   const decidedRequests = useMemo(
     () =>
       decidedThisSession
-        .map((id) => requests.find((r) => r.id === id))
+        .map((d) => requests.find((r) => r.id === d.id))
         .filter((r): r is Request => Boolean(r)),
     [decidedThisSession, requests],
   );
+
+  const approvedCount = decidedThisSession.filter(
+    (d) => d.action === 'approved',
+  ).length;
+  const rejectedCount = decidedThisSession.filter(
+    (d) => d.action === 'rejected',
+  ).length;
 
   const commitApproval = (req: Request) => {
     const at = formatNow();
@@ -110,7 +137,9 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
       decision,
     });
     setDecidedThisSession((prev) =>
-      prev.includes(req.id) ? prev : [...prev, req.id],
+      prev.some((d) => d.id === req.id)
+        ? prev
+        : [...prev, { id: req.id, action: 'approved' }],
     );
     setSelectedId(null);
     setComment('');
@@ -138,8 +167,8 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
     commitApproval(selected);
   };
 
-  const handleReject = () => {
-    if (!selected) return;
+  const commitReject = (req: Request) => {
+    if (comment.trim() === '') return;
     const at = formatNow();
     const decision: ApprovalDecision = {
       actor: decisionActor(user),
@@ -149,21 +178,28 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
     };
     dispatch({
       type: 'UPDATE_REQUEST_STATUS',
-      id: selected.id,
+      id: req.id,
       status: 'failed',
       decision,
     });
     setDecidedThisSession((prev) =>
-      prev.includes(selected.id) ? prev : [...prev, selected.id],
+      prev.some((d) => d.id === req.id)
+        ? prev
+        : [...prev, { id: req.id, action: 'rejected' }],
     );
     setSelectedId(null);
     setComment('');
     setToast({
-      id: `reject-${selected.id}-${at}`,
+      id: `reject-${req.id}-${at}`,
       kind: 'warn',
       title: 'Request rejected',
-      body: `${selected.id} moved to failed.`,
+      body: `${req.id} moved to failed.`,
     });
+  };
+
+  const handleReject = () => {
+    if (!selected) return;
+    commitReject(selected);
   };
 
   const failingChecks = selected
@@ -173,10 +209,37 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
   return (
     <div className="page approvals-page">
       <div className="page-head">
-        <h1 className="page-title">Approvals</h1>
-        <p className="page-sub">
-          Review and decide on pending requests across every department.
-        </p>
+        <div className="page-head-row">
+          <div>
+            <h1 className="page-title">Approvals</h1>
+            <p className="page-sub">
+              Review and decide on pending requests across every department.
+            </p>
+          </div>
+          <div
+            className="kpi-grid"
+            style={{ gridTemplateColumns: 'repeat(3, minmax(140px, 180px))' }}
+          >
+            <div className="kpi">
+              <div className="kpi-label">In queue</div>
+              <div className="kpi-value">{pending.length}</div>
+            </div>
+            <div
+              className="kpi"
+              style={{ ['--accent' as 'color']: 'var(--green-700)' }}
+            >
+              <div className="kpi-label">Approved today</div>
+              <div className="kpi-value">{approvedCount}</div>
+            </div>
+            <div
+              className="kpi"
+              style={{ ['--accent' as 'color']: 'var(--red-700)' }}
+            >
+              <div className="kpi-label">Rejected today</div>
+              <div className="kpi-value">{rejectedCount}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="approvals-grid">
@@ -209,6 +272,8 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
               ) : (
                 filtered.map((r) => {
                   const active = r.id === selectedId;
+                  const failing = r.policyChecks.filter((c) => !c.ok).length;
+                  const reqName = requesterDisplayName(r);
                   return (
                     <div
                       key={r.id}
@@ -224,13 +289,38 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
                         }
                       }}
                     >
-                      <div className="approval-row-title mono">{r.id}</div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 8,
+                        }}
+                      >
+                        <div className="approval-row-title mono">{r.id}</div>
+                        {failing > 0 && (
+                          <span
+                            className="pill amber"
+                            data-testid="failing-checks-badge"
+                            style={{ fontSize: 11 }}
+                          >
+                            {failing} failing
+                          </span>
+                        )}
+                      </div>
                       <div className="approval-row-meta">
                         <span>{r.formLabel ?? r.formId}</span>
                         <span className="dot-sep">·</span>
+                        <span>{reqName}</span>
+                        <span className="dot-sep">·</span>
                         <span>{r.requesterGroupName}</span>
                         <span className="dot-sep">·</span>
-                        <span>{r.env}</span>
+                        <span
+                          data-testid="row-env"
+                          style={{ color: envColor(r.env), fontWeight: 500 }}
+                        >
+                          {r.env}
+                        </span>
                       </div>
                       {r.waiting && (
                         <div className="approval-row-foot">
