@@ -1,0 +1,23 @@
+#==============================================================================
+# DooD self-heal: realign this shell with the docker group at runtime.
+#
+# postStartCommand changes /etc/group's docker GID to match the host socket.
+# A shell attached *before* that runs caches the old group list and gets
+# "permission denied" on /var/run/docker.sock even though node is in `docker`.
+# If we detect the mismatch, re-exec once via sg(1) so the new GID takes effect.
+#==============================================================================
+if [ -S /var/run/docker.sock ] && [ -z "${_DOCKER_GID_REEXEC:-}" ]; then
+  _sock_gid=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || true)
+  _whoami=$(id -un 2>/dev/null)
+  # `getent group docker` reads /etc/group (authoritative), unlike `id -nG`
+  # which reflects the *process* group cache we are precisely trying to refresh.
+  if [ -n "$_sock_gid" ] && [ -n "$_whoami" ] \
+     && getent group docker 2>/dev/null | awk -F: -v u="$_whoami" '
+          { n=split($4,m,","); for (i=1;i<=n;i++) if (m[i]==u) { found=1 } }
+          END { exit !found }' \
+     && ! id -G 2>/dev/null | tr ' ' '\n' | grep -qx "$_sock_gid"; then
+    export _DOCKER_GID_REEXEC=1
+    exec sg docker -c "exec bash"
+  fi
+  unset _sock_gid _whoami
+fi
