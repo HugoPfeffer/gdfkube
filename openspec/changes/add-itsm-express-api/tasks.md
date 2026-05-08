@@ -1,74 +1,74 @@
 ## 1. Backend skeleton (server package, health, metrics, structured logs, Mongoose connection)
 
-- [ ] 1.1 Initialize npm package at `gdfkube-src/gdfkube-itsm/server/` with deps `express`, `mongoose`, `ulid`, `pino`, `pino-http`, `prom-client` and devDeps `typescript`, `tsx`, `vitest`, `supertest`, `@types/express`, `@types/node`, `@types/supertest`. Scripts: `dev`, `build`, `start`, `test`.
-- [ ] 1.2 Add `tsconfig.json` and `vitest.config.ts`.
-- [ ] 1.3 Implement `src/db.ts` wrapping `mongoose.connect` with `serverSelectionTimeoutMS: 30000`, `writeConcern: { w: 'majority' }`, and a `ping()` helper.
-- [ ] 1.4 Write failing health tests in `__tests__/health.test.ts` (live + ready against `gdfkube_test`).
-- [ ] 1.5 Implement `src/app.ts` (mounts pino-http, express.json, health/metrics routers, error middleware), `src/routes/health.ts`, `src/routes/metrics.ts`, `src/middleware/error.ts`, `src/middleware/logging.ts`. Run tests — expect PASS.
-- [ ] 1.6 Implement `src/index.ts` (process entry: connect, build app, listen on `PORT`).
+- [x] 1.1 Initialize npm package at `gdfkube-src/gdfkube-itsm/server/` with deps `express`, `mongoose`, `ulid`, `pino`, `pino-http`, `prom-client` and devDeps `typescript`, `tsx`, `vitest`, `supertest`, `@types/express`, `@types/node`, `@types/supertest`. Scripts: `dev`, `build`, `start`, `test`.
+- [x] 1.2 Add `tsconfig.json` and `vitest.config.ts`.
+- [x] 1.3 Implement `src/db.ts` wrapping `mongoose.connect` with `serverSelectionTimeoutMS: 30000`, `writeConcern: { w: 'majority' }`, and a `ping()` helper.
+- [x] 1.4 Write failing health tests in `__tests__/health.test.ts` (live + ready against `gdfkube_test`).
+- [x] 1.5 Implement `src/app.ts` (mounts pino-http, express.json, health/metrics routers, error middleware), `src/routes/health.ts`, `src/routes/metrics.ts`, `src/middleware/error.ts`, `src/middleware/logging.ts`. Run tests — expect PASS.
+- [x] 1.6 Implement `src/index.ts` (process entry: connect, build app, listen on `PORT`).
 
 ## 2. Mongoose models
 
-- [ ] 2.1 Write failing `__tests__/models.test.ts` covering Request, FormDef, User, Group with the requirements from specs (enums, required fields, ranges, default values).
-- [ ] 2.2 Implement `src/models/Request.ts` with `_id: String`, status enum, stage 0..6, requester subdoc, `vars`/`meta` as `Schema.Types.Mixed`, policyChecks, approvalChain default `[]`, `reason` default `null`. Disable `__v`, `timestamps: false`.
-- [ ] 2.3 Implement `src/models/FormDef.ts` with `_id: String`, name, topic, status enum, `fields: [TypedFieldSchema]`, optional `templates: [TemplateFileSchema]`.
-- [ ] 2.4 Implement `src/models/User.ts` (`_id: String` = username, role enum operator/admin/approver/service, optional fullName/group/status/mfa/last).
-- [ ] 2.5 Implement `src/models/Group.ts` (`_id: String` = org id, name, optional fullName/repo/clusters, default-empty `users: [String]` and `forms: [String]`).
+- [x] 2.1 Write failing `__tests__/models.test.ts` covering Request, FormDef, User, Group with the requirements from specs (enums, required fields, ranges, default values).
+- [x] 2.2 Implement `src/models/Request.ts` with `_id: String`, status enum, stage 0..6, requester subdoc, `vars`/`meta` as `Schema.Types.Mixed`, policyChecks, approvalChain default `[]`, `reason` default `null`. Disable `__v`, `timestamps: false`.
+- [x] 2.3 Implement `src/models/FormDef.ts` with `_id: String`, name, topic, status enum, `fields: [TypedFieldSchema]`, optional `templates: [TemplateFileSchema]`.
+- [x] 2.4 Implement `src/models/User.ts` (`_id: String` = username, role enum operator/admin/approver/service, optional fullName/group/status/mfa/last).
+- [x] 2.5 Implement `src/models/Group.ts` (`_id: String` = org id, name, optional fullName/repo/clusters, default-empty `users: [String]` and `forms: [String]`).
 
 ## 3. Demo identity middleware + admin gate
 
-- [ ] 3.1 Populate `src/data/demoUsers.ts` with the SPA's seed users (`joao.silva`, `maria.costa`, ...) — at least one admin, full role coverage.
-- [ ] 3.2 Write failing `__tests__/demoUser.test.ts` (missing header → 401, unknown user → 401, known user → req.demoUser populated).
-- [ ] 3.3 Write failing `__tests__/requireAdmin.test.ts` (non-admin → 403, admin → next()).
-- [ ] 3.4 Implement `src/middleware/demoUser.ts` and `src/middleware/requireAdmin.ts`. Mount `demoUser` on `/api/itsm/*`. Mount `requireAdmin` on every admin write route including `POST /api/itsm/requests/:id/approvals`.
+- [x] 3.1 Populate `src/data/demoUsers.ts` with the SPA's seed users (`joao.silva`, `maria.costa`, ...) — at least one admin, full role coverage.
+- [x] 3.2 Write failing `__tests__/demoUser.test.ts` (missing header → 401, unknown user → 401, known user → req.demoUser populated).
+- [x] 3.3 Write failing `__tests__/requireAdmin.test.ts` (non-admin → 403, admin → next()).
+- [x] 3.4 Implement `src/middleware/demoUser.ts` and `src/middleware/requireAdmin.ts`. Mount `demoUser` on `/api/itsm/*`. Mount `requireAdmin` on every admin write route including `POST /api/itsm/requests/:id/approvals`.
 
 ## 4. FormDef-driven validator
 
-- [ ] 4.1 Write failing `__tests__/formValidator.test.ts` covering happy path, missing required, regex, range, enum, unknown-key-ignored.
-- [ ] 4.2 Implement `src/services/formValidator.ts` as a pure function (no Mongoose import); export error type from a sibling `types.ts`.
+- [x] 4.1 Write failing `__tests__/formValidator.test.ts` covering happy path, missing required, regex, range, enum, unknown-key-ignored.
+- [x] 4.2 Implement `src/services/formValidator.ts` as a pure function (no Mongoose import); export error type from a sibling `types.ts`.
 
 ## 5. Forms read + admin write endpoints
 
-- [ ] 5.1 Write failing `__tests__/forms.test.ts` for GET list (active-only default; `?include=disabled` admin-only), GET by id (404 on miss), admin POST (201, 409 on dup), admin PATCH (whitelist enforced, fields/templates array-replace, 404 on unknown id, 403 for operator).
-- [ ] 5.2 Implement `src/services/formAdminService.ts` (`create`, `patch`).
-- [ ] 5.3 Implement `src/routes/forms.ts` mounted at `/api/itsm/forms`. Wire to `src/app.ts`. Run tests — expect PASS.
+- [x] 5.1 Write failing `__tests__/forms.test.ts` for GET list (active-only default; `?include=disabled` admin-only), GET by id (404 on miss), admin POST (201, 409 on dup), admin PATCH (whitelist enforced, fields/templates array-replace, 404 on unknown id, 403 for operator).
+- [x] 5.2 Implement `src/services/formAdminService.ts` (`create`, `patch`).
+- [x] 5.3 Implement `src/routes/forms.ts` mounted at `/api/itsm/forms`. Wire to `src/app.ts`. Run tests — expect PASS.
 
 ## 6. Requests read endpoints
 
-- [ ] 6.1 Write failing `__tests__/requests.test.ts` for GET list (sorted desc by submittedAt, filters: status, formId, requesterGroup), GET by id.
-- [ ] 6.2 Implement `src/routes/requests.ts` (read routes only). Wire to `src/app.ts`. Run tests — expect PASS.
+- [x] 6.1 Write failing `__tests__/requests.test.ts` for GET list (sorted desc by submittedAt, filters: status, formId, requesterGroup), GET by id.
+- [x] 6.2 Implement `src/routes/requests.ts` (read routes only). Wire to `src/app.ts`. Run tests — expect PASS.
 
 ## 7. Request submit endpoint (POST /api/itsm/requests)
 
-- [ ] 7.1 Extend `__tests__/requests.test.ts` with submit tests: `{id}`-only response shape, Location header, server-assigned ULID, FormDef validation errors with field codes, env enum rejection, `meta.correlationId === _id`.
-- [ ] 7.2 Implement `src/services/requestService.ts` with `submit({demoUser, body})` per design.md (ULID + FormDef load + validate + Mongoose create).
-- [ ] 7.3 Wire `POST /api/itsm/requests` to call `requestService.submit`; respond `201` with `{ id }` and `Location` header.
+- [x] 7.1 Extend `__tests__/requests.test.ts` with submit tests: `{id}`-only response shape, Location header, server-assigned ULID, FormDef validation errors with field codes, env enum rejection, `meta.correlationId === _id`.
+- [x] 7.2 Implement `src/services/requestService.ts` with `submit({demoUser, body})` per design.md (ULID + FormDef load + validate + Mongoose create).
+- [x] 7.3 Wire `POST /api/itsm/requests` to call `requestService.submit`; respond `201` with `{ id }` and `Location` header.
 
 ## 8. Approval endpoint (POST /api/itsm/requests/:id/approvals)
 
-- [ ] 8.1 Extend `__tests__/requests.test.ts` with approval tests: approved transitions to provisioning/stage 1, rejected to failed with reason, requested_changes only appends, idempotency (no dedupe — 2 entries on duplicate POST), 403 for operator, 404 for unknown id, 400 for invalid action enum.
-- [ ] 8.2 Extend `requestService.ts` with `decide({id, demoUser, body})` performing single `findByIdAndUpdate` with `$push` always + conditional `$set`.
-- [ ] 8.3 Wire `POST /api/itsm/requests/:id/approvals` (gated by `requireAdmin`). Run tests — expect PASS.
+- [x] 8.1 Extend `__tests__/requests.test.ts` with approval tests: approved transitions to provisioning/stage 1, rejected to failed with reason, requested_changes only appends, idempotency (no dedupe — 2 entries on duplicate POST), 403 for operator, 404 for unknown id, 400 for invalid action enum.
+- [x] 8.2 Extend `requestService.ts` with `decide({id, demoUser, body})` performing single `findByIdAndUpdate` with `$push` always + conditional `$set`.
+- [x] 8.3 Wire `POST /api/itsm/requests/:id/approvals` (gated by `requireAdmin`). Run tests — expect PASS.
 
 ## 9. Users CRUD endpoints (admin)
 
-- [ ] 9.1 Write failing `__tests__/users.test.ts` (list/get/create/update; 403 for operator; 400 bad role; 409 dup; 404 unknown; PATCH whitelist).
-- [ ] 9.2 Implement `src/services/userAdminService.ts`.
-- [ ] 9.3 Implement `src/routes/users.ts` (all routes admin-gated). Wire to `src/app.ts`.
+- [x] 9.1 Write failing `__tests__/users.test.ts` (list/get/create/update; 403 for operator; 400 bad role; 409 dup; 404 unknown; PATCH whitelist).
+- [x] 9.2 Implement `src/services/userAdminService.ts`.
+- [x] 9.3 Implement `src/routes/users.ts` (all routes admin-gated). Wire to `src/app.ts`.
 
 ## 10. Groups CRUD endpoints (admin)
 
-- [ ] 10.1 Write failing `__tests__/groups.test.ts` (list/get/create/update; 403/409/404/400 paths; PATCH replaces `users[]` and `forms[]` wholesale).
-- [ ] 10.2 Implement `src/services/groupAdminService.ts`.
-- [ ] 10.3 Implement `src/routes/groups.ts` (all routes admin-gated). Wire to `src/app.ts`.
+- [x] 10.1 Write failing `__tests__/groups.test.ts` (list/get/create/update; 403/409/404/400 paths; PATCH replaces `users[]` and `forms[]` wholesale).
+- [x] 10.2 Implement `src/services/groupAdminService.ts`.
+- [x] 10.3 Implement `src/routes/groups.ts` (all routes admin-gated). Wire to `src/app.ts`.
 
 ## 11. OpenAPI spec + Dockerfile
 
-- [ ] 11.1 Author `src/openapi.yaml` (OpenAPI 3.1) covering all routes (2 health + 1 metrics + 1 self-spec + 4 forms + 4 requests + 4 users + 4 groups). Include `X-Demo-User` apiKey scheme and admin security requirement.
-- [ ] 11.2 Write `__tests__/openapi.test.ts` that loads the spec, parses with `js-yaml`, walks `buildApp()`'s registered Express routes, and asserts every route is present in `paths.<path>.<method>`.
-- [ ] 11.3 Write multi-stage `Dockerfile` (Node 20 alpine, non-root, healthcheck) and `.dockerignore`.
-- [ ] 11.4 Wire `GET /api/itsm/openapi.yaml` to serve the YAML file.
-- [ ] 11.5 Build the image locally to verify (`docker build -t gdfkube-itsm-api:local gdfkube-src/gdfkube-itsm/server/`).
+- [x] 11.1 Author `src/openapi.yaml` (OpenAPI 3.1) covering all routes (2 health + 1 metrics + 1 self-spec + 4 forms + 4 requests + 4 users + 4 groups). Include `X-Demo-User` apiKey scheme and admin security requirement.
+- [x] 11.2 Write `__tests__/openapi.test.ts` that loads the spec, parses with `js-yaml`, walks `buildApp()`'s registered Express routes, and asserts every route is present in `paths.<path>.<method>`.
+- [x] 11.3 Write multi-stage `Dockerfile` (Node 20 alpine, non-root, healthcheck) and `.dockerignore`.
+- [x] 11.4 Wire `GET /api/itsm/openapi.yaml` to serve the YAML file.
+- [x] 11.5 Build the image locally to verify (`docker build -t gdfkube-itsm-api:local gdfkube-src/gdfkube-itsm/server/`).
 
 ## 12. Seed exporter + mongosh seed script
 
