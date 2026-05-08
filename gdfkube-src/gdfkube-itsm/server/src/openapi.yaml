@@ -1,0 +1,507 @@
+openapi: "3.1.0"
+info:
+  title: gdfkube ITSM API
+  version: "0.1.0"
+  description: Backend API for the gdfkube ITSM self-service portal
+servers:
+  - url: /
+components:
+  securitySchemes:
+    DemoUser:
+      type: apiKey
+      in: header
+      name: X-Demo-User
+      description: Username of the demo persona (e.g. maria.costa)
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details: {}
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+    FormDef:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        topic:
+          type: string
+        status:
+          type: string
+          enum: [active, disabled]
+        fields:
+          type: array
+          items:
+            type: object
+        templates:
+          type: array
+          items:
+            type: object
+    Request:
+      type: object
+      properties:
+        id:
+          type: string
+        formId:
+          type: string
+        env:
+          type: string
+          enum: [production, staging, development]
+        status:
+          type: string
+          enum: [approval, provisioning, ready, failed]
+        stage:
+          type: integer
+        submittedAt:
+          type: string
+        requester:
+          type: object
+        requesterGroupName:
+          type: string
+        vars:
+          type: object
+        meta:
+          type: object
+        policyChecks:
+          type: array
+          items:
+            type: object
+        approvalChain:
+          type: array
+          items:
+            type: object
+        reason:
+          type: string
+          nullable: true
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [operator, admin, approver, service]
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        fullName:
+          type: string
+        users:
+          type: array
+          items:
+            type: string
+        forms:
+          type: array
+          items:
+            type: string
+security:
+  - DemoUser: []
+paths:
+  /healthz/live:
+    get:
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /healthz/ready:
+    get:
+      summary: Readiness probe (pings MongoDB)
+      security: []
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+        "503":
+          description: Not ready
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      security: []
+      responses:
+        "200":
+          description: Prometheus text format
+          content:
+            text/plain: {}
+  /api/itsm/openapi.yaml:
+    get:
+      summary: Serve this OpenAPI spec
+      security: []
+      responses:
+        "200":
+          description: YAML spec file
+          content:
+            text/yaml: {}
+  /api/itsm/forms:
+    get:
+      summary: List forms (active only unless admin passes ?include=disabled)
+      parameters:
+        - in: query
+          name: include
+          schema:
+            type: string
+            enum: [disabled]
+      responses:
+        "200":
+          description: Array of FormDef
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FormDef"
+        "403":
+          description: Operator cannot list disabled forms
+    post:
+      summary: Create a new form (admin only)
+      security:
+        - DemoUser: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FormDef"
+      responses:
+        "201":
+          description: Created
+        "403":
+          description: Admin role required
+        "409":
+          description: Duplicate id
+  /api/itsm/forms/{id}:
+    get:
+      summary: Get form by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: FormDef
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormDef"
+        "404":
+          description: Not found
+    patch:
+      summary: Update form (admin only)
+      security:
+        - DemoUser: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Updated FormDef
+        "400":
+          description: Invalid field
+        "403":
+          description: Admin role required
+        "404":
+          description: Not found
+  /api/itsm/requests:
+    get:
+      summary: List requests (sorted desc by submittedAt)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: formId
+          schema:
+            type: string
+        - in: query
+          name: requesterGroup
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Array of Request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Request"
+    post:
+      summary: Submit a new request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [formId, env]
+              properties:
+                formId:
+                  type: string
+                env:
+                  type: string
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+        "400":
+          description: Validation error
+  /api/itsm/requests/{id}:
+    get:
+      summary: Get request by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Request object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Request"
+        "404":
+          description: Not found
+  /api/itsm/requests/{id}/approvals:
+    post:
+      summary: Submit approval decision (admin only)
+      security:
+        - DemoUser: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [approved, rejected, requested_changes]
+                comment:
+                  type: string
+      responses:
+        "200":
+          description: Updated request
+        "400":
+          description: Invalid action
+        "403":
+          description: Admin role required
+        "404":
+          description: Request not found
+  /api/itsm/users:
+    get:
+      summary: List users (admin only)
+      security:
+        - DemoUser: []
+      responses:
+        "200":
+          description: Array of User
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "403":
+          description: Admin role required
+    post:
+      summary: Create user (admin only)
+      security:
+        - DemoUser: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Invalid role
+        "403":
+          description: Admin role required
+        "409":
+          description: Duplicate id
+  /api/itsm/users/{id}:
+    get:
+      summary: Get user by id (admin only)
+      security:
+        - DemoUser: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "403":
+          description: Admin role required
+        "404":
+          description: Not found
+    patch:
+      summary: Update user (admin only)
+      security:
+        - DemoUser: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Updated User
+        "400":
+          description: Invalid field or role
+        "403":
+          description: Admin role required
+        "404":
+          description: Not found
+  /api/itsm/groups:
+    get:
+      summary: List groups (admin only)
+      security:
+        - DemoUser: []
+      responses:
+        "200":
+          description: Array of Group
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Group"
+        "403":
+          description: Admin role required
+    post:
+      summary: Create group (admin only)
+      security:
+        - DemoUser: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Group"
+      responses:
+        "201":
+          description: Created
+        "403":
+          description: Admin role required
+        "409":
+          description: Duplicate id
+  /api/itsm/groups/{id}:
+    get:
+      summary: Get group by id (admin only)
+      security:
+        - DemoUser: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "403":
+          description: Admin role required
+        "404":
+          description: Not found
+    patch:
+      summary: Update group (admin only)
+      security:
+        - DemoUser: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Updated Group
+        "400":
+          description: Invalid field
+        "403":
+          description: Admin role required
+        "404":
+          description: Not found
