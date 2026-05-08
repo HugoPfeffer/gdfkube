@@ -5,6 +5,9 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
+    depends_on:
+      gdfkube-itsm-api:
+        condition: service_healthy
     networks:
       - gdfkube-net
     healthcheck:
@@ -12,6 +15,36 @@ services:
       interval: 10s
       timeout: 3s
       start_period: 10s
+      retries: 3
+
+  mongo-seed:
+    image: mongo:7.0
+    restart: "no"
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./gdfkube-src/gdfkube-infra/mongodb/seed-collections.js:/scripts/seed-collections.js:ro
+      - ./gdfkube-src/gdfkube-infra/mongodb/seed-data:/seed-data:ro
+    networks:
+      - gdfkube-net
+    entrypoint: ["mongosh", "--host", "mongo1:27017", "/scripts/seed-collections.js"]
+
+  gdfkube-itsm-api:
+    build: ./gdfkube-src/gdfkube-itsm/server
+    restart: unless-stopped
+    environment:
+      MONGO_URL: mongodb://mongo1:27017/gdfkube?replicaSet=rs0
+    depends_on:
+      mongo-seed:
+        condition: service_completed_successfully
+    networks:
+      - gdfkube-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz/live"]
+      interval: 10s
+      timeout: 3s
+      start_period: 15s
       retries: 3
 
   mongo1:

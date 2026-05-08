@@ -1,0 +1,90 @@
+[
+  {
+    "_id": "joao.silva",
+    "name": "João Silva",
+    "fullName": "João Silva",
+    "email": "joao.silva@saude.gov",
+    "role": "operator",
+    "group": "saude",
+    "status": "active",
+    "mfa": null,
+    "last": "2 min ago"
+  },
+  {
+    "_id": "maria.costa",
+    "name": "Maria Costa",
+    "fullName": "Maria Costa",
+    "email": "m.costa@setic.gov",
+    "role": "admin",
+    "group": "setic",
+    "status": "active",
+    "mfa": null,
+    "last": "now"
+  },
+  {
+    "_id": "carlos.mendes",
+    "name": "Carlos Mendes",
+    "fullName": "Carlos Mendes",
+    "email": "c.mendes@transportes.gov",
+    "role": "operator",
+    "group": "transportes",
+    "status": "active",
+    "mfa": null,
+    "last": "18m ago"
+  },
+  {
+    "_id": "ana.rodrigues",
+    "name": "Ana Rodrigues",
+    "fullName": "Ana Rodrigues",
+    "email": "ana.r@fazenda.gov",
+    "role": "operator",
+    "group": "fazenda",
+    "status": "active",
+    "mfa": null,
+    "last": "1h ago"
+  },
+  {
+    "_id": "pedro.almeida",
+    "name": "Pedro Almeida",
+    "fullName": "Pedro Almeida",
+    "email": "p.almeida@agricultura.gov",
+    "role": "operator",
+    "group": "agricultura",
+    "status": "disabled",
+    "mfa": null,
+    "last": "3d ago"
+  },
+  {
+    "_id": "lucia.fernandes",
+    "name": "Lúcia Fernandes",
+    "fullName": "Lúcia Fernandes",
+    "email": "l.fernandes@seguranca.gov",
+    "role": "approver",
+    "group": "seguranca",
+    "status": "active",
+    "mfa": null,
+    "last": "yesterday"
+  },
+  {
+    "_id": "rafael.souza",
+    "name": "Rafael Souza",
+    "fullName": "Rafael Souza",
+    "email": "r.souza@educacao.gov",
+    "role": "operator",
+    "group": "educacao",
+    "status": "active",
+    "mfa": null,
+    "last": "5h ago"
+  },
+  {
+    "_id": "platform.bot",
+    "name": "Platform Service",
+    "fullName": "Platform Service",
+    "email": "platform@setic.gov",
+    "role": "service",
+    "group": "setic",
+    "status": "active",
+    "mfa": null,
+    "last": "now"
+  }
+]

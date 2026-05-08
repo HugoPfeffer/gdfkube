@@ -72,18 +72,18 @@
 
 ## 12. Seed exporter + mongosh seed script
 
-- [ ] 12.1 Write `gdfkube-src/gdfkube-itsm/scripts/export-seed-data.mjs` using `tsx` to import `src/data/seeds.ts`, `src/data/adminSeeds.ts`, `src/data/defaultTemplates.ts`. Translate to four JSON files in `gdfkube-src/gdfkube-infra/mongodb/seed-data/{requests,forms,users,groups}.json`. For requests: `_id = r.id`, `meta.correlationId = r.requestId ?? r.id`. For forms: attach `fields[]` from `FIELDS[id]` and `templates[]` from `DEFAULT_TEMPLATES[id]`. For users/groups: `_id = entity.id`.
-- [ ] 12.2 Add `seed:export` npm script to `gdfkube-src/gdfkube-itsm/package.json`. Run it; verify all four files exist with non-empty arrays.
-- [ ] 12.3 Write `gdfkube-src/gdfkube-infra/mongodb/seed-collections.js` (mongosh, idempotent): `bulkWrite` upserts for all four collections + `createIndex` calls per `docs/03-mongodb.md:138-145` plus `users.{group:1}`, `users.{role:1}`, `groups.{name:1}`.
-- [ ] 12.4 Manually verify idempotency by running the seed script twice via `docker run` and inspecting `upsertedCount` (expect > 0 then 0). Verify counts match seed sizes.
-- [ ] 12.5 Update `gdfkube-src/gdfkube-infra/mongodb/README.md` with seed-script usage and CDC-watched vs admin-only distinction.
+- [x] 12.1 Write `gdfkube-src/gdfkube-itsm/scripts/export-seed-data.mjs` using `tsx` to import `src/data/seeds.ts`, `src/data/adminSeeds.ts`, `src/data/defaultTemplates.ts`. Translate to four JSON files in `gdfkube-src/gdfkube-infra/mongodb/seed-data/{requests,forms,users,groups}.json`. For requests: `_id = r.id`, `meta.correlationId = r.requestId ?? r.id`. For forms: attach `fields[]` from `FIELDS[id]` and `templates[]` from `DEFAULT_TEMPLATES[id]`. For users/groups: `_id = entity.id`.
+- [x] 12.2 Add `seed:export` npm script to `gdfkube-src/gdfkube-itsm/package.json`. Run it; verify all four files exist with non-empty arrays.
+- [x] 12.3 Write `gdfkube-src/gdfkube-infra/mongodb/seed-collections.js` (mongosh, idempotent): `bulkWrite` upserts for all four collections + `createIndex` calls per `docs/03-mongodb.md:138-145` plus `users.{group:1}`, `users.{role:1}`, `groups.{name:1}`.
+- [x] 12.4 Manually verify idempotency by running the seed script twice via `docker run` and inspecting `upsertedCount` (expect > 0 then 0). Verify counts match seed sizes.
+- [x] 12.5 Update `gdfkube-src/gdfkube-infra/mongodb/README.md` with seed-script usage and CDC-watched vs admin-only distinction.
 
 ## 13. Compose wiring + nginx /api/itsm/ proxy
 
-- [ ] 13.1 Edit `gdfkube-src/gdfkube-itsm/nginx.conf` to add the `location /api/itsm/` block *before* the SPA-fallback `location /`. Forward `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Request-Id`.
-- [ ] 13.2 Edit `docker-compose.yml`: add `mongo-seed` (one-shot, `service_completed_successfully`) and `gdfkube-itsm-api` (build from `server/`, `MONGO_URL`, healthcheck). Tighten the existing `itsm` service `depends_on` to `gdfkube-itsm-api: { condition: service_healthy }`.
-- [ ] 13.3 Bring up the full stack from clean: `docker compose down -v && docker compose up -d --build`. Confirm `mongo-init` and `mongo-seed` exited 0; `gdfkube-itsm-api` and `itsm` are healthy.
-- [ ] 13.4 Verify the proxy end-to-end via `curl http://127.0.0.1:8080/api/itsm/forms`, `requests`, `users`, `groups` (operator vs admin), and the 403 path.
+- [x] 13.1 Edit `gdfkube-src/gdfkube-itsm/nginx.conf` to add the `location /api/itsm/` block *before* the SPA-fallback `location /`. Forward `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Request-Id`.
+- [x] 13.2 Edit `docker-compose.yml`: add `mongo-seed` (one-shot, `service_completed_successfully`) and `gdfkube-itsm-api` (build from `server/`, `MONGO_URL`, healthcheck). Tighten the existing `itsm` service `depends_on` to `gdfkube-itsm-api: { condition: service_healthy }`.
+- [x] 13.3 Bring up the full stack from clean: `docker compose down -v && docker compose up -d --build`. Confirm `mongo-init` and `mongo-seed` exited 0; `gdfkube-itsm-api` and `itsm` are healthy.
+- [x] 13.4 Verify the proxy end-to-end via `curl http://127.0.0.1:8080/api/itsm/forms`, `requests`, `users`, `groups` (operator vs admin), and the 403 path.
 
 ## 14. SPA api client + Bootstrap hydration
 
