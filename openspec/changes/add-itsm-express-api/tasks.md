@@ -87,28 +87,28 @@
 
 ## 14. SPA api client + Bootstrap hydration
 
-- [ ] 14.1 Write failing `src/api/__tests__/itsmApi.test.ts` with `vi.stubGlobal('fetch', ...)`: cover all four namespaces (`requests`, `forms`, `users`, `groups`); thin POST body for `requests.create`; PATCH path for updates; `X-Demo-User` from a configurable getter; `Content-Type: application/json` on writes; non-2xx throws `ApiError` with `status` and `details`; `AbortController` surfaces as `AbortError` and is not logged.
-- [ ] 14.2 Implement `src/api/itsmApi.ts` with `setDemoUserResolver(fn)` and the four namespaces.
-- [ ] 14.3 Write failing `src/shell/__tests__/Bootstrap.test.tsx` (loader, mounts `<GdfDataProvider>` with all slices populated, error+retry, abort on unmount).
-- [ ] 14.4 Implement `src/shell/Bootstrap.tsx`: parallel `Promise.all` for `forms.list` + `requests.list`; conditionally fetch `users.list` + `groups.list` only when current persona is admin (else fall back to a tiny built-in list). Derive `templates` from `forms[].templates`; derive `fields` from `forms[].fields`.
-- [ ] 14.5 Edit `src/main.tsx` to wrap `<App>` in `<Bootstrap>`. Drop direct imports of `REQUESTS`, `FORMS`, `FIELDS`, `USERS`, `GROUPS`, `DEFAULT_TEMPLATES` from initial-state assembly. Wire `setDemoUserResolver` to read the current persona from the SPA's user accessor.
-- [ ] 14.6 Edit `vite.config.ts` to add `server.proxy['/api/itsm'] = 'http://127.0.0.1:8080'`.
-- [ ] 14.7 Run the full SPA unit suite — every existing `GdfDataProvider`-based test must still pass (provider contract unchanged).
+- [x] 14.1 Write failing `src/api/__tests__/itsmApi.test.ts` with `vi.stubGlobal('fetch', ...)`: cover all four namespaces (`requests`, `forms`, `users`, `groups`); thin POST body for `requests.create`; PATCH path for updates; `X-Demo-User` from a configurable getter; `Content-Type: application/json` on writes; non-2xx throws `ApiError` with `status` and `details`; `AbortController` surfaces as `AbortError` and is not logged.
+- [x] 14.2 Implement `src/api/itsmApi.ts` with `setDemoUserResolver(fn)` and the four namespaces.
+- [x] 14.3 Write failing `src/shell/__tests__/Bootstrap.test.tsx` (loader, mounts `<GdfDataProvider>` with all slices populated, error+retry, abort on unmount).
+- [x] 14.4 Implement `src/shell/Bootstrap.tsx`: parallel `Promise.all` for `forms.list` + `requests.list`; conditionally fetch `users.list` + `groups.list` only when current persona is admin (else fall back to a tiny built-in list). Derive `templates` from `forms[].templates`; derive `fields` from `forms[].fields`.
+- [x] 14.5 Edit `src/main.tsx` to wrap `<App>` in `<Bootstrap>`. Drop direct imports of `REQUESTS`, `FORMS`, `FIELDS`, `USERS`, `GROUPS`, `DEFAULT_TEMPLATES` from initial-state assembly. Wire `setDemoUserResolver` to read the current persona from the SPA's user accessor.
+- [x] 14.6 Edit `vite.config.ts` to add `server.proxy['/api/itsm'] = 'http://127.0.0.1:8080'`.
+- [x] 14.7 Run the full SPA unit suite — every existing `GdfDataProvider`-based test must still pass (provider contract unchanged).
 
 ## 15. Wire SPA writes through API (requests + forms admin)
 
-- [ ] 15.1 Update `src/forms/__tests__/GenericRequest.test.tsx` to mock `itsmApi.requests.create` (returns `{id}`) + `.get` (returns full Request). Assert thin body, follow-up GET, dispatch from canonical doc, error toast on reject, submit disabled while in-flight.
-- [ ] 15.2 Modify `src/forms/GenericRequest.tsx:141-187`: `onSubmit` becomes async; thin body; await create then get; dispatch with canonical doc.
-- [ ] 15.3 Update `src/pages/__tests__/Approvals.test.tsx` to mock `itsmApi.requests.decide` for both approve and reject; error path; buttons disabled while in-flight.
-- [ ] 15.4 Modify `src/pages/Approvals.tsx:124-198`: `commitApproval`/`commitReject` async; await `decide`; dispatch from response.
-- [ ] 15.5 For each admin form page (locate via `git ls-files | grep -iE 'admin.*form|FieldsTable|FormDesigner'`): replace `dispatch(ADD_FORM | UPDATE_FORM | REORDER_FIELDS | UPDATE_FIELD | UPDATE_TEMPLATES)` with `await itsmApi.forms.<create|update>(...)` then dispatch with response. Add `isSaving` state. Update tests to mock the API.
-- [ ] 15.6 Run full SPA suite — all green.
+- [x] 15.1 Update `src/forms/__tests__/GenericRequest.test.tsx` to mock `itsmApi.requests.create` (returns `{id}`) + `.get` (returns full Request). Assert thin body, follow-up GET, dispatch from canonical doc, error toast on reject, submit disabled while in-flight.
+- [x] 15.2 Modify `src/forms/GenericRequest.tsx:141-187`: `onSubmit` becomes async; thin body; await create then get; dispatch with canonical doc.
+- [x] 15.3 Update `src/pages/__tests__/Approvals.test.tsx` to mock `itsmApi.requests.decide` for both approve and reject; error path; buttons disabled while in-flight.
+- [x] 15.4 Modify `src/pages/Approvals.tsx:124-198`: `commitApproval`/`commitReject` async; await `decide`; dispatch from response.
+- [x] 15.5 For each admin form page (locate via `git ls-files | grep -iE 'admin.*form|FieldsTable|FormDesigner'`): replace `dispatch(ADD_FORM | UPDATE_FORM | REORDER_FIELDS | UPDATE_FIELD | UPDATE_TEMPLATES)` with `await itsmApi.forms.<create|update>(...)` then dispatch with response. Add `isSaving` state. Update tests to mock the API.
+- [x] 15.6 Run full SPA suite — all green.
 
 ## 16. Wire SPA writes through API (users + groups admin)
 
-- [ ] 16.1 For each admin user page (locate via `git ls-files | grep -iE 'admin.*user|UserTable|AdminUsers'`): mock `itsmApi.users.{create,update}` in tests; modify pages to await before dispatch; add `isSaving`. Run tests.
-- [ ] 16.2 For each admin group page (locate via `git ls-files | grep -iE 'admin.*group|GroupTable|AdminGroups'`): mock `itsmApi.groups.{create,update}` in tests; modify pages to await before dispatch; add `isSaving`. Run tests.
-- [ ] 16.3 Run full SPA suite — all green.
+- [x] 16.1 For each admin user page (locate via `git ls-files | grep -iE 'admin.*user|UserTable|AdminUsers'`): mock `itsmApi.users.{create,update}` in tests; modify pages to await before dispatch; add `isSaving`. Run tests.
+- [x] 16.2 For each admin group page (locate via `git ls-files | grep -iE 'admin.*group|GroupTable|AdminGroups'`): mock `itsmApi.groups.{create,update}` in tests; modify pages to await before dispatch; add `isSaving`. Run tests.
+- [x] 16.3 Run full SPA suite — all green.
 
 ## 17. E2E + verify + READMEs
 
