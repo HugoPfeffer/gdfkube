@@ -11,12 +11,25 @@
 //   - "Disable account" red ghost button at the bottom; clicking it sets
 //     status to disabled and emits a confirmation toast.
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GdfDataProvider, type DataState } from '../../state/dataContext';
 import type { Group, User } from '../../types';
 import { UserEditor } from '../UserEditor';
+import { itsmApi } from '../../api/itsmApi';
+
+vi.mock('../../api/itsmApi', () => ({
+  itsmApi: { users: { update: vi.fn() } },
+}));
+
+const mockUpdate = itsmApi.users.update as ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  mockUpdate.mockResolvedValue({});
+});
+
+afterEach(() => { vi.clearAllMocks(); });
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
@@ -182,7 +195,7 @@ describe('UserEditor', () => {
     expect(editor?.contains(btn)).toBe(true);
   });
 
-  it('clicking "Disable account" sets status to disabled and emits a confirmation toast', () => {
+  it('clicking "Disable account" sets status to disabled and emits a confirmation toast', async () => {
     const user = makeUser({ status: 'active' });
     const setToast = vi.fn();
     render(
@@ -191,10 +204,10 @@ describe('UserEditor', () => {
         <UserEditor user={user} onClose={vi.fn()} setToast={setToast} />,
       ),
     );
-    fireEvent.click(screen.getByRole('button', { name: /disable account/i }));
-    // Status radio-card now disabled.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /disable account/i }));
+    });
     expect(screen.getByRole('radio', { name: /^disabled$/i }).getAttribute('aria-checked')).toBe('true');
-    // Confirmation toast emitted.
     expect(setToast).toHaveBeenCalledTimes(1);
     const toast = setToast.mock.calls[0]![0];
     expect(toast.title).toMatch(/disabled/i);

@@ -7,9 +7,9 @@
 //   - On Create the page dispatches ADD_FORM and the new form lands in
 //     `state.forms`. The page also calls onClose to navigate back.
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   GdfDataProvider,
   useGdfData,
@@ -17,6 +17,23 @@ import {
 } from '../../state/dataContext';
 import type { FormDef } from '../../types';
 import { NewFormPage } from '../NewFormPage';
+import { itsmApi } from '../../api/itsmApi';
+
+vi.mock('../../api/itsmApi', () => ({
+  itsmApi: {
+    forms: { create: vi.fn() },
+  },
+}));
+
+const mockCreate = itsmApi.forms.create as ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  mockCreate.mockImplementation((body: Record<string, unknown>) =>
+    Promise.resolve({ id: body._id, ...body }),
+  );
+});
+
+afterEach(() => { vi.clearAllMocks(); });
 
 function makeForm(overrides: Partial<FormDef> = {}): FormDef {
   return {
@@ -91,7 +108,7 @@ describe('NewFormPage', () => {
     expect(idInput.getAttribute('aria-invalid')).toBe('true');
   });
 
-  it('Create dispatches ADD_FORM and seeds an empty fields slice', () => {
+  it('Create dispatches ADD_FORM and seeds an empty fields slice', async () => {
     const observed: DataState[] = [];
     const onClose = vi.fn();
     render(
@@ -109,8 +126,11 @@ describe('NewFormPage', () => {
 
     fireEvent.change(idInput, { target: { value: 'backup-restore' } });
     fireEvent.change(nameInput, { target: { value: 'Backup & Restore' } });
-    fireEvent.click(screen.getByRole('button', { name: /create form/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create form/i }));
+    });
 
+    expect(mockCreate).toHaveBeenCalledTimes(1);
     const last = observed[observed.length - 1];
     expect(last?.forms.map((f) => f.id)).toContain('backup-restore');
     expect(last?.fields['backup-restore']).toEqual([]);
@@ -168,7 +188,7 @@ describe('NewFormPage', () => {
     expect(screen.getByRole('button', { name: /add field/i })).toBeInTheDocument();
   });
 
-  it('Create persists drafts via ADD_FORM + UPDATE_FIELD + UPDATE_TEMPLATES', () => {
+  it('Create persists drafts via ADD_FORM + UPDATE_FIELD + UPDATE_TEMPLATES', async () => {
     const observed: DataState[] = [];
     const onClose = vi.fn();
     render(
@@ -200,8 +220,9 @@ describe('NewFormPage', () => {
     // The template editor renders at least one default file.
     expect(screen.getByTestId('template-textarea')).toBeInTheDocument();
 
-    // Click Create.
-    fireEvent.click(screen.getByRole('button', { name: /create form/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create form/i }));
+    });
 
     const last = observed[observed.length - 1]!;
     expect(last.forms.map((f) => f.id)).toContain('newform');

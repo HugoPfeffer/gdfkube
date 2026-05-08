@@ -10,15 +10,30 @@
 //   - ManagedClusterSet is a `<select>` with seeded options
 //     `default`, `production`, `staging`, `internal`.
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   GdfDataProvider,
   useGdfData,
   type DataState,
 } from '../../state/dataContext';
 import { NewGroupPage } from '../NewGroupPage';
+import { itsmApi } from '../../api/itsmApi';
+
+vi.mock('../../api/itsmApi', () => ({
+  itsmApi: { groups: { create: vi.fn() } },
+}));
+
+const mockCreate = itsmApi.groups.create as ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  mockCreate.mockImplementation((body: Record<string, unknown>) =>
+    Promise.resolve({ id: body._id, ...body }),
+  );
+});
+
+afterEach(() => { vi.clearAllMocks(); });
 
 function makeState(overrides: Partial<DataState> = {}): DataState {
   return {
@@ -106,7 +121,7 @@ describe('NewGroupPage', () => {
     expect(create.disabled).toBe(false);
   });
 
-  it('Create dispatches ADD_GROUP and calls onClose', () => {
+  it('Create dispatches ADD_GROUP and calls onClose', async () => {
     const observed: DataState[] = [];
     const onClose = vi.fn();
     render(
@@ -123,8 +138,11 @@ describe('NewGroupPage', () => {
     fireEvent.change(screen.getByLabelText(/display name/i), {
       target: { value: 'Cultura' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /create group/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create group/i }));
+    });
 
+    expect(mockCreate).toHaveBeenCalledTimes(1);
     const last = observed[observed.length - 1];
     expect(last?.groups.map((g) => g.id)).toContain('cultura');
     expect(onClose).toHaveBeenCalledTimes(1);

@@ -9,6 +9,7 @@
 // Create disabled until id and display name are non-empty.
 
 import { useState } from 'react';
+import { itsmApi } from '../api/itsmApi';
 import { useGdfDispatch } from '../state/dataContext';
 import type { Group } from '../types';
 
@@ -28,6 +29,7 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
   const [repoDirty, setRepoDirty] = useState(false);
   const [managedClusterSet, setManagedClusterSet] = useState<typeof MANAGED_CLUSTER_SETS[number]>('default');
   const [autoProvision, setAutoProvision] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const onIdChange = (next: string) => {
     const cleaned = next.toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -45,19 +47,31 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
   const trimmedId = id.trim();
   const canCreate = trimmedId !== '' && displayName.trim() !== '';
 
-  const handleCreate = () => {
-    if (!canCreate) return;
-    const group: Group = {
-      id: trimmedId,
-      name: displayName.trim(),
-      fullName: fullName.trim() || displayName.trim(),
-      users: 0,
-      forms: 0,
-      repo: repo.trim() || `gdfkube-${trimmedId}`,
-      clusters: 0,
-    };
-    dispatch({ type: 'ADD_GROUP', group });
-    onClose();
+  const handleCreate = async () => {
+    if (!canCreate || isSaving) return;
+    setIsSaving(true);
+    try {
+      const body: Record<string, unknown> = {
+        _id: trimmedId,
+        name: displayName.trim(),
+        fullName: fullName.trim() || displayName.trim(),
+        repo: repo.trim() || `gdfkube-${trimmedId}`,
+      };
+      const created = await itsmApi.groups.create(body);
+      const group: Group = {
+        id: (created.id as string) ?? trimmedId,
+        name: (created.name as string) ?? displayName.trim(),
+        fullName: (created.fullName as string) ?? (fullName.trim() || displayName.trim()),
+        users: 0,
+        forms: 0,
+        repo: (created.repo as string) ?? (repo.trim() || `gdfkube-${trimmedId}`),
+        clusters: 0,
+      };
+      dispatch({ type: 'ADD_GROUP', group });
+      onClose();
+    } catch {
+      setIsSaving(false);
+    }
   };
 
   const idDisplay = trimmedId || '{id}';
@@ -69,8 +83,8 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
         <button type="button" className="btn ghost sm" onClick={onClose}>← All groups</button>
         <span className="spacer" />
         <button type="button" className="btn sm" onClick={onClose}>Cancel</button>
-        <button type="button" className="btn primary sm" disabled={!canCreate} onClick={handleCreate}>
-          Create group
+        <button type="button" className="btn primary sm" disabled={!canCreate || isSaving} onClick={handleCreate}>
+          {isSaving ? 'Creating…' : 'Create group'}
         </button>
       </div>
 

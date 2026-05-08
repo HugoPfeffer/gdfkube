@@ -13,6 +13,12 @@ import { GdfDataProvider, type DataState } from '../../../state/dataContext';
 import type { Field, FormDef } from '../../../types';
 import { Forms } from '../Forms';
 
+vi.mock('../../../api/itsmApi', () => ({
+  itsmApi: {
+    forms: { create: vi.fn().mockResolvedValue({}), update: vi.fn().mockResolvedValue({}) },
+  },
+}));
+
 function makeForm(overrides: Partial<FormDef> = {}): FormDef {
   return {
     id: 'cluster-request',

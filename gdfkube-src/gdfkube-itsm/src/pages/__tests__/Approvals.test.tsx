@@ -21,9 +21,9 @@
 //
 // Operator-redirect from the approvals route is exercised in App.test.tsx.
 
-import { fireEvent, render, within } from '@testing-library/react';
+import { act, fireEvent, render, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GdfDataProvider, type DataState } from '../../state/dataContext';
 import type {
   PolicyCheck,
@@ -32,6 +32,17 @@ import type {
   User,
 } from '../../types';
 import { Approvals } from '../Approvals';
+import { itsmApi } from '../../api/itsmApi';
+
+vi.mock('../../api/itsmApi', () => ({
+  itsmApi: {
+    requests: {
+      decide: vi.fn(),
+    },
+  },
+}));
+
+const mockDecide = itsmApi.requests.decide as ReturnType<typeof vi.fn>;
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
@@ -100,6 +111,28 @@ function makeState(requests: Request[]): DataState {
 function withProvider(state: DataState, ui: ReactNode) {
   return <GdfDataProvider initial={state}>{ui}</GdfDataProvider>;
 }
+
+beforeEach(() => {
+  mockDecide.mockImplementation((_id: string, body: Record<string, unknown>) => {
+    const action = body.action as string;
+    return Promise.resolve({
+      _id: _id,
+      id: _id,
+      status: action === 'approved' ? 'provisioning' : 'failed',
+      stage: action === 'approved' ? 1 : 0,
+      approvalChain: [{
+        actor: 'Maria Costa',
+        action,
+        comment: body.comment,
+        at: new Date().toISOString(),
+      }],
+    });
+  });
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 const adminUser = makeUser();
 
@@ -310,7 +343,7 @@ describe('Approvals', () => {
     expect(text).not.toMatch(/Estimated\s+cost/i);
   });
 
-  it('approving moves request out of queue, sets provisioning + stage=1, logs decided-this-session, and toasts', () => {
+  it('approving moves request out of queue, sets provisioning + stage=1, logs decided-this-session, and toasts', async () => {
     const requests = [
       makeRequest('REQ0010249'),
       makeRequest('REQ0010238'),
@@ -332,9 +365,10 @@ describe('Approvals', () => {
     const approveBtn = within(
       container.querySelector('[data-testid="decision-panel"]') as HTMLElement,
     ).getByRole('button', { name: /Approve/i });
-    fireEvent.click(approveBtn);
+    await act(async () => {
+      fireEvent.click(approveBtn);
+    });
 
-    // Removed from queue.
     const queue = container.querySelector(
       '[data-testid="approval-queue"]',
     ) as HTMLElement;
@@ -343,21 +377,19 @@ describe('Approvals', () => {
     );
     expect(ids).not.toContain('REQ0010249');
 
-    // Decided-this-session log includes it.
     const decided = container.querySelector(
       '[data-testid="decided-this-session"]',
     ) as HTMLElement;
     expect(decided).not.toBeNull();
     expect(decided.textContent).toContain('REQ0010249');
 
-    // Toast fired with success kind.
     expect(setToast).toHaveBeenCalled();
     const last = setToast.mock.calls.at(-1)?.[0];
     expect(last?.kind).toBe('success');
     expect(last?.title).toMatch(/approved/i);
   });
 
-  it('approving with a failing policy check first opens the override modal; status unchanged until Confirm', () => {
+  it('approving with a failing policy check first opens the override modal; status unchanged until Confirm', async () => {
     const requests = [
       makeRequest('REQ0010238', {
         policyChecks: [
@@ -399,10 +431,10 @@ describe('Approvals', () => {
       queue.querySelector('.approval-row[data-id="REQ0010238"]'),
     ).not.toBeNull();
 
-    // Click Confirm — approval is committed and modal closes.
-    fireEvent.click(within(modal).getByRole('button', { name: /Confirm/i }));
+    await act(async () => {
+      fireEvent.click(within(modal).getByRole('button', { name: /Confirm/i }));
+    });
 
-    // Modal gone, request gone from queue, decided log includes it.
     expect(
       container.querySelector('[data-testid="override-modal"]'),
     ).toBeNull();
@@ -461,7 +493,7 @@ describe('Approvals', () => {
     ).not.toBeNull();
   });
 
-  it('rejecting marks the request failed, removes from queue, and toasts', () => {
+  it('rejecting marks the request failed, removes from queue, and toasts', async () => {
     const requests = [makeRequest('REQ0010251')];
     const setToast = vi.fn();
     const { container } = render(
@@ -489,9 +521,10 @@ describe('Approvals', () => {
     });
 
     const rejectBtn = within(panel).getByRole('button', { name: /Reject/i });
-    fireEvent.click(rejectBtn);
+    await act(async () => {
+      fireEvent.click(rejectBtn);
+    });
 
-    // Removed from queue.
     const queue = container.querySelector(
       '[data-testid="approval-queue"]',
     ) as HTMLElement;
@@ -499,13 +532,11 @@ describe('Approvals', () => {
       queue.querySelector('.approval-row[data-id="REQ0010251"]'),
     ).toBeNull();
 
-    // Decided log includes it.
     const decided = container.querySelector(
       '[data-testid="decided-this-session"]',
     ) as HTMLElement;
     expect(decided.textContent).toContain('REQ0010251');
 
-    // Toast fired with warn kind.
     expect(setToast).toHaveBeenCalled();
     const last = setToast.mock.calls.at(-1)?.[0];
     expect(last?.kind).toBe('warn');
@@ -659,7 +690,7 @@ describe('Approvals', () => {
     expect(valueByLabel('Rejected today')).toBe('0');
   });
 
-  it('approving updates the In-queue and Approved-today KPI tiles in real time', () => {
+  it('approving updates the In-queue and Approved-today KPI tiles in real time', async () => {
     const requests = [
       makeRequest('REQ0010238'),
       makeRequest('REQ0010249'),
@@ -673,13 +704,15 @@ describe('Approvals', () => {
         '.approval-row[data-id="REQ0010238"]',
       ) as HTMLElement,
     );
-    fireEvent.click(
-      within(
-        container.querySelector(
-          '[data-testid="decision-panel"]',
-        ) as HTMLElement,
-      ).getByRole('button', { name: /Approve/i }),
-    );
+    await act(async () => {
+      fireEvent.click(
+        within(
+          container.querySelector(
+            '[data-testid="decision-panel"]',
+          ) as HTMLElement,
+        ).getByRole('button', { name: /Approve/i }),
+      );
+    });
 
     const valueByLabel = (lbl: string) => {
       const tiles = container.querySelectorAll('.approvals-page .page-head .kpi');
@@ -693,7 +726,7 @@ describe('Approvals', () => {
     expect(valueByLabel('Rejected today')).toBe('0');
   });
 
-  it('rejecting updates the In-queue and Rejected-today KPI tiles in real time', () => {
+  it('rejecting updates the In-queue and Rejected-today KPI tiles in real time', async () => {
     const requests = [makeRequest('REQ0010251')];
     const { container } = render(
       withProvider(makeState(requests), <Approvals {...defaultProps()} />),
@@ -710,7 +743,9 @@ describe('Approvals', () => {
     ) as HTMLElement;
     const textarea = panel.querySelector('textarea') as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'No.' } });
-    fireEvent.click(within(panel).getByRole('button', { name: /Reject/i }));
+    await act(async () => {
+      fireEvent.click(within(panel).getByRole('button', { name: /Reject/i }));
+    });
 
     const tiles = container.querySelectorAll('.approvals-page .page-head .kpi');
     const valueByLabel = (lbl: string) =>

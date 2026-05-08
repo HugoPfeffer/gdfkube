@@ -14,12 +14,25 @@
 // FieldsTable.test.tsx, so this file focuses on tab and field-control
 // behavior only.
 
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GdfDataProvider, type DataState } from '../../state/dataContext';
 import type { Field, FormDef } from '../../types';
 import { FormEditor } from '../FormEditor';
+import { itsmApi } from '../../api/itsmApi';
+
+vi.mock('../../api/itsmApi', () => ({
+  itsmApi: { forms: { update: vi.fn() } },
+}));
+
+const mockUpdate = itsmApi.forms.update as ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  mockUpdate.mockResolvedValue({});
+});
+
+afterEach(() => { vi.clearAllMocks(); });
 
 function makeField(key: string, overrides: Partial<Field> = {}): Field {
   return {
@@ -230,7 +243,7 @@ describe('FormEditor', () => {
     expect(status.checked).toBe(false);
   });
 
-  it('header renders "Reload from Git" + "Save changes" buttons that fire info toasts', () => {
+  it('header renders "Reload from Git" + "Save changes" buttons; Save calls API', async () => {
     const setToast = vi.fn();
     render(
       withProvider(
@@ -244,13 +257,16 @@ describe('FormEditor', () => {
     );
 
     const reload = screen.getByRole('button', { name: /reload from git/i });
-    const save = screen.getByRole('button', { name: /save changes/i });
+    const save = screen.getByRole('button', { name: /save/i });
     expect(reload).toBeInTheDocument();
     expect(save).toBeInTheDocument();
 
-    fireEvent.click(save);
+    await act(async () => {
+      fireEvent.click(save);
+    });
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
     expect(setToast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: expect.stringMatching(/Saved \(demo\)/i) }),
+      expect.objectContaining({ title: expect.stringMatching(/Saved/i) }),
     );
 
     fireEvent.click(reload);

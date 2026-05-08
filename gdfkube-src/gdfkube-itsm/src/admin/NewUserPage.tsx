@@ -7,6 +7,7 @@
 // On Create dispatches ADD_USER and calls onClose.
 
 import { useState, type KeyboardEvent } from 'react';
+import { itsmApi } from '../api/itsmApi';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
 import type { Role, User } from '../types';
 
@@ -35,6 +36,7 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
   const [status, setStatus] = useState<'active' | 'disabled'>('active');
   const [mfa, setMfa] = useState('none');
   const [invite, setInvite] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const canCreate =
     name.trim() !== '' &&
@@ -43,22 +45,39 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
     group !== '' &&
     role !== '';
 
-  const handleCreate = () => {
-    if (!canCreate) return;
-    const user: User = {
-      id: `user-${Date.now()}`,
-      name: name.trim(),
-      fullName: name.trim(),
-      username: username.trim(),
-      email: email.trim(),
-      group,
-      role: role as Role,
-      status,
-      mfa,
-      active: status === 'active',
-    };
-    dispatch({ type: 'ADD_USER', user });
-    onClose();
+  const handleCreate = async () => {
+    if (!canCreate || isSaving) return;
+    setIsSaving(true);
+    try {
+      const body: Record<string, unknown> = {
+        _id: username.trim(),
+        name: name.trim(),
+        fullName: name.trim(),
+        username: username.trim(),
+        email: email.trim(),
+        group,
+        role,
+        status,
+        mfa,
+      };
+      const created = await itsmApi.users.create(body);
+      const user: User = {
+        id: (created.id as string) ?? `user-${Date.now()}`,
+        name: (created.name as string) ?? name.trim(),
+        fullName: (created.fullName as string) ?? name.trim(),
+        username: (created.username as string) ?? username.trim(),
+        email: (created.email as string) ?? email.trim(),
+        group: (created.group as string) ?? group,
+        role: (created.role as Role) ?? (role as Role),
+        status: (created.status as 'active' | 'disabled') ?? status,
+        mfa: (created.mfa as string) ?? mfa,
+        active: status === 'active',
+      };
+      dispatch({ type: 'ADD_USER', user });
+      onClose();
+    } catch {
+      setIsSaving(false);
+    }
   };
 
   const onRoleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, r: Role) => {
@@ -74,8 +93,8 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
         <button type="button" className="btn ghost sm" onClick={onClose}>← All users</button>
         <span className="spacer" />
         <button type="button" className="btn sm" onClick={onClose}>Cancel</button>
-        <button type="button" className="btn primary sm" disabled={!canCreate} onClick={handleCreate}>
-          Create user
+        <button type="button" className="btn primary sm" disabled={!canCreate || isSaving} onClick={handleCreate}>
+          {isSaving ? 'Creating…' : 'Create user'}
         </button>
       </div>
 

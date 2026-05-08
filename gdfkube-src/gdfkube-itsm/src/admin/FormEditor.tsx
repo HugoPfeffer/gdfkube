@@ -5,6 +5,7 @@
 // sub-tabs delegate to FieldsTable and TemplateEditor respectively.
 
 import { useState } from 'react';
+import { itsmApi } from '../api/itsmApi';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
 import type { Toast } from '../shell/ToastStack';
 import { FieldsTable } from './FieldsTable';
@@ -23,6 +24,7 @@ export function FormEditor({ formId, onClose, setToast }: FormEditorProps) {
   const dispatch = useGdfDispatch();
   const form = forms.find((f) => f.id === formId);
   const [subtab, setSubtab] = useState<SubTab>('definition');
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!form) {
     return (
@@ -74,16 +76,38 @@ export function FormEditor({ formId, onClose, setToast }: FormEditorProps) {
         <button
           type="button"
           className="btn primary sm"
-          onClick={() =>
-            setToast?.({
-              id: `save-${Date.now()}`,
-              kind: 'info',
-              title: 'Saved (demo)',
-              body: 'Changes are persisted in-memory for the demo session.',
-            })
-          }
+          disabled={isSaving}
+          onClick={async () => {
+            setIsSaving(true);
+            try {
+              const patch: Record<string, unknown> = {
+                name: form.name,
+                topic: form.topic,
+                description: form.description,
+                status: form.status,
+                fields: fields[formId] ?? [],
+                templates: undefined,
+              };
+              await itsmApi.forms.update(formId, patch);
+              setToast?.({
+                id: `save-${Date.now()}`,
+                kind: 'info',
+                title: 'Saved',
+                body: 'Changes persisted to the API.',
+              });
+            } catch (err) {
+              setToast?.({
+                id: `save-err-${Date.now()}`,
+                kind: 'warn',
+                title: 'Save failed',
+                body: err instanceof Error ? err.message : String(err),
+              });
+            } finally {
+              setIsSaving(false);
+            }
+          }}
         >
-          Save changes
+          {isSaving ? 'Saving…' : 'Save changes'}
         </button>
       </div>
 

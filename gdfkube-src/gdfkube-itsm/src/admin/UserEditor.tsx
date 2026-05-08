@@ -7,7 +7,8 @@
 // user to `disabled` and emits a confirmation toast. A "Recent sessions"
 // list synthesized deterministically from the user's id provides demo content.
 
-import { useMemo, type KeyboardEvent } from 'react';
+import { useMemo, useState, type KeyboardEvent } from 'react';
+import { itsmApi } from '../api/itsmApi';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
 import type { Toast } from '../shell/ToastStack';
 import type { Role, User } from '../types';
@@ -76,18 +77,44 @@ export function UserEditor({ user: initial, onClose, setToast }: UserEditorProps
   // input values. The `user` prop only seeds the initial selection.
   const user = users.find((u) => u.id === initial.id) ?? initial;
   const sessions = useMemo(() => synthesizeSessions(user), [user]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const patch = (p: Partial<User>) =>
     dispatch({ type: 'UPDATE_USER', id: user.id, patch: p });
 
-  const handleDisable = () => {
-    patch({ status: 'disabled', active: false });
-    setToast?.({
-      id: `user-disabled-${user.id}-${Date.now()}`,
-      kind: 'info',
-      title: 'Account disabled',
-      body: `${user.fullName ?? user.name} can no longer sign in.`,
-    });
+  const patchWithApi = async (p: Partial<User>) => {
+    setIsSaving(true);
+    try {
+      await itsmApi.users.update(user.id, p as Record<string, unknown>);
+      dispatch({ type: 'UPDATE_USER', id: user.id, patch: p });
+    } catch {
+      /* silent for inline edits */
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDisable = async () => {
+    setIsSaving(true);
+    try {
+      await itsmApi.users.update(user.id, { status: 'disabled', active: false } as Record<string, unknown>);
+      patch({ status: 'disabled', active: false });
+      setToast?.({
+        id: `user-disabled-${user.id}-${Date.now()}`,
+        kind: 'info',
+        title: 'Account disabled',
+        body: `${user.fullName ?? user.name} can no longer sign in.`,
+      });
+    } catch (err) {
+      setToast?.({
+        id: `user-disable-err-${user.id}-${Date.now()}`,
+        kind: 'warn',
+        title: 'Failed to disable',
+        body: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const fullName = user.fullName ?? user.name;

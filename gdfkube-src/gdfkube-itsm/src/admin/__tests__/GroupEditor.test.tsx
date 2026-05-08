@@ -6,10 +6,20 @@
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GdfDataProvider, type DataState } from '../../state/dataContext';
 import type { Group } from '../../types';
 import { GroupEditor } from '../GroupEditor';
+import { itsmApi } from '../../api/itsmApi';
+
+vi.mock('../../api/itsmApi', () => ({
+  itsmApi: { groups: { update: vi.fn() } },
+}));
+
+const mockUpdate = itsmApi.groups.update as ReturnType<typeof vi.fn>;
+
+beforeEach(() => { mockUpdate.mockResolvedValue({}); });
+afterEach(() => { vi.clearAllMocks(); });
 
 function makeGroup(overrides: Partial<Group> = {}): Group {
   return {

@@ -8,9 +8,9 @@
 //   - "Initial credentials" subsection with "Send invite email" toggle
 //     (default checked) and help text.
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   GdfDataProvider,
   useGdfData,
@@ -18,6 +18,21 @@ import {
 } from '../../state/dataContext';
 import type { Group } from '../../types';
 import { NewUserPage } from '../NewUserPage';
+import { itsmApi } from '../../api/itsmApi';
+
+vi.mock('../../api/itsmApi', () => ({
+  itsmApi: { users: { create: vi.fn() } },
+}));
+
+const mockCreate = itsmApi.users.create as ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  mockCreate.mockImplementation((body: Record<string, unknown>) =>
+    Promise.resolve({ id: body._id ?? `user-${Date.now()}`, ...body }),
+  );
+});
+
+afterEach(() => { vi.clearAllMocks(); });
 
 function makeGroup(id: string): Group {
   return {
@@ -84,7 +99,7 @@ describe('NewUserPage', () => {
     expect(create.disabled).toBe(false);
   });
 
-  it('Create dispatches ADD_USER and calls onClose', () => {
+  it('Create dispatches ADD_USER and calls onClose', async () => {
     const observed: DataState[] = [];
     const onClose = vi.fn();
     render(
@@ -102,8 +117,11 @@ describe('NewUserPage', () => {
     fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'ana@gov' } });
     fireEvent.change(screen.getByLabelText(/^group$/i), { target: { value: 'saude' } });
     fireEvent.click(screen.getByRole('radio', { name: /operator/i }));
-    fireEvent.click(screen.getByRole('button', { name: /create user/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create user/i }));
+    });
 
+    expect(mockCreate).toHaveBeenCalledTimes(1);
     const last = observed[observed.length - 1];
     expect(last?.users.map((u) => u.username)).toContain('ana.souza');
     expect(onClose).toHaveBeenCalledTimes(1);

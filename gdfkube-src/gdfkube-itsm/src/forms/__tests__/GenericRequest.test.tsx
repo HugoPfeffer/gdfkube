@@ -3,9 +3,9 @@
 // Covers spec scenarios in itsm-request-submission/spec.md using synthetic
 // field sets so the tests don't depend on seed data.
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   GdfDataProvider,
   useGdfData,
@@ -13,6 +13,7 @@ import {
 } from '../../state/dataContext';
 import type { Field, FormDef, User } from '../../types';
 import { GenericRequest } from '../GenericRequest';
+import { itsmApi } from '../../api/itsmApi';
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
@@ -79,6 +80,40 @@ function renderWithFields(
   );
   return { ...render(ui), navigate, setToast, user };
 }
+
+vi.mock('../../api/itsmApi', () => ({
+  itsmApi: {
+    requests: {
+      create: vi.fn(),
+      get: vi.fn(),
+    },
+  },
+}));
+
+const mockCreate = itsmApi.requests.create as ReturnType<typeof vi.fn>;
+const mockGet = itsmApi.requests.get as ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  mockCreate.mockResolvedValue({ id: 'REQ-API-1' });
+  mockGet.mockResolvedValue({
+    id: 'REQ-API-1',
+    formId: 'cluster-request',
+    env: 'development',
+    requester: { id: 'u1', username: 'joao.silva', name: 'João Silva', fullName: 'João Silva', email: 'joao.silva@saude.gov', role: 'operator', group: 'saude' },
+    requesterGroupName: 'saude',
+    status: 'approval',
+    stage: 0,
+    submittedAt: new Date().toISOString(),
+    vars: { clusterName: 'vacinacao' },
+    meta: {},
+    policyChecks: [{ id: 'baseline', label: 'Baseline policies', ok: true }],
+    approvalChain: [],
+  });
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('GenericRequest', () => {
   it('renders cluster-request through the generic runner with no ClusterRequest component', () => {
@@ -287,7 +322,7 @@ describe('GenericRequest', () => {
     expect(submit).not.toBeDisabled();
   });
 
-  it('Submit dispatches ADD_REQUEST with status approval, navigates, and toasts', () => {
+  it('Submit calls API create+get, dispatches ADD_REQUEST, navigates, and toasts', async () => {
     const navigate = vi.fn();
     const setToast = vi.fn();
     const fields: Field[] = [
@@ -325,24 +360,69 @@ describe('GenericRequest', () => {
     fireEvent.change(screen.getByLabelText(/Cluster name/), {
       target: { value: 'vacinacao' },
     });
-    // Click first radio card.
     const cards = document.querySelectorAll('.radio-card');
     fireEvent.click(cards[0]!);
 
-    fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+    });
 
-    // Toast called with the right kind/title.
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    const body = mockCreate.mock.calls[0]![0] as Record<string, unknown>;
+    expect(body.formId).toBe('cluster-request');
+    expect(body.vars).toBeDefined();
+    expect(mockGet).toHaveBeenCalledWith('REQ-API-1');
+
     expect(setToast).toHaveBeenCalledTimes(1);
     const toastArg = setToast.mock.calls[0]![0];
     expect(toastArg.kind).toBe('info');
     expect(toastArg.title).toBe('Request submitted for approval');
 
-    // Navigate called with request-detail and an id + submitted:true flag.
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate.mock.calls[0]![0]).toBe('request-detail');
     const navParams = navigate.mock.calls[0]![1];
-    expect(navParams.id).toBeTruthy();
+    expect(navParams.id).toBe('REQ-API-1');
     expect(navParams.submitted).toBe(true);
+  });
+
+  it('shows error toast when API rejects', async () => {
+    mockCreate.mockRejectedValueOnce(new Error('Validation failed'));
+    const setToast = vi.fn();
+    const fields: Field[] = [
+      { key: 'clusterName', label: 'Cluster name', type: 'text', required: true, bucket: 'vars' },
+    ];
+    renderWithFields('cluster-request', fields, { setToast });
+
+    fireEvent.change(screen.getByLabelText(/Cluster name/), { target: { value: 'vacinacao' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+    });
+
+    expect(setToast).toHaveBeenCalledTimes(1);
+    expect(setToast.mock.calls[0]![0].kind).toBe('warn');
+    expect(setToast.mock.calls[0]![0].body).toContain('Validation failed');
+  });
+
+  it('disables submit button while in-flight', async () => {
+    let resolveCreate: ((v: { id: string }) => void) | undefined;
+    mockCreate.mockImplementationOnce(() => new Promise((resolve) => { resolveCreate = resolve; }));
+    const fields: Field[] = [
+      { key: 'clusterName', label: 'Cluster name', type: 'text', required: true, bucket: 'vars' },
+    ];
+    renderWithFields('cluster-request', fields);
+
+    fireEvent.change(screen.getByLabelText(/Cluster name/), { target: { value: 'vacinacao' } });
+    const submitBtn = screen.getByRole('button', { name: /Submit/i });
+    expect(submitBtn).not.toBeDisabled();
+
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
+    expect(screen.getByRole('button', { name: /Submitting/i })).toBeDisabled();
+
+    await act(async () => {
+      resolveCreate!({ id: 'REQ-API-1' });
+    });
   });
 
   it('live payload preview reflects every input change', () => {
@@ -515,7 +595,7 @@ describe('GenericRequest', () => {
     expect(footer!.querySelector('svg')).not.toBeNull();
   });
 
-  it('env defaults to development when no environment field exists', () => {
+  it('env defaults to development when no environment field exists', async () => {
     let latestState: DataState | undefined;
     const fields: Field[] = [
       {
@@ -535,7 +615,9 @@ describe('GenericRequest', () => {
     fireEvent.change(screen.getByLabelText(/Cluster name/), {
       target: { value: 'vacinacao' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+    });
 
     expect(latestState).toBeDefined();
     expect(latestState!.requests).toHaveLength(1);

@@ -5,6 +5,7 @@
 // ManagedClusterSet binding, and an auto-provision toggle.
 
 import { useState } from 'react';
+import { itsmApi } from '../api/itsmApi';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
 import type { Group } from '../types';
 
@@ -21,9 +22,23 @@ export function GroupEditor({ group: initial, onClose }: GroupEditorProps) {
   const group = groups.find((g) => g.id === initial.id) ?? initial;
   const [binding, setBinding] = useState('');
   const [autoProvision, setAutoProvision] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const patch = (p: Partial<Group>) =>
     dispatch({ type: 'UPDATE_GROUP', id: group.id, patch: p });
+
+  const patchWithApi = async (p: Partial<Group>) => {
+    setIsSaving(true);
+    try {
+      await itsmApi.groups.update(group.id, p as Record<string, unknown>);
+      dispatch({ type: 'UPDATE_GROUP', id: group.id, patch: p });
+    } catch {
+      /* silent for inline edits */
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  void patchWithApi;
 
   return (
     <div className="group-editor" style={{ padding: '18px 0 24px' }}>

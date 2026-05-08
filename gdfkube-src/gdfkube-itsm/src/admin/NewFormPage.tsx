@@ -8,6 +8,7 @@
 // UPDATE_TEMPLATES with the draft templates.
 
 import { useState } from 'react';
+import { itsmApi } from '../api/itsmApi';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
 import type { Field, FormDef, TemplateFile } from '../types';
 import { FieldsTable } from './FieldsTable';
@@ -41,44 +42,50 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
   const [draftTemplates, setDraftTemplates] = useState<TemplateFile[]>([
     { name: 'main.yaml', content: '# New manifest\n' },
   ]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const trimmedId = id.trim();
   const idCollision = trimmedId !== '' && forms.some((f) => f.id === trimmedId);
   const canCreate = trimmedId !== '' && name.trim() !== '' && !idCollision;
 
-  const handleCreate = () => {
-    if (!canCreate) return;
+  const handleCreate = async () => {
+    if (!canCreate || isSaving) return;
+    setIsSaving(true);
     const today = todayIso();
-    const form: FormDef = {
-      id: trimmedId,
-      name: name.trim(),
-      topic: topic.trim() || 'dbz.gdfkube.requests',
-      description: description.trim() || undefined,
-      status: active ? 'active' : 'disabled',
-      submissions: 0,
-      fieldCount: draftFields.length,
-      lastEdited: today,
-      updated: today,
-    };
-    dispatch({ type: 'ADD_FORM', form });
-    // ADD_FORM seeds an empty fields slice. UPDATE_FIELD upserts by key,
-    // so each draft field is appended in one dispatch per field.
-    draftFields.forEach((f) => {
-      dispatch({
-        type: 'UPDATE_FIELD',
-        formId: trimmedId,
-        key: f.key,
-        patch: f,
-      });
-    });
-    if (draftTemplates.length > 0) {
-      dispatch({
-        type: 'UPDATE_TEMPLATES',
-        formId: trimmedId,
+    try {
+      const body: Record<string, unknown> = {
+        _id: trimmedId,
+        name: name.trim(),
+        topic: topic.trim() || 'dbz.gdfkube.requests',
+        description: description.trim() || undefined,
+        status: active ? 'active' : 'disabled',
+        fields: draftFields,
         templates: draftTemplates,
+      };
+      const created = await itsmApi.forms.create(body);
+
+      const form: FormDef = {
+        id: (created.id as string) ?? trimmedId,
+        name: (created.name as string) ?? name.trim(),
+        topic: (created.topic as string) ?? topic.trim(),
+        description: created.description as string | undefined,
+        status: (created.status as 'active' | 'disabled') ?? (active ? 'active' : 'disabled'),
+        submissions: 0,
+        fieldCount: draftFields.length,
+        lastEdited: today,
+        updated: today,
+      };
+      dispatch({ type: 'ADD_FORM', form });
+      draftFields.forEach((f) => {
+        dispatch({ type: 'UPDATE_FIELD', formId: form.id, key: f.key, patch: f });
       });
+      if (draftTemplates.length > 0) {
+        dispatch({ type: 'UPDATE_TEMPLATES', formId: form.id, templates: draftTemplates });
+      }
+      onClose();
+    } catch {
+      setIsSaving(false);
     }
-    onClose();
   };
 
   return (
@@ -94,7 +101,7 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
         <button
           type="button"
           className="btn primary sm"
-          disabled={!canCreate}
+          disabled={!canCreate || isSaving}
           onClick={handleCreate}
           title={
             idCollision

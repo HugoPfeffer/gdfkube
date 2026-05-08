@@ -6,6 +6,7 @@
 // triggers an info toast, and navigates to request-detail.
 
 import { useMemo, useState, type ChangeEvent } from 'react';
+import { itsmApi } from '../api/itsmApi';
 import { Icons } from '../icons/Icons';
 import type { Navigate } from '../router';
 import type { Toast } from '../shell/ToastStack';
@@ -121,6 +122,7 @@ export function GenericRequest({
   const formDef = forms.find((f) => f.id === formId);
 
   const [values, setValues] = useState<FormValues>(() => seedDefaults(fields));
+  const [isSaving, setIsSaving] = useState(false);
 
   const stringValues = useMemo(() => asStringMap(values), [values]);
   const { meta, vars } = useMemo(
@@ -138,52 +140,52 @@ export function GenericRequest({
   const setValue = (key: string, next: unknown) =>
     setValues((prev) => ({ ...prev, [key]: next }));
 
-  const onSubmit = () => {
-    if (!isValid) return;
-    const id = genId();
-    const submittedAt = new Date().toISOString();
+  const onSubmit = async () => {
+    if (!isValid || isSaving) return;
+    setIsSaving(true);
     const env: Env = (values.environment as Env) || 'development';
     const justification =
       typeof values.justification === 'string' && values.justification.length > 0
         ? values.justification
         : undefined;
 
-    const enrichedMeta: Record<string, unknown> = {
-      ...meta,
-      requestId: id,
-      correlationId: genCorrelationId(),
-      requesterName: user.username || user.name,
-      requesterFullName: user.fullName ?? user.name,
-      requesterEmail: user.email,
-      requesterRole: user.role,
-      submittedAt,
-      formId,
-    };
+    const thinBody: Record<string, unknown> = { formId, env, vars };
+    if (justification) thinBody.justification = justification;
+    const policyChecks = [{ id: 'baseline', label: 'Baseline policies', ok: true }];
+    thinBody.policyChecks = policyChecks;
 
-    const newRequest: Request = {
-      id,
-      formId,
-      env,
-      requester: user,
-      requesterGroupName:
-        (values.requesterGroupName as string) ||
-        user.group ||
-        `${user.username}-default`,
-      status: 'approval',
-      stage: 0,
-      submittedAt,
-      justification,
-      vars,
-      meta: enrichedMeta,
-      policyChecks: [
-        { id: 'baseline', label: 'Baseline policies', ok: true },
-      ],
-      approvalChain: [],
-    };
+    try {
+      const { id } = await itsmApi.requests.create(thinBody);
+      const doc = await itsmApi.requests.get(id);
 
-    dispatch({ type: 'ADD_REQUEST', request: newRequest });
-    setToast({ kind: 'info', title: 'Request submitted for approval' });
-    navigate('request-detail', { id, submitted: true });
+      const newRequest: Request = {
+        id: doc.id as string,
+        formId: (doc.formId as string) ?? formId,
+        env: (doc.env as Env) ?? env,
+        requester: (doc.requester as User) ?? user,
+        requesterGroupName:
+          (doc.requesterGroupName as string) ||
+          (values.requesterGroupName as string) ||
+          user.group ||
+          '',
+        status: (doc.status as Request['status']) ?? 'approval',
+        stage: (doc.stage as number) ?? 0,
+        submittedAt: (doc.submittedAt as string) ?? new Date().toISOString(),
+        justification: doc.justification as string | undefined,
+        vars: (doc.vars as Record<string, unknown>) ?? vars,
+        meta: (doc.meta as Record<string, unknown>) ?? {},
+        policyChecks: (doc.policyChecks as Request['policyChecks']) ?? policyChecks,
+        approvalChain: (doc.approvalChain as Request['approvalChain']) ?? [],
+      };
+
+      dispatch({ type: 'ADD_REQUEST', request: newRequest });
+      setToast({ kind: 'info', title: 'Request submitted for approval' });
+      navigate('request-detail', { id, submitted: true });
+    } catch (err) {
+      setToast({ kind: 'warn', title: 'Submit failed', body: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const renderField = (field: Field) => {
@@ -317,10 +319,10 @@ export function GenericRequest({
             <button
               type="button"
               className="btn primary"
-              disabled={!isValid}
+              disabled={!isValid || isSaving}
               onClick={onSubmit}
             >
-              Submit
+              {isSaving ? 'Submitting…' : 'Submit'}
             </button>
           </div>
         </div>

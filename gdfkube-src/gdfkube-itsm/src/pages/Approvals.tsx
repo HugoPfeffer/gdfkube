@@ -12,6 +12,7 @@
 // pending queue, and so the page-head KPI tiles can compute counts.
 
 import { useMemo, useState } from 'react';
+import { itsmApi } from '../api/itsmApi';
 import type { Toast } from '../shell/ToastStack';
 import type { Navigate } from '../router';
 import {
@@ -22,6 +23,7 @@ import type {
   ApprovalDecision,
   Env,
   Request,
+  RequestStatus,
   Role,
   User,
 } from '../types';
@@ -86,6 +88,7 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
     [],
   );
   const [overrideOpen, setOverrideOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const pending = useMemo(
     () => requests.filter((r) => r.status === 'approval'),
@@ -121,34 +124,54 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
     (d) => d.action === 'rejected',
   ).length;
 
-  const commitApproval = (req: Request) => {
-    const at = formatNow();
-    const decision: ApprovalDecision = {
-      actor: decisionActor(user),
-      action: 'approved',
-      comment: comment || undefined,
-      at,
-    };
-    dispatch({
-      type: 'UPDATE_REQUEST_STATUS',
-      id: req.id,
-      status: 'provisioning',
-      stage: 1,
-      decision,
-    });
-    setDecidedThisSession((prev) =>
-      prev.some((d) => d.id === req.id)
-        ? prev
-        : [...prev, { id: req.id, action: 'approved' }],
-    );
-    setSelectedId(null);
-    setComment('');
-    setToast({
-      id: `approve-${req.id}-${at}`,
-      kind: 'success',
-      title: 'Request approved',
-      body: `${req.id} moved to provisioning.`,
-    });
+  const commitApproval = async (req: Request) => {
+    setIsSaving(true);
+    try {
+      const doc = await itsmApi.requests.decide(req.id, {
+        action: 'approved',
+        comment: comment || undefined,
+      });
+
+      const status = (doc.status as RequestStatus) ?? 'provisioning';
+      const stage = (doc.stage as number) ?? 1;
+      const chain = doc.approvalChain as ApprovalDecision[] | undefined;
+      const decision = chain?.length ? chain[chain.length - 1]! : {
+        actor: decisionActor(user),
+        action: 'approved' as const,
+        comment: comment || undefined,
+        at: formatNow(),
+      };
+
+      dispatch({
+        type: 'UPDATE_REQUEST_STATUS',
+        id: req.id,
+        status,
+        stage,
+        decision,
+      });
+      setDecidedThisSession((prev) =>
+        prev.some((d) => d.id === req.id)
+          ? prev
+          : [...prev, { id: req.id, action: 'approved' }],
+      );
+      setSelectedId(null);
+      setComment('');
+      setToast({
+        id: `approve-${req.id}-${Date.now()}`,
+        kind: 'success',
+        title: 'Request approved',
+        body: `${req.id} moved to provisioning.`,
+      });
+    } catch (err) {
+      setToast({
+        id: `approve-err-${req.id}-${Date.now()}`,
+        kind: 'warn',
+        title: 'Approval failed',
+        body: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleApprove = () => {
@@ -167,34 +190,53 @@ export function Approvals({ user, setToast }: ApprovalsProps) {
     commitApproval(selected);
   };
 
-  const commitReject = (req: Request) => {
+  const commitReject = async (req: Request) => {
     if (comment.trim() === '') return;
-    const at = formatNow();
-    const decision: ApprovalDecision = {
-      actor: decisionActor(user),
-      action: 'rejected',
-      comment: comment || undefined,
-      at,
-    };
-    dispatch({
-      type: 'UPDATE_REQUEST_STATUS',
-      id: req.id,
-      status: 'failed',
-      decision,
-    });
-    setDecidedThisSession((prev) =>
-      prev.some((d) => d.id === req.id)
-        ? prev
-        : [...prev, { id: req.id, action: 'rejected' }],
-    );
-    setSelectedId(null);
-    setComment('');
-    setToast({
-      id: `reject-${req.id}-${at}`,
-      kind: 'warn',
-      title: 'Request rejected',
-      body: `${req.id} moved to failed.`,
-    });
+    setIsSaving(true);
+    try {
+      const doc = await itsmApi.requests.decide(req.id, {
+        action: 'rejected',
+        comment: comment || undefined,
+      });
+
+      const status = (doc.status as RequestStatus) ?? 'failed';
+      const chain = doc.approvalChain as ApprovalDecision[] | undefined;
+      const decision = chain?.length ? chain[chain.length - 1]! : {
+        actor: decisionActor(user),
+        action: 'rejected' as const,
+        comment: comment || undefined,
+        at: formatNow(),
+      };
+
+      dispatch({
+        type: 'UPDATE_REQUEST_STATUS',
+        id: req.id,
+        status,
+        decision,
+      });
+      setDecidedThisSession((prev) =>
+        prev.some((d) => d.id === req.id)
+          ? prev
+          : [...prev, { id: req.id, action: 'rejected' }],
+      );
+      setSelectedId(null);
+      setComment('');
+      setToast({
+        id: `reject-${req.id}-${Date.now()}`,
+        kind: 'warn',
+        title: 'Request rejected',
+        body: `${req.id} moved to failed.`,
+      });
+    } catch (err) {
+      setToast({
+        id: `reject-err-${req.id}-${Date.now()}`,
+        kind: 'warn',
+        title: 'Rejection failed',
+        body: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReject = () => {

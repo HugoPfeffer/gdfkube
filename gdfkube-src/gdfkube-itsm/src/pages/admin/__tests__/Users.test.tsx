@@ -14,6 +14,13 @@ import { GdfDataProvider, type DataState } from '../../../state/dataContext';
 import type { Group, User } from '../../../types';
 import { Users } from '../Users';
 
+vi.mock('../../../api/itsmApi', () => ({
+  itsmApi: {
+    users: { create: vi.fn().mockResolvedValue({}), update: vi.fn().mockResolvedValue({}) },
+    groups: { create: vi.fn().mockResolvedValue({}), update: vi.fn().mockResolvedValue({}) },
+  },
+}));
+
 function makeUser(overrides: Partial<User> = {}): User {
   return {
     id: 'u1',
