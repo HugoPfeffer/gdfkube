@@ -7,6 +7,7 @@
 // so the App can be exercised end-to-end before each page lands.
 
 import { useEffect, useMemo, useState } from 'react';
+import { setDemoUserResolver } from './api/itsmApi';
 import { Approvals } from './pages/Approvals';
 import { Catalog } from './pages/Catalog';
 import { Dashboard } from './pages/Dashboard';
@@ -77,6 +78,10 @@ function App() {
   const data = useGdfData();
 
   const user = useMemo(() => pickUser(data.users, role), [data.users, role]);
+
+  useEffect(() => {
+    setDemoUserResolver(() => user.username || user.name);
+  }, [user]);
 
   // Role-route guard: operators may not view admin/approval routes.
   useEffect(() => {
