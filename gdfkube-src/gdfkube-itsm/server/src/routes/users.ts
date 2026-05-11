@@ -15,7 +15,7 @@ function toJson(doc: any) {
 
 router.get('/', demoUser, requireAdmin, async (_req, res, next) => {
   try {
-    const docs = await UserModel.find();
+    const docs = await UserModel.find().sort({ name: 1 });
     res.json(docs.map(toJson));
   } catch (err) {
     next(err);

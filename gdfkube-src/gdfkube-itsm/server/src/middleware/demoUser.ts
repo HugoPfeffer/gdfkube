@@ -12,12 +12,12 @@ declare global {
 export function demoUser(req: Request, res: Response, next: NextFunction): void {
   const username = req.headers['x-demo-user'] as string | undefined;
   if (!username) {
-    res.status(401).json({ error: 'Missing X-Demo-User header' });
+    res.status(401).json({ error: 'X-Demo-User required' });
     return;
   }
   const user = DEMO_USERS[username];
   if (!user) {
-    res.status(401).json({ error: `Unknown demo user: ${username}` });
+    res.status(401).json({ error: 'unknown demo user' });
     return;
   }
   req.demoUser = user;

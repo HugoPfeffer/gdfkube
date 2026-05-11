@@ -19,7 +19,7 @@ export async function submit({ demoUser, body }: SubmitInput) {
   >;
 
   if (!formId || typeof formId !== 'string') {
-    const e: AppError = new Error('formId is required');
+    const e: AppError = new Error('formId required');
     e.statusCode = 400;
     throw e;
   }
@@ -31,9 +31,9 @@ export async function submit({ demoUser, body }: SubmitInput) {
   }
 
   const form = await FormDefModel.findById(formId);
-  if (!form) {
-    const e: AppError = new Error(`Form not found: ${formId}`);
-    e.statusCode = 404;
+  if (!form || (form as any).status !== 'active') {
+    const e: AppError = new Error('unknown formId');
+    e.statusCode = 400;
     throw e;
   }
 

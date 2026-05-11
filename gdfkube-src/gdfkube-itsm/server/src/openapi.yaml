@@ -26,7 +26,10 @@ components:
       properties:
         status:
           type: string
-          enum: [ok, unavailable]
+          enum: [live, ready, unavailable]
+        mongo:
+          type: string
+          enum: [ok]
     FormDef:
       type: object
       properties:
