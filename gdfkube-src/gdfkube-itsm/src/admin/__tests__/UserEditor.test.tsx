@@ -212,4 +212,40 @@ describe('UserEditor', () => {
     const toast = setToast.mock.calls[0]![0];
     expect(toast.title).toMatch(/disabled/i);
   });
+
+  it('Save button is disabled when no changes have been made', () => {
+    const user = makeUser();
+    render(
+      withProvider(makeState(user), <UserEditor user={user} onClose={vi.fn()} />),
+    );
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).toBeDisabled();
+  });
+
+  it('Save button calls itsmApi.users.update with the current fields', async () => {
+    const user = makeUser();
+    const setToast = vi.fn();
+    render(
+      withProvider(makeState(user), <UserEditor user={user} onClose={vi.fn()} setToast={setToast} />),
+    );
+    fireEvent.change(screen.getByLabelText(/^name$/i), { target: { value: 'Maria C.' } });
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).not.toBeDisabled();
+    await act(async () => { fireEvent.click(saveBtn); });
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).toHaveBeenCalledWith('2', expect.objectContaining({ name: 'Maria C.' }));
+    expect(setToast).toHaveBeenCalledWith(expect.objectContaining({ kind: 'info', title: 'Saved' }));
+  });
+
+  it('Save button shows error toast on API failure', async () => {
+    mockUpdate.mockRejectedValueOnce(new Error('Network error'));
+    const user = makeUser();
+    const setToast = vi.fn();
+    render(
+      withProvider(makeState(user), <UserEditor user={user} onClose={vi.fn()} setToast={setToast} />),
+    );
+    fireEvent.change(screen.getByLabelText(/^name$/i), { target: { value: 'Changed' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /save changes/i })); });
+    expect(setToast).toHaveBeenCalledWith(expect.objectContaining({ kind: 'warn', title: 'Save failed' }));
+  });
 });

@@ -7,14 +7,16 @@
 import { useState } from 'react';
 import { itsmApi } from '../api/itsmApi';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
+import type { Toast } from '../shell/ToastStack';
 import type { Group } from '../types';
 
 interface GroupEditorProps {
   group: Group;
   onClose: () => void;
+  setToast?: (t: Toast) => void;
 }
 
-export function GroupEditor({ group: initial, onClose }: GroupEditorProps) {
+export function GroupEditor({ group: initial, onClose, setToast }: GroupEditorProps) {
   const { groups } = useGdfData();
   const dispatch = useGdfDispatch();
   // Read the live group from state so dispatched edits round-trip into the
@@ -23,28 +25,57 @@ export function GroupEditor({ group: initial, onClose }: GroupEditorProps) {
   const [binding, setBinding] = useState('');
   const [autoProvision, setAutoProvision] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(initial);
+
+  const isDirty =
+    group.name !== saved.name ||
+    group.fullName !== saved.fullName ||
+    group.repo !== saved.repo;
 
   const patch = (p: Partial<Group>) =>
     dispatch({ type: 'UPDATE_GROUP', id: group.id, patch: p });
 
-  const patchWithApi = async (p: Partial<Group>) => {
+  const handleSave = async () => {
     setIsSaving(true);
     try {
-      await itsmApi.groups.update(group.id, p as Record<string, unknown>);
-      dispatch({ type: 'UPDATE_GROUP', id: group.id, patch: p });
-    } catch {
-      /* silent for inline edits */
+      const changes: Record<string, unknown> = {
+        name: group.name,
+        fullName: group.fullName,
+        repo: group.repo,
+      };
+      await itsmApi.groups.update(group.id, changes);
+      setSaved({ ...group });
+      setToast?.({
+        id: `save-${Date.now()}`,
+        kind: 'info',
+        title: 'Saved',
+        body: 'Group changes persisted to the API.',
+      });
+    } catch (err) {
+      setToast?.({
+        id: `save-err-${Date.now()}`,
+        kind: 'warn',
+        title: 'Save failed',
+        body: err instanceof Error ? err.message : String(err),
+      });
     } finally {
       setIsSaving(false);
     }
   };
-  void patchWithApi;
 
   return (
     <div className="group-editor" style={{ padding: '18px 0 24px' }}>
       <div className="row" style={{ marginBottom: 14, alignItems: 'center', gap: 8 }}>
         <button type="button" className="btn ghost sm" onClick={onClose}>← All groups</button>
         <span className="spacer" />
+        <button
+          type="button"
+          className="btn primary sm"
+          disabled={isSaving || !isDirty}
+          onClick={handleSave}
+        >
+          {isSaving ? 'Saving…' : 'Save changes'}
+        </button>
       </div>
 
       <div className="form-grid">

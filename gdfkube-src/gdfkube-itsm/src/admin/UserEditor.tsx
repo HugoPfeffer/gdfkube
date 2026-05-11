@@ -78,17 +78,47 @@ export function UserEditor({ user: initial, onClose, setToast }: UserEditorProps
   const user = users.find((u) => u.id === initial.id) ?? initial;
   const sessions = useMemo(() => synthesizeSessions(user), [user]);
   const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(initial);
+
+  const isDirty =
+    user.name !== saved.name ||
+    (user.username ?? '') !== (saved.username ?? '') ||
+    user.email !== saved.email ||
+    (user.group ?? '') !== (saved.group ?? '') ||
+    user.role !== saved.role ||
+    (user.status ?? 'active') !== (saved.status ?? 'active') ||
+    (user.mfa ?? 'none') !== (saved.mfa ?? 'none');
 
   const patch = (p: Partial<User>) =>
     dispatch({ type: 'UPDATE_USER', id: user.id, patch: p });
 
-  const patchWithApi = async (p: Partial<User>) => {
+  const handleSave = async () => {
     setIsSaving(true);
     try {
-      await itsmApi.users.update(user.id, p as Record<string, unknown>);
-      dispatch({ type: 'UPDATE_USER', id: user.id, patch: p });
-    } catch {
-      /* silent for inline edits */
+      const changes: Record<string, unknown> = {
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        group: user.group,
+        role: user.role,
+        status: user.status ?? 'active',
+        mfa: user.mfa ?? 'none',
+      };
+      await itsmApi.users.update(user.id, changes);
+      setSaved({ ...user });
+      setToast?.({
+        id: `save-${Date.now()}`,
+        kind: 'info',
+        title: 'Saved',
+        body: 'User changes persisted to the API.',
+      });
+    } catch (err) {
+      setToast?.({
+        id: `save-err-${Date.now()}`,
+        kind: 'warn',
+        title: 'Save failed',
+        body: err instanceof Error ? err.message : String(err),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -99,6 +129,7 @@ export function UserEditor({ user: initial, onClose, setToast }: UserEditorProps
     try {
       await itsmApi.users.update(user.id, { status: 'disabled', active: false } as Record<string, unknown>);
       patch({ status: 'disabled', active: false });
+      setSaved((prev) => ({ ...prev, status: 'disabled', active: false }));
       setToast?.({
         id: `user-disabled-${user.id}-${Date.now()}`,
         kind: 'info',
@@ -125,6 +156,14 @@ export function UserEditor({ user: initial, onClose, setToast }: UserEditorProps
       <div className="row" style={{ marginBottom: 14, alignItems: 'center', gap: 8 }}>
         <button type="button" className="btn ghost sm" onClick={onClose}>← All users</button>
         <span className="spacer" />
+        <button
+          type="button"
+          className="btn primary sm"
+          disabled={isSaving || !isDirty}
+          onClick={handleSave}
+        >
+          {isSaving ? 'Saving…' : 'Save changes'}
+        </button>
       </div>
 
       <div className="user-banner" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
