@@ -52,6 +52,10 @@ public class HelmValuesBuilder {
         return event.formId;
     }
 
+    public String getReleaseName(RequestEvent event) {
+        return resolveResourceName(event, event.requesterGroupName);
+    }
+
     private Map<String, Object> buildMeta(RequestEvent event, String org,
                                            String requestId) {
         Map<String, Object> meta = new LinkedHashMap<>();
