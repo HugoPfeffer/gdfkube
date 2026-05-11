@@ -212,6 +212,18 @@ services:
       - gdfkube-net
     entrypoint: ["bash", "/scripts/init-topics.sh"]
 
+  gdfkube-connect-topics-init:
+    image: apache/kafka:3.7.2
+    restart: "no"
+    depends_on:
+      kafka1: { condition: service_healthy }
+      kafka2: { condition: service_healthy }
+      kafka3: { condition: service_healthy }
+    volumes:
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/debezium/init-connect-topics.sh:/scripts/init-connect-topics.sh:ro
+    networks: [gdfkube-net]
+    entrypoint: ["bash", "/scripts/init-connect-topics.sh"]
+
 networks:
   gdfkube-net:
     driver: bridge
