@@ -30,6 +30,18 @@ services:
       - gdfkube-net
     entrypoint: ["mongosh", "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0", "/scripts/seed-collections.js"]
 
+  mongo-collections-init:
+    image: mongo:7.0
+    restart: "no"
+    depends_on:
+      mongo1:
+        condition: service_healthy
+    volumes:
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/mongodb/init-camel-collections.js:/init-camel-collections.js:ro
+    networks:
+      - gdfkube-net
+    entrypoint: ["mongosh", "mongodb://mongo1:27017/gdfkube?replicaSet=rs0", "/init-camel-collections.js"]
+
   gdfkube-itsm-api:
     build: ./gdfkube-src/gdfkube-itsm/server
     restart: unless-stopped
