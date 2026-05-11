@@ -20,7 +20,7 @@ interface FormEditorProps {
 }
 
 export function FormEditor({ formId, onClose, setToast }: FormEditorProps) {
-  const { forms, fields } = useGdfData();
+  const { forms, fields, templates } = useGdfData();
   const dispatch = useGdfDispatch();
   const form = forms.find((f) => f.id === formId);
   const [subtab, setSubtab] = useState<SubTab>('definition');
@@ -86,7 +86,7 @@ export function FormEditor({ formId, onClose, setToast }: FormEditorProps) {
                 description: form.description,
                 status: form.status,
                 fields: fields[formId] ?? [],
-                templates: undefined,
+                templates: templates[formId] ?? [],
               };
               await itsmApi.forms.update(formId, patch);
               setToast?.({
