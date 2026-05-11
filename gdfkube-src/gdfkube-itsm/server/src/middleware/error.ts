@@ -17,9 +17,10 @@ export function errorMiddleware(
   if (status >= 500) {
     logger.error({ err }, 'unhandled error');
   }
-  res.status(status).json({
+  const body: Record<string, unknown> = {
     error: err.message || 'Internal Server Error',
-    ...(err.code && { code: err.code }),
-    ...(err.details && { details: err.details }),
-  });
+  };
+  if (err.code) body.code = err.code;
+  if (err.details != null) body.details = err.details;
+  res.status(status).json(body);
 }

@@ -24,11 +24,11 @@ services:
       mongo-init:
         condition: service_completed_successfully
     volumes:
-      - ./gdfkube-src/gdfkube-infra/mongodb/seed-collections.js:/scripts/seed-collections.js:ro
-      - ./gdfkube-src/gdfkube-infra/mongodb/seed-data:/seed-data:ro
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/mongodb/seed-collections.js:/scripts/seed-collections.js:ro
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/mongodb/seed-data:/seed-data:ro
     networks:
       - gdfkube-net
-    entrypoint: ["mongosh", "--host", "mongo1:27017", "/scripts/seed-collections.js"]
+    entrypoint: ["mongosh", "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0", "/scripts/seed-collections.js"]
 
   gdfkube-itsm-api:
     build: ./gdfkube-src/gdfkube-itsm/server
@@ -102,7 +102,7 @@ services:
       mongo3:
         condition: service_healthy
     volumes:
-      - ./gdfkube-src/gdfkube-infra/mongodb/init-rs.js:/scripts/init-rs.js:ro
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/mongodb/init-rs.js:/scripts/init-rs.js:ro
     networks:
       - gdfkube-net
     entrypoint: ["mongosh", "--host", "mongo1:27017", "/scripts/init-rs.js"]

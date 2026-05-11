@@ -11,10 +11,27 @@
 const dbName = process.env.SEED_DB || 'gdfkube';
 const seedPath = process.env.SEED_PATH || '/seed-data';
 
+let ready = false;
+for (let i = 0; i < 30; i++) {
+  try {
+    const status = rs.status();
+    if (status.members && status.members.some(m => m.stateStr === 'PRIMARY')) {
+      ready = true;
+      break;
+    }
+  } catch (_) {}
+  print('Waiting for primary election...');
+  sleep(1000);
+}
+if (!ready) {
+  print('ERROR: no PRIMARY elected within 30s');
+  quit(1);
+}
+
 const database = db.getSiblingDB(dbName);
 
 function loadSeedFile(filename) {
-  const raw = cat(`${seedPath}/${filename}`);
+  const raw = fs.readFileSync(`${seedPath}/${filename}`, 'utf8');
   return JSON.parse(raw);
 }
 

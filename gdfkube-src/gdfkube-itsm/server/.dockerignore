@@ -4,6 +4,5 @@ __tests__
 *.test.ts
 vitest.config.ts
 vitest.setup.ts
-tsconfig.json
 .dockerignore
 Dockerfile

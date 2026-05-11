@@ -56,7 +56,7 @@ router.post('/', demoUser, async (req, res, next) => {
 router.post('/:id/approvals', demoUser, requireAdmin, async (req, res, next) => {
   try {
     const doc = await requestService.decide({
-      id: req.params.id,
+      id: req.params.id as string,
       demoUser: req.demoUser!,
       body: req.body,
     });

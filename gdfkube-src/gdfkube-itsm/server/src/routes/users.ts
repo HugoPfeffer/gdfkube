@@ -46,7 +46,7 @@ router.post('/', demoUser, requireAdmin, async (req, res, next) => {
 
 router.patch('/:id', demoUser, requireAdmin, async (req, res, next) => {
   try {
-    const doc = await userAdmin.patch(req.params.id, req.body);
+    const doc = await userAdmin.patch(req.params.id as string, req.body);
     res.json(toJson(doc));
   } catch (err) {
     next(err);

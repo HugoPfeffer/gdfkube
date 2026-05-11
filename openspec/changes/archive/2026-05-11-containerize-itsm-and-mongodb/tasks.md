@@ -19,12 +19,12 @@
 
 ## 4. Verification (per `superpowers:verification-before-completion`)
 
-- [ ] 4.1 Run `docker compose build` and `docker compose up -d` from `/workspace`; capture stdout into `verify.md`.
-- [ ] 4.2 Confirm `docker compose ps` reports `itsm`, `mongo1`, `mongo2`, `mongo3` as `healthy` and `mongo-init` as exited with code 0.
-- [ ] 4.3 Confirm SPA-fallback: `curl -fsS http://127.0.0.1:8080/ | grep -q 'id="root"'` and `curl -fsS http://127.0.0.1:8080/some/spa/deep/route | grep -q 'id="root"'`.
-- [ ] 4.4 Confirm cache headers: `curl -sI http://127.0.0.1:8080/` includes `Cache-Control: no-cache`, and `curl -sI http://127.0.0.1:8080/assets/<hashed-asset>` includes `max-age=31536000` and `immutable`.
-- [ ] 4.5 Confirm replica set: `rs.status().ok === 1`, three members, sorted state strings equal `["PRIMARY","SECONDARY","SECONDARY"]`.
-- [ ] 4.6 Confirm idempotency: `docker compose run --rm mongo-init` exits 0 with no `already initialized` error.
-- [ ] 4.7 Confirm persistence: insert into `gdfkube.smoke`, `docker compose restart mongo1`, then count returns `1`.
-- [ ] 4.8 Confirm full reset: `docker compose down -v` followed by `docker compose up -d` followed by re-checking `db.smoke.countDocuments({})` returns `0`.
-- [ ] 4.9 Paste captured stdout for steps 4.1–4.8 into `verify.md` and run `pre-commit run --all-files`.
+- [x] 4.1 Run `docker compose build` and `docker compose up -d` from `/workspace`; capture stdout into `verify.md`.
+- [x] 4.2 Confirm `docker compose ps` reports `itsm`, `mongo1`, `mongo2`, `mongo3` as `healthy` and `mongo-init` as exited with code 0.
+- [x] 4.3 Confirm SPA-fallback: `curl -fsS http://127.0.0.1:8080/ | grep -q 'id="root"'` and `curl -fsS http://127.0.0.1:8080/some/spa/deep/route | grep -q 'id="root"'`.
+- [x] 4.4 Confirm cache headers: `curl -sI http://127.0.0.1:8080/` includes `Cache-Control: no-cache`, and `curl -sI http://127.0.0.1:8080/assets/<hashed-asset>` includes `max-age=31536000` and `immutable`.
+- [x] 4.5 Confirm replica set: `rs.status().ok === 1`, three members, sorted state strings equal `["PRIMARY","SECONDARY","SECONDARY"]`.
+- [x] 4.6 Confirm idempotency: `docker compose run --rm mongo-init` exits 0 with no `already initialized` error.
+- [x] 4.7 Confirm persistence: insert into `gdfkube.smoke`, `docker compose restart mongo1`, then count returns `1`.
+- [x] 4.8 Confirm full reset: `docker compose down -v` followed by `docker compose up -d` followed by re-checking `db.smoke.countDocuments({})` returns `0`.
+- [x] 4.9 Paste captured stdout for steps 4.1–4.8 into `verify.md` and run `pre-commit run --all-files`.
