@@ -1,0 +1,4 @@
+apiVersion: v2
+name: rhacm-org
+description: Renders RHACM ManagedClusterSet and ManagedClusterSetBinding for an organization
+version: 0.1.0

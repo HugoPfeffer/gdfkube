@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ .Values.system.naming.appProject }}
+  namespace: argocd
+  labels:
+    {{- toYaml .Values.system.labels | nindent 4 }}
+spec:
+  description: "Project for {{ .Values.meta.org }}"
+  sourceRepos:
+    - "{{ .Values.system.giteaExternalUrl }}/{{ .Values.system.giteaOwner }}/gdfkube-{{ .Values.meta.org }}.git"
+  destinations:
+    - namespace: "*"
+      server: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"

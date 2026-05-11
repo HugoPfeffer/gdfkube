@@ -1,0 +1,20 @@
+apiVersion: hypershift.openshift.io/v1beta1
+kind: HostedCluster
+metadata:
+  name: {{ .Values.system.naming.hostedClusterName }}
+  namespace: clusters
+  labels:
+    {{- toYaml .Values.system.labels | nindent 4 }}
+spec:
+  release:
+    image: {{ .Values.system.releaseImage }}
+  pullSecret:
+    name: pull-secret
+  platform:
+    type: KubeVirt
+    kubevirt:
+      baseDomain: {{ .Values.system.baseDomain }}
+  services:
+    - service: APIServer
+      servicePublishingStrategy:
+        type: LoadBalancer

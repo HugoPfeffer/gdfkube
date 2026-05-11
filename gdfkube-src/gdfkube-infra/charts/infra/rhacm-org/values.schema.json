@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["meta", "system"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["requestId", "formId", "org"],
+      "properties": {
+        "requestId": { "type": "string" },
+        "formId": { "type": "string" },
+        "org": { "type": "string" },
+        "email": { "type": "string" },
+        "submittedAt": { "type": "string" },
+        "correlationId": { "type": "string" }
+      }
+    },
+    "system": {
+      "type": "object",
+      "required": ["naming", "labels"],
+      "properties": {
+        "naming": {
+          "type": "object",
+          "required": ["hostedClusterName", "namespace", "appProject", "clusterSet"],
+          "properties": {
+            "hostedClusterName": { "type": "string" },
+            "namespace": { "type": "string" },
+            "appProject": { "type": "string" },
+            "clusterSet": { "type": "string" }
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    }
+  }
+}

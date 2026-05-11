@@ -1,0 +1,4 @@
+apiVersion: v2
+name: cluster-request
+description: Renders HyperShift HostedCluster, NodePool, and ManagedCluster for a cluster provisioning request
+version: 0.1.0

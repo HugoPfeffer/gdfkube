@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: appset-{{ .Values.meta.org }}
+  namespace: argocd
+  labels:
+    {{- toYaml .Values.system.labels | nindent 4 }}
+spec:
+  generators:
+    - git:
+        repoURL: "{{ .Values.system.giteaExternalUrl }}/{{ .Values.system.giteaOwner }}/gdfkube-{{ .Values.meta.org }}.git"
+        revision: HEAD
+        directories:
+          - path: "clusters/*"
+          - path: "namespaces/*"
+          - path: "scale-patches/*"
+  template:
+    metadata:
+      name: "{{ .Values.meta.org }}-{{ `{{path.basename}}` }}"
+    spec:
+      project: {{ .Values.system.naming.appProject }}
+      source:
+        repoURL: "{{ .Values.system.giteaExternalUrl }}/{{ .Values.system.giteaOwner }}/gdfkube-{{ .Values.meta.org }}.git"
+        targetRevision: HEAD
+        path: "{{ `{{path}}` }}"
+      destination:
+        server: https://kubernetes.default.svc

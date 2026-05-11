@@ -1,0 +1,4 @@
+apiVersion: v2
+name: namespace-request
+description: Renders a Namespace resource for a namespace provisioning request
+version: 0.1.0
