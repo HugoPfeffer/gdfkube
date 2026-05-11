@@ -28,7 +28,7 @@ This design adds the Kafka broker layer to the existing compose file, following 
 
 ### 1. Image: `apache/kafka:3.7`
 
-The `docs/05-kafka.md` specifies "Apache Kafka 3.7+". The official Apache image supports env-var configuration natively and includes KRaft support without needing Strimzi or Confluent wrappers. Alternative: Confluent `cp-kafka` — rejected because it pulls in the Confluent ecosystem and license, adding unnecessary weight for a demo stack.
+The `docs/05-kafka.md` specifies "Apache Kafka 3.7+". The official Apache image (`apache/kafka:3.7.2`) supports env-var configuration natively and includes KRaft support without needing Strimzi or Confluent wrappers. Alternative: Confluent `cp-kafka` — rejected because it pulls in the Confluent ecosystem and license, adding unnecessary weight for a demo stack.
 
 ### 2. KRaft with combined controller+broker roles
 

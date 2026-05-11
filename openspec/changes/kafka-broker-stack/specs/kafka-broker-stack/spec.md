@@ -2,14 +2,14 @@
 
 ### Requirement: Stack SHALL run three Kafka brokers in KRaft mode on gdfkube-net
 
-The repo-root `docker-compose.yml` MUST define services `kafka1`, `kafka2`, and `kafka3`, each running image `apache/kafka:3.7` with combined `process.roles=broker,controller` (KRaft mode). Each service MUST be attached to `gdfkube-net`. Each service MUST declare a healthcheck running `kafka-broker-api-versions.sh --bootstrap-server localhost:9092` and MUST mount a named Docker volume at `/var/lib/kafka/data` (`kafka1-data`, `kafka2-data`, `kafka3-data` respectively). Only `kafka1` MAY publish port `9092` to the host, and that publish MUST bind to `127.0.0.1` only.
+The repo-root `docker-compose.yml` MUST define services `kafka1`, `kafka2`, and `kafka3`, each running image `apache/kafka:3.7.2` with combined `process.roles=broker,controller` (KRaft mode). Each service MUST be attached to `gdfkube-net`. Each service MUST declare a healthcheck running `kafka-broker-api-versions.sh --bootstrap-server localhost:19092` and MUST mount a named Docker volume at `/var/lib/kafka/data` (`kafka1-data`, `kafka2-data`, `kafka3-data` respectively). Only `kafka1` MAY publish port `9092` to the host, and that publish MUST bind to `127.0.0.1` only. Each broker MUST listen on port `19092` for PLAINTEXT inter-broker/client traffic and port `9093` for CONTROLLER quorum traffic. `kafka1` MUST additionally listen on port `9092` for host-accessible traffic via a separate HOST listener.
 
 #### Scenario: Three Kafka containers come up healthy
 
 - **GIVEN** a clean checkout at `/workspace`
 - **WHEN** `docker compose up -d kafka1 kafka2 kafka3` is run
 - **THEN** within 60 seconds `docker compose ps kafka1 kafka2 kafka3` SHALL report all three services in state `healthy`
-- **AND** each service SHALL be running image `apache/kafka:3.7`
+- **AND** each service SHALL be running image `apache/kafka:3.7.2`
 
 #### Scenario: Only kafka1 is reachable from the host
 
@@ -22,7 +22,7 @@ The repo-root `docker-compose.yml` MUST define services `kafka1`, `kafka2`, and 
 
 ### Requirement: KRaft quorum SHALL be initialized deterministically
 
-A fixed `KAFKA_CLUSTER_ID` (env-driven or hard-coded for the demo) and `KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka1:9093,2@kafka2:9093,3@kafka3:9093` MUST be set on every broker so that re-creating volumes yields the same quorum. Each broker MUST use port `9093` for controller traffic (separate from the client port `9092`).
+A fixed `KAFKA_CLUSTER_ID` (env-driven or hard-coded for the demo) and `KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka1:9093,2@kafka2:9093,3@kafka3:9093` MUST be set on every broker so that re-creating volumes yields the same quorum. Each broker MUST use port `9093` for controller traffic (separate from the PLAINTEXT client port `19092`). `kafka1` additionally uses port `9092` for host-accessible traffic via a dedicated HOST listener.
 
 #### Scenario: All brokers join the same KRaft quorum
 
@@ -75,18 +75,18 @@ The following topics MUST be created with exact settings:
 - **GIVEN** the three Kafka brokers are healthy
 - **WHEN** `docker compose up kafka-init` exits
 - **THEN** `kafka-init` SHALL exit with code 0
-- **AND** `kafka-topics.sh --bootstrap-server kafka1:9092 --list` SHALL print all 9 topic names
+- **AND** `kafka-topics.sh --bootstrap-server kafka1:19092 --list` SHALL print all 9 topic names
 
 #### Scenario: Topic partition and replication settings match the catalog
 
 - **GIVEN** `kafka-init` has exited 0
-- **WHEN** `kafka-topics.sh --bootstrap-server kafka1:9092 --describe --topic <topic>` is run for each catalog topic
+- **WHEN** `kafka-topics.sh --bootstrap-server kafka1:19092 --describe --topic <topic>` is run for each catalog topic
 - **THEN** each topic SHALL report the partition count and replication factor specified in the catalog table
 
 #### Scenario: Topic config settings match the catalog
 
 - **GIVEN** `kafka-init` has exited 0
-- **WHEN** `kafka-configs.sh --bootstrap-server kafka1:9092 --entity-type topics --entity-name <topic> --describe` is run for each catalog topic
+- **WHEN** `kafka-configs.sh --bootstrap-server kafka1:19092 --entity-type topics --entity-name <topic> --describe` is run for each catalog topic
 - **THEN** `retention.ms` SHALL match the catalog value
 - **AND** `min.insync.replicas` SHALL equal `2`
 - **AND** `cleanup.policy` SHALL equal `delete`
@@ -144,7 +144,7 @@ With three brokers healthy and RF=3 plus `min.insync.replicas=2`, stopping any o
 ### Requirement: Connection contract SHALL be documented for downstream specs
 
 A file at `gdfkube-src/gdfkube-infra/kafka/README.md` MUST exist and MUST contain:
-- In-network bootstrap string: `kafka1:9092,kafka2:9092,kafka3:9092`
+- In-network bootstrap string: `kafka1:19092,kafka2:19092,kafka3:19092`
 - Host-side bootstrap string: `127.0.0.1:9092`
 - Consumer-group names: `gdfkube-camel`, `itsm-sse-{podName}`
 - Required producer config: `enable.idempotence=true`, `acks=all`, `max.in.flight.requests.per.connection<=5`
@@ -155,7 +155,7 @@ A file at `gdfkube-src/gdfkube-infra/kafka/README.md` MUST exist and MUST contai
 
 - **GIVEN** the change is implemented
 - **WHEN** `gdfkube-src/gdfkube-infra/kafka/README.md` is read
-- **THEN** the file SHALL contain the in-network bootstrap string `kafka1:9092,kafka2:9092,kafka3:9092`
+- **THEN** the file SHALL contain the in-network bootstrap string `kafka1:19092,kafka2:19092,kafka3:19092`
 - **AND** the file SHALL contain the host-side bootstrap string `127.0.0.1:9092`
 - **AND** the file SHALL list consumer groups `gdfkube-camel` and `itsm-sse-{podName}`
 - **AND** the file SHALL list required producer config including `enable.idempotence=true` and `acks=all`

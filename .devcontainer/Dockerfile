@@ -64,6 +64,25 @@ RUN curl -fsSL https://starship.rs/install.sh | sh -s -- -y -v v${STARSHIP_VERSI
 # Install TruffleHog (secret scanner)
 RUN curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
 
+# Docker CLI only — engine runs on the host; socket is bind-mounted at runtime (DooD).
+RUN install -m 0755 -d /etc/apt/keyrings && \
+  curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc && \
+  chmod a+r /etc/apt/keyrings/docker.asc && \
+  . /etc/os-release && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian ${VERSION_CODENAME} stable" \
+    > /etc/apt/sources.list.d/docker.list && \
+  apt-get update && apt-get install -y --no-install-recommends \
+    docker-ce-cli \
+    docker-buildx-plugin \
+    docker-compose-plugin \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Ship the DooD GID-realignment helper and grant node passwordless sudo for it only.
+COPY scripts/setup-docker-group.sh /usr/local/bin/setup-docker-group.sh
+RUN chmod +x /usr/local/bin/setup-docker-group.sh && \
+  echo "node ALL=(root) NOPASSWD: /usr/local/bin/setup-docker-group.sh" > /etc/sudoers.d/node-docker-group && \
+  chmod 0440 /etc/sudoers.d/node-docker-group
+
 # Set up non-root user
 USER node
 
