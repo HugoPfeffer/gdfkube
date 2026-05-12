@@ -1,3 +1,15 @@
+FROM registry.access.redhat.com/ubi9/openjdk-21:1.21 AS build
+
+USER root
+WORKDIR /build
+
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+RUN ./mvnw dependency:go-offline -B
+
+COPY src/ src/
+RUN ./mvnw package -DskipTests -B
+
 FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.21
 
 USER root
@@ -12,10 +24,10 @@ RUN curl -fsSL -o /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-
 
 USER 185
 
-COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+COPY --from=build --chown=185 /build/target/quarkus-app/lib/ /deployments/lib/
+COPY --from=build --chown=185 /build/target/quarkus-app/*.jar /deployments/
+COPY --from=build --chown=185 /build/target/quarkus-app/app/ /deployments/app/
+COPY --from=build --chown=185 /build/target/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
 
