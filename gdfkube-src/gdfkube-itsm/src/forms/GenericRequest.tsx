@@ -149,10 +149,18 @@ export function GenericRequest({
         ? values.justification
         : undefined;
 
-    const thinBody: Record<string, unknown> = { formId, env, vars };
+    const fieldValues: Record<string, unknown> = {};
+    for (const f of fields) {
+      const v = values[f.key];
+      if (v !== undefined && v !== null && v !== '') fieldValues[f.key] = v;
+    }
+
+    const thinBody: Record<string, unknown> = { formId, env, ...fieldValues };
     if (justification) thinBody.justification = justification;
-    const policyChecks = [{ id: 'baseline', label: 'Baseline policies', ok: true }];
-    thinBody.policyChecks = policyChecks;
+
+    // #region agent log
+    fetch('http://localhost:7430/ingest/60f88a58-2925-43f9-b28f-bcec8ca13914',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'df73a6'},body:JSON.stringify({sessionId:'df73a6',location:'GenericRequest.tsx:onSubmit',message:'payload sent to API',data:{thinBody,metaKeys:Object.keys(meta),varsKeys:Object.keys(vars)},timestamp:Date.now(),hypothesisId:'H1,H2'})}).catch(()=>{});
+    // #endregion
 
     try {
       const { id } = await itsmApi.requests.create(thinBody);
@@ -174,7 +182,7 @@ export function GenericRequest({
         justification: doc.justification as string | undefined,
         vars: (doc.vars as Record<string, unknown>) ?? vars,
         meta: (doc.meta as Record<string, unknown>) ?? {},
-        policyChecks: (doc.policyChecks as Request['policyChecks']) ?? policyChecks,
+        policyChecks: (doc.policyChecks as Request['policyChecks']) ?? [],
         approvalChain: (doc.approvalChain as Request['approvalChain']) ?? [],
       };
 

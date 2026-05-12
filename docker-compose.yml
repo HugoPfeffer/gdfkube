@@ -305,7 +305,7 @@ services:
       gitea: { condition: service_healthy }
     volumes:
       - gitea-data:/data
-      - ./gdfkube-src/gdfkube-infra/gitea/bootstrap.sh:/bootstrap.sh:ro
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/gitea/bootstrap.sh:/bootstrap.sh:ro
     environment:
       GITEA_ADMIN_USERNAME: "${GITEA_ADMIN_USERNAME:-gdfkube-admin}"
       GITEA_ADMIN_PASSWORD: "${GITEA_ADMIN_PASSWORD:-ChangeMeLocally123!}"
@@ -324,7 +324,7 @@ services:
     volumes:
       - gitea-data:/data:ro
       - "${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src:/workspace-src:ro"
-      - ./gdfkube-src/gdfkube-infra/gitea/seed-repos.sh:/seed-repos.sh:ro
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/gitea/seed-repos.sh:/seed-repos.sh:ro
     environment:
       GITEA_ADMIN_USERNAME: "${GITEA_ADMIN_USERNAME:-gdfkube-admin}"
       GITEA_ORG: "${GITEA_ORG:-gdfkube}"
@@ -341,7 +341,7 @@ services:
       mongo-seed: { condition: service_completed_successfully }
     volumes:
       - gitea-data:/data:ro
-      - ./gdfkube-src/gdfkube-infra/gitea/sync-token.sh:/scripts/sync-token.sh:ro
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/gitea/sync-token.sh:/scripts/sync-token.sh:ro
     environment:
       GITEA_ORG: "${GITEA_ORG:-gdfkube}"
     entrypoint: ["sh", "/scripts/sync-token.sh"]

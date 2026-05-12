@@ -7,7 +7,7 @@ GITEA_LOCAL_TOKEN=$(cat /data/itsm/token)
 [ -n "$GITEA_LOCAL_TOKEN" ] || { echo "[gitea-token-sync] empty token file" >&2; exit 1; }
 export GITEA_LOCAL_TOKEN
 
-mongosh --quiet "mongodb://mongo1:27017/gdfkube?replicaSet=rs0" --eval '
+mongosh --quiet "mongodb://mongo1:27017/gdfkube?replicaSet=rs0&serverSelectionTimeoutMS=10000" --eval '
   db.gitea_settings.updateOne(
     { _id: "gitea" },
     { $set: {

@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.bson.Document;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -17,7 +18,12 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import com.mongodb.client.MongoClient;
+
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import static com.mongodb.client.model.Filters.eq;
 
 @ApplicationScoped
 @io.quarkus.arc.properties.IfBuildProperty(name = "app.git.provider", stringValue = "gitea", enableIfMissing = false)
@@ -29,17 +35,32 @@ public class GiteaGitProvider implements GitProvider {
     @ConfigProperty(name = "app.system.gitea-external-url")
     String giteaUrl;
 
-    @ConfigProperty(name = "gitea.token", defaultValue = "")
-    String giteaToken;
+    @Inject
+    MongoClient mongoClient;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
+
+    private String currentToken() {
+        Document doc = mongoClient.getDatabase("gdfkube")
+                .getCollection("gitea_settings")
+                .find(eq("_id", "gitea"))
+                .first();
+        if (doc == null) {
+            throw new IllegalStateException("gitea_settings.token missing or placeholder");
+        }
+        String token = doc.getString("token");
+        if (token == null || token.isEmpty() || "CHANGE_ME".equals(token)) {
+            throw new IllegalStateException("gitea_settings.token missing or placeholder");
+        }
+        return token;
+    }
 
     @Override
     public boolean repoExists(String owner, String name) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(giteaUrl + "/api/v1/repos/" + owner + "/" + name))
-                    .header("Authorization", "token " + giteaToken)
+                    .header("Authorization", "token " + currentToken())
                     .GET()
                     .build();
             HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
@@ -61,7 +82,7 @@ public class GiteaGitProvider implements GitProvider {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(giteaUrl + "/api/v1/orgs/" + owner + "/repos"))
-                    .header("Authorization", "token " + giteaToken)
+                    .header("Authorization", "token " + currentToken())
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
@@ -82,7 +103,7 @@ public class GiteaGitProvider implements GitProvider {
     @Override
     public Path cloneOrPull(String owner, String name, String branch) {
         Path dir = CLONE_ROOT.resolve(owner).resolve(name);
-        CredentialsProvider creds = new UsernamePasswordCredentialsProvider("oauth2", giteaToken);
+        CredentialsProvider creds = new UsernamePasswordCredentialsProvider("oauth2", currentToken());
         String repoUrl = giteaUrl + "/" + owner + "/" + name + ".git";
 
         try {
@@ -116,7 +137,7 @@ public class GiteaGitProvider implements GitProvider {
 
     @Override
     public void commitAndPush(Path workingTree, List<Path> files, String message, GitAuthor author) {
-        CredentialsProvider creds = new UsernamePasswordCredentialsProvider("oauth2", giteaToken);
+        CredentialsProvider creds = new UsernamePasswordCredentialsProvider("oauth2", currentToken());
 
         try (Git git = Git.open(workingTree.toFile())) {
             for (Path file : files) {

@@ -11,13 +11,16 @@ import gov.gdf.camel.git.RepoOptions;
 import gov.gdf.camel.model.RequestEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class RepoBootstrapRoute extends RouteBuilder {
 
     private static final Logger LOG = Logger.getLogger(RepoBootstrapRoute.class);
     private static final String ROUTE_ID = "repo-bootstrap";
-    private static final String GITEA_OWNER = "gdfkube";
+
+    @ConfigProperty(name = "app.system.gitea-owner")
+    String giteaOwner;
 
     @Inject
     GitProvider gitProvider;
@@ -40,17 +43,17 @@ public class RepoBootstrapRoute extends RouteBuilder {
             .process(exchange -> {
                 RequestEvent event = exchange.getProperty("requestEvent", RequestEvent.class);
                 String org = event.requesterGroupName;
-                String repoName = GITEA_OWNER + "-" + org;
+                String repoName = giteaOwner + "-" + org;
 
-                if (!gitProvider.repoExists(GITEA_OWNER, repoName)) {
+                if (!gitProvider.repoExists(giteaOwner, repoName)) {
                     RepoOptions opts = new RepoOptions("main", true,
                             "GitOps manifests for " + org);
-                    gitProvider.createRepo(GITEA_OWNER, repoName, opts);
+                    gitProvider.createRepo(giteaOwner, repoName, opts);
                     LOG.infof("Bootstrapped repo %s/%s for org=%s",
-                            GITEA_OWNER, repoName, org);
+                            giteaOwner, repoName, org);
 
                     auditInterceptor.emit(ROUTE_ID, event._id, 5, "create-repo",
-                            Map.of("repo", GITEA_OWNER + "/" + repoName));
+                            Map.of("repo", giteaOwner + "/" + repoName));
                 }
             });
     }

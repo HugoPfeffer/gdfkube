@@ -18,14 +18,17 @@ import gov.gdf.camel.git.GitProvider;
 import gov.gdf.camel.model.RequestEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class GitPushRoute extends RouteBuilder {
 
     private static final Logger LOG = Logger.getLogger(GitPushRoute.class);
     private static final String ROUTE_ID = "git-push";
-    private static final String GITEA_OWNER = "gdfkube";
     private static final ConcurrentHashMap<String, ReentrantLock> REPO_LOCKS = new ConcurrentHashMap<>();
+
+    @ConfigProperty(name = "app.system.gitea-owner")
+    String giteaOwner;
 
     @Inject
     GitProvider gitProvider;
@@ -57,11 +60,11 @@ public class GitPushRoute extends RouteBuilder {
                 @SuppressWarnings("unchecked")
                 List<Path> renderedFiles = exchange.getProperty("renderedFiles", List.class);
 
-                String repoName = GITEA_OWNER + "-" + org;
+                String repoName = giteaOwner + "-" + org;
                 ReentrantLock lock = REPO_LOCKS.computeIfAbsent(repoName, k -> new ReentrantLock());
                 lock.lock();
                 try {
-                    Path workTree = gitProvider.cloneOrPull(GITEA_OWNER, repoName, "main");
+                    Path workTree = gitProvider.cloneOrPull(giteaOwner, repoName, "main");
 
                     Path targetDir = workTree.resolve("clusters").resolve(releaseName);
                     Files.createDirectories(targetDir);
@@ -78,7 +81,7 @@ public class GitPushRoute extends RouteBuilder {
                     gitProvider.commitAndPush(workTree, copiedFiles, message, GitAuthor.CAMEL);
 
                     LOG.infof("Pushed %d files to %s/%s for requestId=%s",
-                            copiedFiles.size(), GITEA_OWNER, repoName, requestId);
+                            copiedFiles.size(), giteaOwner, repoName, requestId);
                 } finally {
                     lock.unlock();
                 }
@@ -86,7 +89,7 @@ public class GitPushRoute extends RouteBuilder {
             .process(exchange -> {
                 RequestEvent event = exchange.getProperty("requestEvent", RequestEvent.class);
                 auditInterceptor.emit(ROUTE_ID, event._id, 5, "push",
-                        Map.of("repo", GITEA_OWNER + "-" + event.requesterGroupName,
+                        Map.of("repo", giteaOwner + "-" + event.requesterGroupName,
                                "release", exchange.getProperty("releaseName", String.class)));
             })
             .to("direct:status-emitter");
