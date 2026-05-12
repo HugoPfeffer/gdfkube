@@ -1,11 +1,13 @@
 package gov.gdf.camel.routes;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -43,6 +45,23 @@ public class HelmRenderRoute extends RouteBuilder {
 
         from("direct:" + ROUTE_ID)
             .routeId(ROUTE_ID)
+            .onCompletion()
+                .process(exchange -> {
+                    String outputDir = exchange.getProperty("outputDir", String.class);
+                    if (outputDir != null) {
+                        Path dir = Path.of(outputDir);
+                        if (Files.exists(dir)) {
+                            try (Stream<Path> walk = Files.walk(dir)) {
+                                walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                                    try { Files.delete(p); } catch (IOException e) {
+                                        LOG.warnf("Failed to clean up %s: %s", p, e.getMessage());
+                                    }
+                                });
+                            }
+                        }
+                    }
+                })
+            .end()
             .process(exchange -> {
                 exchange.setProperty("currentStage", 4);
                 RequestEvent event = exchange.getProperty("requestEvent", RequestEvent.class);
@@ -74,20 +93,7 @@ public class HelmRenderRoute extends RouteBuilder {
                         Map.of("chart", exchange.getProperty("chartRef", String.class),
                                "release", exchange.getProperty("releaseName", String.class)));
             })
-            .to("direct:git-push")
-            .process(exchange -> {
-                String outputDir = exchange.getProperty("outputDir", String.class);
-                if (outputDir != null) {
-                    Path dir = Path.of(outputDir);
-                    if (Files.exists(dir)) {
-                        try (Stream<Path> walk = Files.walk(dir)) {
-                            walk.sorted(Comparator.reverseOrder()).forEach(p -> {
-                                try { Files.delete(p); } catch (IOException ignored) {}
-                            });
-                        }
-                    }
-                }
-            });
+            .to("direct:git-push");
     }
 
     private void runHelmTemplate(String releaseName, String chartRef,
@@ -101,20 +107,30 @@ public class HelmRenderRoute extends RouteBuilder {
         pb.redirectErrorStream(true);
 
         Process process = pb.start();
-        boolean finished = process.waitFor(30, TimeUnit.SECONDS);
-        if (!finished) {
+        try {
+            CompletableFuture<byte[]> stdout = CompletableFuture.supplyAsync(() -> {
+                try { return process.getInputStream().readAllBytes(); }
+                catch (IOException e) { return new byte[0]; }
+            });
+
+            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                process.waitFor(5, TimeUnit.SECONDS);
+                throw new RuntimeException("helm template timed out after 30 seconds");
+            }
+
+            String output = new String(stdout.join(), StandardCharsets.UTF_8);
+            int exitCode = process.exitValue();
+
+            if (exitCode != 0) {
+                throw new RuntimeException(
+                        "helm template failed (exit " + exitCode + "): " + output);
+            }
+            LOG.debugf("helm template output: %s", output);
+        } finally {
             process.destroyForcibly();
-            throw new RuntimeException("helm template timed out after 30 seconds");
         }
-
-        String output = new String(process.getInputStream().readAllBytes());
-        int exitCode = process.exitValue();
-
-        if (exitCode != 0) {
-            throw new RuntimeException(
-                    "helm template failed (exit " + exitCode + "): " + output);
-        }
-        LOG.debugf("helm template output: %s", output);
     }
 
     @SuppressWarnings("unchecked")
