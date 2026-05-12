@@ -106,7 +106,7 @@
 - [ ] 12.6 Verify golden path: `POST /api/itsm/requests` with a valid `cluster-request` payload; Express writes to MongoDB only; Debezium emits `op=c` to `dbz.gdfkube.requests`; Camel renders, commits to `MockGitProvider`, emits 7-stage batch to `gdfkube.pipeline.status`; `audit_log` has ≥4 rows
 - [ ] 12.7 Verify SSE: open `GET /api/itsm/requests/:id/events` from `curl -N`; observe the synthetic first event then 7 stage events in order
 - [ ] 12.8 Verify approval-loop guard: update an existing request `status` from `approval` → `provisioning`; Camel re-runs once; subsequent `stage` write-backs (`provisioning` → `provisioning`) are dropped; no infinite loop in logs
-- [ ] 12.9 Verify all 5 charts render and lint clean (`helm template` + `kubectl --dry-run=client -f -`)
+- [x] 12.9 Verify all 5 charts render and lint clean (`helm template` + `kubectl --dry-run=client -f -`)
 - [ ] 12.10 Verify form-cache reload: update a document in `gdfkube.forms`; observe `FormDefCache invalidated` log line in `gdfkube-camel`
 - [ ] 12.11 Verify Camel DLQ flow: produce a malformed payload to `dbz.gdfkube.requests` (via `kafka-console-producer.sh`); observe 3 redeliveries then landing on `dlq.gdfkube.requests` with 9 headers; `dlq_log` records it
 - [ ] 12.12 Verify Debezium DLQ flow: stop `mongo2` temporarily to induce a connector error; observe landing on `dlq.gdfkube.debezium` with context headers; restart `mongo2`
