@@ -36,6 +36,8 @@ services:
     depends_on:
       mongo1:
         condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
     volumes:
       - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/mongodb/init-camel-collections.js:/init-camel-collections.js:ro
     networks:

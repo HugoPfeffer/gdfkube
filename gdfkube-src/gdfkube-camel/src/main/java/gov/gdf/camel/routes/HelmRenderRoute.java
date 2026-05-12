@@ -3,8 +3,10 @@ package gov.gdf.camel.routes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.apache.camel.Exchange;
@@ -51,7 +53,11 @@ public class HelmRenderRoute extends RouteBuilder {
                 String releaseName = helmValuesBuilder.getReleaseName(event);
                 String outputDir = "/tmp/" + requestId + "-out";
 
-                runHelmTemplate(releaseName, chartRef, valuesPath, outputDir);
+                try {
+                    runHelmTemplate(releaseName, chartRef, valuesPath, outputDir);
+                } finally {
+                    Files.deleteIfExists(Path.of(valuesPath));
+                }
 
                 List<Path> renderedFiles = collectRenderedFiles(outputDir);
                 LOG.infof("Helm rendered %d files for requestId=%s chart=%s",
@@ -68,7 +74,20 @@ public class HelmRenderRoute extends RouteBuilder {
                         Map.of("chart", exchange.getProperty("chartRef", String.class),
                                "release", exchange.getProperty("releaseName", String.class)));
             })
-            .to("direct:git-push");
+            .to("direct:git-push")
+            .process(exchange -> {
+                String outputDir = exchange.getProperty("outputDir", String.class);
+                if (outputDir != null) {
+                    Path dir = Path.of(outputDir);
+                    if (Files.exists(dir)) {
+                        try (Stream<Path> walk = Files.walk(dir)) {
+                            walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                                try { Files.delete(p); } catch (IOException ignored) {}
+                            });
+                        }
+                    }
+                }
+            });
     }
 
     private void runHelmTemplate(String releaseName, String chartRef,
@@ -82,8 +101,14 @@ public class HelmRenderRoute extends RouteBuilder {
         pb.redirectErrorStream(true);
 
         Process process = pb.start();
+        boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+        if (!finished) {
+            process.destroyForcibly();
+            throw new RuntimeException("helm template timed out after 30 seconds");
+        }
+
         String output = new String(process.getInputStream().readAllBytes());
-        int exitCode = process.waitFor();
+        int exitCode = process.exitValue();
 
         if (exitCode != 0) {
             throw new RuntimeException(

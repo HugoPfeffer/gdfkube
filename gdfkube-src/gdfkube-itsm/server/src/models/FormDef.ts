@@ -59,4 +59,4 @@ const FormDefSchema = new Schema(
   },
 );
 
-export const FormDefModel = model('FormDef', FormDefSchema);
+export const FormDefModel = model('FormDef', FormDefSchema, 'forms');
