@@ -56,6 +56,8 @@ services:
       kafka1: { condition: service_healthy }
       kafka2: { condition: service_healthy }
       kafka3: { condition: service_healthy }
+      gitea-token-sync:
+        condition: service_completed_successfully
     networks:
       - gdfkube-net
     healthcheck:
@@ -270,6 +272,80 @@ services:
       - gdfkube-net
     entrypoint: ["sh", "/register-connector.sh"]
 
+  gitea:
+    image: gitea/gitea:1.22
+    container_name: gdfkube-gitea
+    networks: [gdfkube-net]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - gitea-data:/data
+    environment:
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__server__DOMAIN: gitea
+      GITEA__server__HTTP_PORT: "3000"
+      GITEA__server__ROOT_URL: "http://127.0.0.1:3001/"
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__log__LEVEL: warn
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/v1/version || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  gitea-bootstrap:
+    image: gitea/gitea:1.22
+    container_name: gdfkube-gitea-bootstrap
+    networks: [gdfkube-net]
+    restart: "no"
+    depends_on:
+      gitea: { condition: service_healthy }
+    volumes:
+      - gitea-data:/data
+      - ./gdfkube-src/gdfkube-infra/gitea/bootstrap.sh:/bootstrap.sh:ro
+    environment:
+      GITEA_ADMIN_USERNAME: "${GITEA_ADMIN_USERNAME:-gdfkube-admin}"
+      GITEA_ADMIN_PASSWORD: "${GITEA_ADMIN_PASSWORD:-ChangeMeLocally123!}"
+      GITEA_ADMIN_EMAIL: "${GITEA_ADMIN_EMAIL:-admin@gdfkube.local}"
+      GITEA_TOKEN_NAME: "${GITEA_TOKEN_NAME:-itsm-local}"
+      GITEA_ORG: "${GITEA_ORG:-gdfkube}"
+    entrypoint: ["sh", "/bootstrap.sh"]
+
+  gitea-repo-seed:
+    image: gitea/gitea:1.22
+    container_name: gdfkube-gitea-repo-seed
+    networks: [gdfkube-net]
+    restart: "no"
+    depends_on:
+      gitea-bootstrap: { condition: service_completed_successfully }
+    volumes:
+      - gitea-data:/data:ro
+      - "${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src:/workspace-src:ro"
+      - ./gdfkube-src/gdfkube-infra/gitea/seed-repos.sh:/seed-repos.sh:ro
+    environment:
+      GITEA_ADMIN_USERNAME: "${GITEA_ADMIN_USERNAME:-gdfkube-admin}"
+      GITEA_ORG: "${GITEA_ORG:-gdfkube}"
+      GITEA_REPO_MAIN: "${GITEA_REPO_MAIN:-gdfkube-main}"
+    entrypoint: ["sh", "/seed-repos.sh"]
+
+  gitea-token-sync:
+    image: mongo:7.0
+    container_name: gdfkube-gitea-token-sync
+    networks: [gdfkube-net]
+    restart: "no"
+    depends_on:
+      gitea-bootstrap: { condition: service_completed_successfully }
+      mongo-seed: { condition: service_completed_successfully }
+    volumes:
+      - gitea-data:/data:ro
+      - ./gdfkube-src/gdfkube-infra/gitea/sync-token.sh:/scripts/sync-token.sh:ro
+    environment:
+      GITEA_ORG: "${GITEA_ORG:-gdfkube}"
+    entrypoint: ["sh", "/scripts/sync-token.sh"]
+
   gdfkube-camel:
     build:
       context: ./gdfkube-src/gdfkube-camel
@@ -279,6 +355,8 @@ services:
       QUARKUS_PROFILE: dev
       KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19092,kafka3:19092
       MONGODB_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0
+      APP_SYSTEM_GITEA_EXTERNAL_URL: "http://gitea:3000"
+      APP_SYSTEM_GITEA_OWNER: "${GITEA_ORG:-gdfkube}"
     volumes:
       - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/charts:/opt/charts:ro
     depends_on:
@@ -288,6 +366,7 @@ services:
       mongo1: { condition: service_healthy }
       gdfkube-debezium-init: { condition: service_completed_successfully }
       mongo-collections-init: { condition: service_completed_successfully }
+      gitea-repo-seed: { condition: service_completed_successfully }
     networks:
       - gdfkube-net
     healthcheck:
@@ -308,3 +387,4 @@ volumes:
   kafka1-data:
   kafka2-data:
   kafka3-data:
+  gitea-data:

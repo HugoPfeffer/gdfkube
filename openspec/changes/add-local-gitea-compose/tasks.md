@@ -1,38 +1,38 @@
 ## 1. Scaffold the `gdfkube-src/gdfkube-infra/gitea/` scripts
 
-- [ ] 1.1 Create directory `/workspace/gdfkube-src/gdfkube-infra/gitea/`.
-- [ ] 1.2 Write `bootstrap.sh`: ensure `/data/itsm/`, idempotent `gitea admin user create` (swallow "user exists"), `generate-access-token --raw` with `--token-name "${GITEA_TOKEN_NAME}-$(date +%s)" --scopes all`, write token to `/data/itsm/token` with `chmod 600`, POST `/api/v1/orgs` treating 201/422 as success, log only `user=`/`org=`/`token-bytes=`.
-- [ ] 1.3 Write `seed-repos.sh`: read PAT from `/data/itsm/token` (abort if empty); POST `/api/v1/orgs/${GITEA_ORG}/repos` treating 201/409 as success; `cp -a /workspace-src/. "$WORK/"`; prune `node_modules`, `target`, `dist`, `build`, `.git`, `.DS_Store`; `git init -b main`, set local `user.email`/`user.name`, commit, force-push via `http://${GITEA_ADMIN_USERNAME}:${TOKEN}@gitea:3000/${GITEA_ORG}/${GITEA_REPO_MAIN}.git`; `set +x` around the URL assembly; log only repo name and commit short-SHA.
-- [ ] 1.4 Write `sync-token.sh`: `export GITEA_LOCAL_TOKEN=$(cat /data/itsm/token)` (abort if empty); `mongosh --quiet "mongodb://mongo1:27017/gdfkube?replicaSet=rs0" --eval '...db.gitea_settings.updateOne(...)...'`; `unset GITEA_LOCAL_TOKEN` at the end; ensure the token is never on the mongosh command line.
-- [ ] 1.5 `chmod +x` is not required (entrypoint will invoke `sh /script.sh`), but ensure scripts use `#!/bin/sh`, `set -eu`, and use POSIX-portable constructs only (all three images use BusyBox/Alpine-style sh in the gitea image; `mongo:7.0` uses bash but our scripts stay POSIX).
+- [x] 1.1 Create directory `/workspace/gdfkube-src/gdfkube-infra/gitea/`.
+- [x] 1.2 Write `bootstrap.sh`: ensure `/data/itsm/`, idempotent `gitea admin user create` (swallow "user exists"), `generate-access-token --raw` with `--token-name "${GITEA_TOKEN_NAME}-$(date +%s)" --scopes all`, write token to `/data/itsm/token` with `chmod 600`, POST `/api/v1/orgs` treating 201/422 as success, log only `user=`/`org=`/`token-bytes=`.
+- [x] 1.3 Write `seed-repos.sh`: read PAT from `/data/itsm/token` (abort if empty); POST `/api/v1/orgs/${GITEA_ORG}/repos` treating 201/409 as success; `cp -a /workspace-src/. "$WORK/"`; prune `node_modules`, `target`, `dist`, `build`, `.git`, `.DS_Store`; `git init -b main`, set local `user.email`/`user.name`, commit, force-push via `http://${GITEA_ADMIN_USERNAME}:${TOKEN}@gitea:3000/${GITEA_ORG}/${GITEA_REPO_MAIN}.git`; `set +x` around the URL assembly; log only repo name and commit short-SHA.
+- [x] 1.4 Write `sync-token.sh`: `export GITEA_LOCAL_TOKEN=$(cat /data/itsm/token)` (abort if empty); `mongosh --quiet "mongodb://mongo1:27017/gdfkube?replicaSet=rs0" --eval '...db.gitea_settings.updateOne(...)...'`; `unset GITEA_LOCAL_TOKEN` at the end; ensure the token is never on the mongosh command line.
+- [x] 1.5 `chmod +x` is not required (entrypoint will invoke `sh /script.sh`), but ensure scripts use `#!/bin/sh`, `set -eu`, and use POSIX-portable constructs only (all three images use BusyBox/Alpine-style sh in the gitea image; `mongo:7.0` uses bash but our scripts stay POSIX).
 
 ## 2. Add `gitea`, `gitea-bootstrap`, `gitea-repo-seed`, `gitea-token-sync` services to `docker-compose.yml`
 
-- [ ] 2.1 Add top-level `gitea-data:` volume to the `volumes:` block of `/workspace/docker-compose.yml`.
-- [ ] 2.2 Add `gitea` service: image `gitea/gitea:1.22`; network `gdfkube-net`; `ports: ["127.0.0.1:3001:3000"]`; volume `gitea-data:/data`; env `GITEA__database__DB_TYPE=sqlite3`, `GITEA__server__DOMAIN=gitea`, `GITEA__server__HTTP_PORT=3000`, `GITEA__server__ROOT_URL=http://127.0.0.1:3001/`, `GITEA__security__INSTALL_LOCK=true`, `GITEA__service__DISABLE_REGISTRATION=true`, `GITEA__log__LEVEL=warn`; healthcheck `curl -sf http://localhost:3000/api/v1/version` (test `["CMD-SHELL", "curl -sf http://localhost:3000/api/v1/version"]`).
-- [ ] 2.3 Add `gitea-bootstrap` service: image `gitea/gitea:1.22`; network `gdfkube-net`; volumes `gitea-data:/data` and `./gdfkube-src/gdfkube-infra/gitea/bootstrap.sh:/bootstrap.sh:ro`; env passthrough for `GITEA_ADMIN_USERNAME=${GITEA_ADMIN_USERNAME:-gdfkube-admin}`, `GITEA_ADMIN_PASSWORD=${GITEA_ADMIN_PASSWORD:-ChangeMeLocally123!}`, `GITEA_ADMIN_EMAIL=${GITEA_ADMIN_EMAIL:-admin@gdfkube.local}`, `GITEA_TOKEN_NAME=${GITEA_TOKEN_NAME:-itsm-local}`, `GITEA_ORG=${GITEA_ORG:-gdfkube}`; `depends_on: { gitea: { condition: service_healthy } }`; `restart: "no"`; `entrypoint: ["sh", "/bootstrap.sh"]`.
-- [ ] 2.4 Add `gitea-repo-seed` service: image `gitea/gitea:1.22`; network `gdfkube-net`; volumes `gitea-data:/data:ro`, `${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src:/workspace-src:ro`, `./gdfkube-src/gdfkube-infra/gitea/seed-repos.sh:/seed-repos.sh:ro`; env `GITEA_ADMIN_USERNAME=${GITEA_ADMIN_USERNAME:-gdfkube-admin}`, `GITEA_ORG=${GITEA_ORG:-gdfkube}`, `GITEA_REPO_MAIN=${GITEA_REPO_MAIN:-gdfkube-main}`; `depends_on: { gitea-bootstrap: { condition: service_completed_successfully } }`; `restart: "no"`; `entrypoint: ["sh", "/seed-repos.sh"]`.
-- [ ] 2.5 Add `gitea-token-sync` service: image `mongo:7.0`; network `gdfkube-net`; volumes `gitea-data:/data:ro`, `./gdfkube-src/gdfkube-infra/gitea/sync-token.sh:/scripts/sync-token.sh:ro`; env `GITEA_ORG=${GITEA_ORG:-gdfkube}`; `depends_on: { gitea-bootstrap: { condition: service_completed_successfully }, mongo-seed: { condition: service_completed_successfully } }`; `restart: "no"`; `entrypoint: ["sh", "/scripts/sync-token.sh"]`.
-- [ ] 2.6 Confirm all four new services attach to `gdfkube-net` and that every host-port mapping is loopback-only (`127.0.0.1:`).
+- [x] 2.1 Add top-level `gitea-data:` volume to the `volumes:` block of `/workspace/docker-compose.yml`.
+- [x] 2.2 Add `gitea` service: image `gitea/gitea:1.22`; network `gdfkube-net`; `ports: ["127.0.0.1:3001:3000"]`; volume `gitea-data:/data`; env `GITEA__database__DB_TYPE=sqlite3`, `GITEA__server__DOMAIN=gitea`, `GITEA__server__HTTP_PORT=3000`, `GITEA__server__ROOT_URL=http://127.0.0.1:3001/`, `GITEA__security__INSTALL_LOCK=true`, `GITEA__service__DISABLE_REGISTRATION=true`, `GITEA__log__LEVEL=warn`; healthcheck `curl -sf http://localhost:3000/api/v1/version` (test `["CMD-SHELL", "curl -sf http://localhost:3000/api/v1/version"]`).
+- [x] 2.3 Add `gitea-bootstrap` service: image `gitea/gitea:1.22`; network `gdfkube-net`; volumes `gitea-data:/data` and `./gdfkube-src/gdfkube-infra/gitea/bootstrap.sh:/bootstrap.sh:ro`; env passthrough for `GITEA_ADMIN_USERNAME=${GITEA_ADMIN_USERNAME:-gdfkube-admin}`, `GITEA_ADMIN_PASSWORD=${GITEA_ADMIN_PASSWORD:-ChangeMeLocally123!}`, `GITEA_ADMIN_EMAIL=${GITEA_ADMIN_EMAIL:-admin@gdfkube.local}`, `GITEA_TOKEN_NAME=${GITEA_TOKEN_NAME:-itsm-local}`, `GITEA_ORG=${GITEA_ORG:-gdfkube}`; `depends_on: { gitea: { condition: service_healthy } }`; `restart: "no"`; `entrypoint: ["sh", "/bootstrap.sh"]`.
+- [x] 2.4 Add `gitea-repo-seed` service: image `gitea/gitea:1.22`; network `gdfkube-net`; volumes `gitea-data:/data:ro`, `${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src:/workspace-src:ro`, `./gdfkube-src/gdfkube-infra/gitea/seed-repos.sh:/seed-repos.sh:ro`; env `GITEA_ADMIN_USERNAME=${GITEA_ADMIN_USERNAME:-gdfkube-admin}`, `GITEA_ORG=${GITEA_ORG:-gdfkube}`, `GITEA_REPO_MAIN=${GITEA_REPO_MAIN:-gdfkube-main}`; `depends_on: { gitea-bootstrap: { condition: service_completed_successfully } }`; `restart: "no"`; `entrypoint: ["sh", "/seed-repos.sh"]`.
+- [x] 2.5 Add `gitea-token-sync` service: image `mongo:7.0`; network `gdfkube-net`; volumes `gitea-data:/data:ro`, `./gdfkube-src/gdfkube-infra/gitea/sync-token.sh:/scripts/sync-token.sh:ro`; env `GITEA_ORG=${GITEA_ORG:-gdfkube}`; `depends_on: { gitea-bootstrap: { condition: service_completed_successfully }, mongo-seed: { condition: service_completed_successfully } }`; `restart: "no"`; `entrypoint: ["sh", "/scripts/sync-token.sh"]`.
+- [x] 2.6 Confirm all four new services attach to `gdfkube-net` and that every host-port mapping is loopback-only (`127.0.0.1:`).
 
 ## 3. Wire downstream consumers
 
-- [ ] 3.1 In the existing `gdfkube-itsm-api` block (`docker-compose.yml:47-66`), add `gitea-token-sync: { condition: service_completed_successfully }` to `depends_on`. Keep all existing edges intact.
-- [ ] 3.2 In the existing `gdfkube-camel` block (`docker-compose.yml:273-298`), add `gitea-repo-seed: { condition: service_completed_successfully }` to `depends_on`. Keep all existing edges intact.
-- [ ] 3.3 In the same `gdfkube-camel` block, add env overrides `APP_SYSTEM_GITEA_EXTERNAL_URL=http://gitea:3000` and `APP_SYSTEM_GITEA_OWNER=${GITEA_ORG:-gdfkube}` (Quarkus binds these to `app.system.gitea-external-url` and `app.system.gitea-owner`).
+- [x] 3.1 In the existing `gdfkube-itsm-api` block (`docker-compose.yml:47-66`), add `gitea-token-sync: { condition: service_completed_successfully }` to `depends_on`. Keep all existing edges intact.
+- [x] 3.2 In the existing `gdfkube-camel` block (`docker-compose.yml:273-298`), add `gitea-repo-seed: { condition: service_completed_successfully }` to `depends_on`. Keep all existing edges intact.
+- [x] 3.3 In the same `gdfkube-camel` block, add env overrides `APP_SYSTEM_GITEA_EXTERNAL_URL=http://gitea:3000` and `APP_SYSTEM_GITEA_OWNER=${GITEA_ORG:-gdfkube}` (Quarkus binds these to `app.system.gitea-external-url` and `app.system.gitea-owner`).
 
 ## 4. Document the local Gitea overrides in `.env.example`
 
-- [ ] 4.1 If `/workspace/.env.example` does not exist, create it; otherwise append.
-- [ ] 4.2 Append a `# Local Gitea bootstrap` section with: `GITEA_ADMIN_USERNAME=gdfkube-admin`, `GITEA_ADMIN_PASSWORD=ChangeMeLocally123!   # trufflehog:ignore`, `GITEA_ADMIN_EMAIL=admin@gdfkube.local`, `GITEA_TOKEN_NAME=itsm-local`, `GITEA_ORG=gdfkube`.
-- [ ] 4.3 Confirm the `# trufflehog:ignore` comment is on the password line (no other line needs it).
+- [x] 4.1 If `/workspace/.env.example` does not exist, create it; otherwise append.
+- [x] 4.2 Append a `# Local Gitea bootstrap` section with: `GITEA_ADMIN_USERNAME=gdfkube-admin`, `GITEA_ADMIN_PASSWORD=ChangeMeLocally123!   # trufflehog:ignore`, `GITEA_ADMIN_EMAIL=admin@gdfkube.local`, `GITEA_TOKEN_NAME=itsm-local`, `GITEA_ORG=gdfkube`.
+- [x] 4.3 Confirm the `# trufflehog:ignore` comment is on the password line (no other line needs it).
 
 ## 5. Confirm explicitly-untouched files
 
-- [ ] 5.1 Verify `gdfkube-src/gdfkube-infra/mongodb/seed-data/settings.json` is **not** modified by this change (still holds the production-shaped placeholder + `CHANGE_ME` token).
-- [ ] 5.2 Verify `gdfkube-src/gdfkube-infra/mongodb/seed-collections.js` is **not** modified (the existing `$setOnInsert` semantics remain correct).
-- [ ] 5.3 Verify `gdfkube-src/gdfkube-itsm/src/data/adminSeeds.ts` and `gdfkube-src/gdfkube-itsm/scripts/export-seed-data.mjs` are **not** modified.
-- [ ] 5.4 Verify `gdfkube-src/gdfkube-camel/src/main/resources/application.properties` is **not** modified (env overrides cover it).
+- [x] 5.1 Verify `gdfkube-src/gdfkube-infra/mongodb/seed-data/settings.json` is **not** modified by this change (still holds the production-shaped placeholder + `CHANGE_ME` token).
+- [x] 5.2 Verify `gdfkube-src/gdfkube-infra/mongodb/seed-collections.js` is **not** modified (the existing `$setOnInsert` semantics remain correct).
+- [x] 5.3 Verify `gdfkube-src/gdfkube-itsm/src/data/adminSeeds.ts` and `gdfkube-src/gdfkube-itsm/scripts/export-seed-data.mjs` are **not** modified.
+- [x] 5.4 Verify `gdfkube-src/gdfkube-camel/src/main/resources/application.properties` is **not** modified (env overrides cover it).
 
 ## 6. Local smoke verification
 
