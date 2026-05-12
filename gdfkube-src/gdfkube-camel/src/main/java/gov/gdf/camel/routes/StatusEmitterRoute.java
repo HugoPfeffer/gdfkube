@@ -70,10 +70,10 @@ public class StatusEmitterRoute extends RouteBuilder {
             String detail;
 
             if (i <= currentStage) {
-                status = "completed";
+                status = "ok";
                 detail = "processed";
             } else {
-                status = "pending";
+                status = "fail";
                 detail = "awaiting";
             }
 
@@ -106,6 +106,7 @@ public class StatusEmitterRoute extends RouteBuilder {
                 .getCollection("requests")
                 .updateOne(
                         new Document("_id", requestId),
-                        new Document("$set", new Document("stage", stage)));
+                        new Document("$set", new Document("stage", stage)
+                                .append("_stageWriteback", true)));
     }
 }

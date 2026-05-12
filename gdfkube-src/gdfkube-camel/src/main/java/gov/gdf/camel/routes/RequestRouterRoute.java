@@ -56,7 +56,8 @@ public class RequestRouterRoute extends RouteBuilder {
                 } else if ("u".equals(op)) {
                     JsonNode node = MAPPER.readTree(body);
                     String status = node.path("status").asText("");
-                    accepted = "provisioning".equals(status);
+                    boolean isStageWriteback = node.path("_stageWriteback").asBoolean(false);
+                    accepted = "provisioning".equals(status) && !isStageWriteback;
                 }
 
                 if (accepted) {

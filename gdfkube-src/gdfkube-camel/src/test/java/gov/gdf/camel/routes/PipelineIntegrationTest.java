@@ -58,7 +58,7 @@ class PipelineIntegrationTest {
     @Inject
     MockGitProvider mockGitProvider;
 
-    @EndpointInject("mock:status-emit")
+    @EndpointInject("mock:status-emitter")
     MockEndpoint mockStatusEmit;
 
     @BeforeAll
@@ -88,9 +88,9 @@ class PipelineIntegrationTest {
         });
 
         AdviceWith.adviceWith(context, "git-push", route ->
-                route.interceptSendToEndpoint("direct:status-emit")
+                route.interceptSendToEndpoint("direct:status-emitter")
                         .skipSendToOriginalEndpoint()
-                        .to("mock:status-emit"));
+                        .to("mock:status-emitter"));
 
         AdviceWith.adviceWith(context, "status-emitter", route ->
                 route.replaceFromWith("seda:status-emitter-disabled"));
