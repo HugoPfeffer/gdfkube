@@ -1,0 +1,43 @@
+#!/bin/sh
+# Maven Wrapper script — downloads Maven if not cached, then runs it.
+# Based on the Apache Maven Wrapper project.
+
+set -e
+
+MAVEN_PROJECTBASEDIR="${MAVEN_BASEDIR:-$(cd "$(dirname "$0")" && pwd)}"
+MAVEN_WRAPPER_PROPERTIES="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.properties"
+MAVEN_WRAPPER_JAR="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.jar"
+
+if [ -f "$MAVEN_WRAPPER_PROPERTIES" ]; then
+  DIST_URL=$(grep -E '^distributionUrl=' "$MAVEN_WRAPPER_PROPERTIES" | cut -d'=' -f2-)
+  WRAPPER_URL=$(grep -E '^wrapperUrl=' "$MAVEN_WRAPPER_PROPERTIES" | cut -d'=' -f2-)
+fi
+
+DIST_URL="${DIST_URL:-https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.zip}"
+WRAPPER_URL="${WRAPPER_URL:-https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.3.2/maven-wrapper-3.3.2.jar}"
+
+MAVEN_USER_HOME="${MAVEN_USER_HOME:-$HOME/.m2}"
+MAVEN_HOME="$MAVEN_USER_HOME/wrapper/dists/apache-maven-3.9.9"
+
+if [ ! -f "$MAVEN_HOME/bin/mvn" ]; then
+  echo "Downloading Maven distribution..."
+  mkdir -p "$MAVEN_HOME"
+  TMP_ZIP="$MAVEN_USER_HOME/wrapper/dists/maven.zip"
+  mkdir -p "$(dirname "$TMP_ZIP")"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -o "$TMP_ZIP" "$DIST_URL"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -O "$TMP_ZIP" "$DIST_URL"
+  else
+    echo "Error: neither curl nor wget found." >&2
+    exit 1
+  fi
+
+  unzip -qo "$TMP_ZIP" -d "$MAVEN_USER_HOME/wrapper/dists"
+  rm -f "$TMP_ZIP"
+fi
+
+exec "$MAVEN_HOME/bin/mvn" \
+  -Dmaven.multiModuleProjectDirectory="$MAVEN_PROJECTBASEDIR" \
+  "$@"

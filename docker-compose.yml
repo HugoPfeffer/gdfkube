@@ -30,14 +30,32 @@ services:
       - gdfkube-net
     entrypoint: ["mongosh", "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0", "/scripts/seed-collections.js"]
 
+  mongo-collections-init:
+    image: mongo:7.0
+    restart: "no"
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
+    volumes:
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/mongodb/init-camel-collections.js:/init-camel-collections.js:ro
+    networks:
+      - gdfkube-net
+    entrypoint: ["mongosh", "mongodb://mongo1:27017/gdfkube?replicaSet=rs0", "/init-camel-collections.js"]
+
   gdfkube-itsm-api:
     build: ./gdfkube-src/gdfkube-itsm/server
     restart: unless-stopped
     environment:
       MONGO_URL: mongodb://mongo1:27017/gdfkube?replicaSet=rs0
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19092,kafka3:19092
     depends_on:
       mongo-seed:
         condition: service_completed_successfully
+      kafka1: { condition: service_healthy }
+      kafka2: { condition: service_healthy }
+      kafka3: { condition: service_healthy }
     networks:
       - gdfkube-net
     healthcheck:
@@ -199,6 +217,85 @@ services:
     networks:
       - gdfkube-net
     entrypoint: ["bash", "/scripts/init-topics.sh"]
+
+  gdfkube-connect-topics-init:
+    image: apache/kafka:3.7.2
+    restart: "no"
+    depends_on:
+      kafka1: { condition: service_healthy }
+      kafka2: { condition: service_healthy }
+      kafka3: { condition: service_healthy }
+    volumes:
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/debezium/init-connect-topics.sh:/scripts/init-connect-topics.sh:ro
+    networks: [gdfkube-net]
+    entrypoint: ["bash", "/scripts/init-connect-topics.sh"]
+
+  gdfkube-debezium-connect:
+    image: debezium/connect:2.7.3.Final
+    ports:
+      - "127.0.0.1:8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19092,kafka3:19092
+      GROUP_ID: gdfkube-connect
+      CONFIG_STORAGE_TOPIC: connect-configs
+      OFFSET_STORAGE_TOPIC: connect-offsets
+      STATUS_STORAGE_TOPIC: connect-status
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+    depends_on:
+      kafka1: { condition: service_healthy }
+      kafka2: { condition: service_healthy }
+      kafka3: { condition: service_healthy }
+      gdfkube-connect-topics-init: { condition: service_completed_successfully }
+    networks:
+      - gdfkube-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8083/ >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  gdfkube-debezium-init:
+    image: curlimages/curl:8.10.1
+    restart: "no"
+    depends_on:
+      gdfkube-debezium-connect: { condition: service_healthy }
+    volumes:
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/debezium/connector-config.json:/connector-config.json:ro
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/debezium/register-connector.sh:/register-connector.sh:ro
+    networks:
+      - gdfkube-net
+    entrypoint: ["sh", "/register-connector.sh"]
+
+  gdfkube-camel:
+    build:
+      context: ./gdfkube-src/gdfkube-camel
+      dockerfile: Dockerfile.jvm
+    image: gdfkube-camel:dev
+    environment:
+      QUARKUS_PROFILE: dev
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:19092,kafka2:19092,kafka3:19092
+      MONGODB_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0
+    volumes:
+      - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/charts:/opt/charts:ro
+    depends_on:
+      kafka1: { condition: service_healthy }
+      kafka2: { condition: service_healthy }
+      kafka3: { condition: service_healthy }
+      mongo1: { condition: service_healthy }
+      gdfkube-debezium-init: { condition: service_completed_successfully }
+      mongo-collections-init: { condition: service_completed_successfully }
+    networks:
+      - gdfkube-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/q/health/ready | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
 
 networks:
   gdfkube-net:

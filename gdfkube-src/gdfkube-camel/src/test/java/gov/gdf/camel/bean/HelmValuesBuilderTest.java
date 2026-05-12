@@ -1,0 +1,196 @@
+package gov.gdf.camel.bean;
+
+import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
+import org.bson.Document;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.yaml.snakeyaml.Yaml;
+
+import gov.gdf.camel.model.RequestEvent;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class HelmValuesBuilderTest {
+
+    private HelmValuesBuilder builder;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() throws Exception {
+        var formDef = new Document("_id", "cluster-request")
+                .append("name", "Cluster Request");
+
+        var mockCache = new FormDefCache() {
+            @Override
+            public Document lookup(String formId) {
+                return formDef;
+            }
+        };
+
+        builder = new HelmValuesBuilder();
+
+        var formDefCacheField = HelmValuesBuilder.class.getDeclaredField("formDefCache");
+        formDefCacheField.setAccessible(true);
+        formDefCacheField.set(builder, mockCache);
+
+        var baseDomainField = HelmValuesBuilder.class.getDeclaredField("baseDomain");
+        baseDomainField.setAccessible(true);
+        baseDomainField.set(builder, "apps.gdfkube.gov");
+
+        var releaseImageField = HelmValuesBuilder.class.getDeclaredField("releaseImage");
+        releaseImageField.setAccessible(true);
+        releaseImageField.set(builder, "quay.io/openshift-release-dev/ocp-release:4.16.7-x86_64");
+
+        var giteaUrlField = HelmValuesBuilder.class.getDeclaredField("giteaExternalUrl");
+        giteaUrlField.setAccessible(true);
+        giteaUrlField.set(builder, "https://gitea.apps.gdfkube.gov");
+
+        var giteaOwnerField = HelmValuesBuilder.class.getDeclaredField("giteaOwner");
+        giteaOwnerField.setAccessible(true);
+        giteaOwnerField.set(builder, "gdfkube");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void build_systemLabels_has6RequiredEntries() throws Exception {
+        RequestEvent event = buildEvent();
+        String path = builder.build(event);
+
+        Map<String, Object> values = parseYaml(path);
+        Map<String, Object> system = (Map<String, Object>) values.get("system");
+        Map<String, String> labels = (Map<String, String>) system.get("labels");
+
+        assertNotNull(labels, "system.labels must be present");
+        assertEquals(6, labels.size(), "system.labels must have exactly 6 entries");
+
+        assertTrue(labels.containsKey("cluster.open-cluster-management.io/clusterset"));
+        assertTrue(labels.containsKey("setic.gov.br/managed"));
+        assertTrue(labels.containsKey("setic.gov.br/customer"));
+        assertTrue(labels.containsKey("gdfkube.io/managed"));
+        assertTrue(labels.containsKey("gdfkube.io/organization"));
+        assertTrue(labels.containsKey("gdfkube.io/request-id"));
+
+        assertEquals("sec-educ", labels.get("gdfkube.io/organization"));
+        assertEquals("REQ-HVB-001", labels.get("gdfkube.io/request-id"));
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void build_systemNaming_correctlyComposed() throws Exception {
+        RequestEvent event = buildEvent();
+        String path = builder.build(event);
+
+        Map<String, Object> values = parseYaml(path);
+        Map<String, Object> system = (Map<String, Object>) values.get("system");
+        Map<String, Object> naming = (Map<String, Object>) system.get("naming");
+
+        assertNotNull(naming, "system.naming must be present");
+        assertEquals("hc-sec-educ-my-cluster", naming.get("hostedClusterName"));
+        assertEquals("hc-sec-educ-my-cluster", naming.get("namespace"));
+        assertEquals("sec-educ", naming.get("appProject"));
+        assertEquals("sec-educ", naming.get("clusterSet"));
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void build_metaFields_populated() throws Exception {
+        RequestEvent event = buildEvent();
+        String path = builder.build(event);
+
+        Map<String, Object> values = parseYaml(path);
+        Map<String, Object> meta = (Map<String, Object>) values.get("meta");
+
+        assertNotNull(meta, "meta must be present");
+        assertEquals("REQ-HVB-001", meta.get("requestId"));
+        assertEquals("cluster-request", meta.get("formId"));
+        assertEquals("sec-educ", meta.get("org"));
+        assertEquals("user@gdf.gov.br", meta.get("email"));
+        assertEquals("2025-06-01T00:00:00Z", meta.get("submittedAt"));
+        assertEquals("corr-hvb-001", meta.get("correlationId"));
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void build_varsPassThrough() throws Exception {
+        RequestEvent event = buildEvent();
+        String path = builder.build(event);
+
+        Map<String, Object> values = parseYaml(path);
+        Map<String, Object> vars = (Map<String, Object>) values.get("vars");
+
+        assertNotNull(vars, "vars must be present");
+        assertEquals("my-cluster", vars.get("clusterName"));
+        assertEquals("3", String.valueOf(vars.get("workerCount")));
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    void build_writesYamlToTmpPath() throws Exception {
+        RequestEvent event = buildEvent();
+        String path = builder.build(event);
+
+        assertTrue(path.startsWith("/tmp/"), "Output path must be under /tmp/");
+        assertTrue(path.contains(event._id), "Output path must contain the requestId");
+        assertTrue(path.endsWith("-values.yaml"), "Output path must end with -values.yaml");
+        assertTrue(Files.exists(Path.of(path)), "YAML file must actually be written to disk");
+
+        String content = Files.readString(Path.of(path));
+        assertFalse(content.isBlank(), "YAML file must not be empty");
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    void getChartRef_returnsFormId() {
+        RequestEvent event = buildEvent();
+        assertEquals("cluster-request", builder.getChartRef(event));
+    }
+
+    @Test
+    void getReleaseName_clusterRequest_usesClusterNameVar() {
+        RequestEvent event = buildEvent();
+        assertEquals("hc-sec-educ-my-cluster", builder.getReleaseName(event));
+    }
+
+    @Test
+    void getReleaseName_namespaceRequest_usesNamespaceNameVar() {
+        RequestEvent event = buildEvent();
+        event.formId = "namespace-request";
+        event.vars = Map.of("namespaceName", "dev-apps");
+
+        assertEquals("ns-sec-educ-dev-apps", builder.getReleaseName(event));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseYaml(String path) throws Exception {
+        try (FileReader reader = new FileReader(path)) {
+            return new Yaml().load(reader);
+        }
+    }
+
+    private static RequestEvent buildEvent() {
+        RequestEvent event = new RequestEvent();
+        event._id = "REQ-HVB-001";
+        event.formId = "cluster-request";
+        event.status = "provisioning";
+        event.env = "dev";
+        event.requesterGroupName = "sec-educ";
+        event.stage = 0;
+        event.submittedAt = "2025-06-01T00:00:00Z";
+        event.vars = Map.of("clusterName", "my-cluster", "workerCount", 3);
+        event.meta = Map.of("correlationId", "corr-hvb-001");
+        event.requester = Map.of("email", "user@gdf.gov.br");
+        return event;
+    }
+}

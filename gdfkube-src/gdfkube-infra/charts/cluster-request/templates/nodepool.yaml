@@ -1,0 +1,14 @@
+apiVersion: hypershift.openshift.io/v1beta1
+kind: NodePool
+metadata:
+  name: {{ .Values.system.naming.hostedClusterName }}-workers
+  namespace: clusters
+  labels:
+    {{- toYaml .Values.system.labels | nindent 4 }}
+spec:
+  clusterName: {{ .Values.system.naming.hostedClusterName }}
+  replicas: {{ .Values.vars.nodeCount | default 1 }}
+  management:
+    autoRepair: true
+  platform:
+    type: KubeVirt

@@ -33,10 +33,13 @@ create_topic "dbz.gdfkube.forms"          1 3 604800000
 create_topic "gdfkube.pipeline.status"    6 3 1209600000
 create_topic "gdfkube.audit"              3 3 2592000000
 
-create_topic "dlq.gdfkube.requests"       3 3 2592000000
+create_topic "dlq.gdfkube.request-router"  3 3 2592000000
 create_topic "dlq.gdfkube.helm-render"    1 3 2592000000
 create_topic "dlq.gdfkube.git-push"       1 3 2592000000
 create_topic "dlq.gdfkube.repo-bootstrap" 1 3 2592000000
+create_topic "dlq.gdfkube.status-emitter" 1 3 2592000000
+create_topic "dlq.gdfkube.audit-sink"     1 3 2592000000
+create_topic "dlq.gdfkube.config-reload"  1 3 2592000000
 create_topic "dlq.gdfkube.debezium"       1 3 2592000000
 
-echo "=== All 9 topics created successfully ==="
+echo "=== All 12 topics created successfully ==="

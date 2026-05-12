@@ -1,0 +1,4 @@
+apiVersion: v2
+name: scale-patch
+description: Renders a NodePool patch for scaling cluster worker replicas
+version: 0.1.0

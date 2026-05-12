@@ -1,0 +1,4 @@
+apiVersion: v2
+name: argocd-org
+description: Renders ArgoCD AppProject and ApplicationSet for an organization
+version: 0.1.0

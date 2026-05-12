@@ -1,0 +1,30 @@
+meta:
+  requestId: "01HK6X-EXAMPLE"
+  formId: "cluster-request"
+  org: "saude"
+  email: "joao@saude.df.gov.br"
+  submittedAt: "2026-05-05T12:34:56Z"
+  correlationId: "01HK6X-EXAMPLE"
+
+vars:
+  clusterName: "vacinacao"
+  nodeCount: 3
+  environment: "production"
+
+system:
+  baseDomain: "apps.gdfkube.gov"
+  releaseImage: "quay.io/openshift-release-dev/ocp-release:4.16.7-x86_64"
+  giteaExternalUrl: "https://gitea-gitea.apps.gdfkube.gov"
+  giteaOwner: "gdfkube"
+  naming:
+    hostedClusterName: "hc-saude-vacinacao"
+    namespace: "hc-saude-vacinacao"
+    appProject: "saude"
+    clusterSet: "saude"
+  labels:
+    cluster.open-cluster-management.io/clusterset: "saude"
+    setic.gov.br/managed: "true"
+    setic.gov.br/customer: "saude"
+    gdfkube.io/managed: "true"
+    gdfkube.io/organization: "saude"
+    gdfkube.io/request-id: "01HK6X-EXAMPLE"
