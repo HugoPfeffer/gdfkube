@@ -12,6 +12,7 @@
   "transforms.unwrap.type": "io.debezium.connector.mongodb.transforms.ExtractNewDocumentState",
   "transforms.unwrap.delete.handling.mode": "rewrite",
   "transforms.unwrap.add.headers": "op,source.ts_ms",
+  "transforms.unwrap.field.exclude.list": "_stageWriteback",
   "transforms.reroute.type": "org.apache.kafka.connect.transforms.RegexRouter",
   "transforms.reroute.regex": "dbz.gdfkube.gdfkube.(.*)",
   "transforms.reroute.replacement": "dbz.gdfkube.$1",

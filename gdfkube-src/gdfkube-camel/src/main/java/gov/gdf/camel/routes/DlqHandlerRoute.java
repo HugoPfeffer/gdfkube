@@ -28,7 +28,8 @@ public class DlqHandlerRoute extends RouteBuilder {
             + ",dlq.gdfkube.repo-bootstrap"
             + ",dlq.gdfkube.status-emitter"
             + ",dlq.gdfkube.audit-sink"
-            + ",dlq.gdfkube.config-reload";
+            + ",dlq.gdfkube.config-reload"
+            + ",dlq.gdfkube.debezium";
 
     @Inject
     MongoClient mongoClient;

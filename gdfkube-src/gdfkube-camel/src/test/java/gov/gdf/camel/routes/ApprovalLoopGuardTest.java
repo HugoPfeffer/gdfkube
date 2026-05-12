@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.gdf.camel.model.RequestEvent;
 import io.quarkus.test.junit.QuarkusTest;
@@ -158,6 +159,36 @@ class ApprovalLoopGuardTest {
 
         producer.sendBodyAndHeaders("direct:request-router-input", payload,
                 Map.of("__op", "r"));
+
+        mockHelmRender.assertIsSatisfied(5000);
+    }
+
+    @Test
+    void opUpdateWithStageWriteback_isDropped() throws Exception {
+        RequestEvent event = buildRequest("REQ-GUARD-WB", "provisioning");
+        ObjectNode node = MAPPER.valueToTree(event);
+        node.put("_stageWriteback", true);
+        String payload = MAPPER.writeValueAsString(node);
+        mockHelmRender.expectedMessageCount(0);
+
+        producer.sendBodyAndHeaders("direct:request-router-input", payload,
+                Map.of("__op", "u"));
+
+        mockHelmRender.assertIsSatisfied(2000);
+        assertEquals(0, mockHelmRender.getReceivedCounter(),
+                "op=u with _stageWriteback=true must be dropped even if status=provisioning");
+    }
+
+    @Test
+    void opUpdateWithStageWritebackFalse_isAccepted() throws Exception {
+        RequestEvent event = buildRequest("REQ-GUARD-WBFALSE", "provisioning");
+        ObjectNode node = MAPPER.valueToTree(event);
+        node.put("_stageWriteback", false);
+        String payload = MAPPER.writeValueAsString(node);
+        mockHelmRender.expectedMessageCount(1);
+
+        producer.sendBodyAndHeaders("direct:request-router-input", payload,
+                Map.of("__op", "u"));
 
         mockHelmRender.assertIsSatisfied(5000);
     }
