@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Role, User } from '../../types';
 import { Topbar } from '../Topbar';
 
+const navigate = vi.fn();
+
 function makeUser(overrides: Partial<User> = {}): User {
   return {
     id: 'u-1',
@@ -24,6 +26,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser()}
+        navigate={navigate}
       />,
     );
 
@@ -50,6 +53,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser()}
+        navigate={navigate}
       />,
     );
 
@@ -64,6 +68,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser()}
+        navigate={navigate}
       />,
     );
 
@@ -81,6 +86,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser()}
+        navigate={navigate}
       />,
     );
 
@@ -99,6 +105,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser()}
+        navigate={navigate}
       />,
     );
 
@@ -117,6 +124,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser()}
+        navigate={navigate}
       />,
     );
 
@@ -136,6 +144,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser({ group: 'saude' })}
+        navigate={navigate}
       />,
     );
     const opRoleLine = container.querySelector('.role-switch .who .role');
@@ -148,6 +157,7 @@ describe('Topbar', () => {
         role="admin"
         setRole={setRole}
         user={makeUser({ role: 'admin', group: 'setic' })}
+        navigate={navigate}
       />,
     );
     const adminRoleLine = container.querySelector('.role-switch .who .role');
@@ -163,6 +173,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser({ fullName: 'João Silva' })}
+        navigate={navigate}
       />,
     );
 
@@ -175,7 +186,7 @@ describe('Topbar', () => {
     const u = makeUser({ name: 'Maria Costa' });
     delete (u as { fullName?: string }).fullName;
     const { container } = render(
-      <Topbar crumbs={['Home']} role="operator" setRole={setRole} user={u} />,
+      <Topbar crumbs={['Home']} role="operator" setRole={setRole} user={u} navigate={navigate} />,
     );
 
     const avatar = container.querySelector('.avatar');
@@ -191,6 +202,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser()}
+        navigate={navigate}
         onNotify={onNotify}
       />,
     );
@@ -208,6 +220,7 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser()}
+        navigate={navigate}
       />,
     );
 

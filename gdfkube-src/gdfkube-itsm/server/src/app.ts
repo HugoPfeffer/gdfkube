@@ -9,6 +9,7 @@ import requestsRouter from './routes/requests.js';
 import { sseRouter } from './routes/sse.js';
 import usersRouter from './routes/users.js';
 import groupsRouter from './routes/groups.js';
+import settingsRouter from './routes/settings.js';
 import { httpRequestDuration } from './routes/metrics.js';
 
 export function buildApp(): express.Express {
@@ -42,6 +43,7 @@ export function buildApp(): express.Express {
   app.use('/api/itsm/requests', requestsRouter);
   app.use('/api/itsm/users', usersRouter);
   app.use('/api/itsm/groups', groupsRouter);
+  app.use('/api/itsm/settings', settingsRouter);
   app.use('/api/itsm', sseRouter);
 
   app.use(errorMiddleware);

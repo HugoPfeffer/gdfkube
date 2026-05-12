@@ -8,6 +8,7 @@
 
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Icons } from '../icons/Icons';
+import type { Navigate } from '../router';
 import type { Role, User } from '../types';
 
 interface TopbarProps {
@@ -15,6 +16,7 @@ interface TopbarProps {
   role: Role;
   setRole: (r: Role) => void;
   user: User;
+  navigate: Navigate;
   onNotify?: () => void;
 }
 
@@ -28,7 +30,7 @@ function roleLabel(role: Role): string {
   return role === 'admin' ? 'Platform Admin' : 'Operator';
 }
 
-export function Topbar({ crumbs, role, setRole, user, onNotify }: TopbarProps) {
+export function Topbar({ crumbs, role, setRole, user, navigate, onNotify }: TopbarProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -156,9 +158,17 @@ export function Topbar({ crumbs, role, setRole, user, onNotify }: TopbarProps) {
               {role === 'admin' && <Icons.check className="menu-check" />}
             </button>
             <div className="menu-sep"></div>
-            <div className="menu-item">
-              <Icons.cog /> Preferences
-            </div>
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item"
+              onClick={() => {
+                navigate('settings');
+                setOpen(false);
+              }}
+            >
+              <Icons.cog /> Settings
+            </button>
             <div className="menu-sep"></div>
             <div className="menu-item">
               <Icons.x /> Sign out

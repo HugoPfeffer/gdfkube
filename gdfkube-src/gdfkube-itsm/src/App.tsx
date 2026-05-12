@@ -16,6 +16,7 @@ import { RequestDetail } from './pages/RequestDetail';
 import { RequestsList } from './pages/RequestsList';
 import { Forms as AdminForms } from './pages/admin/Forms';
 import { Users as AdminUsers } from './pages/admin/Users';
+import { Settings } from './pages/admin/Settings';
 import { Sidebar } from './shell/Sidebar';
 import { Topbar } from './shell/Topbar';
 import { UtilityBand } from './shell/UtilityBand';
@@ -124,6 +125,8 @@ function App() {
         return ['Forms'];
       case 'admin-users':
         return ['Users'];
+      case 'settings':
+        return ['Settings'];
       default: {
         const _exhaustive: never = route;
         return [_exhaustive];
@@ -164,6 +167,8 @@ function App() {
       <AdminForms navigate={navigate} setToast={setToast} />
     ) : route === 'admin-users' ? (
       <AdminUsers navigate={navigate} setToast={setToast} />
+    ) : route === 'settings' ? (
+      <Settings role={role} navigate={navigate} setToast={setToast} />
     ) : (
       <div className="page-placeholder">{route}</div>
     );
@@ -184,6 +189,7 @@ function App() {
         role={role}
         setRole={setRole}
         user={user}
+        navigate={navigate}
         onNotify={() =>
           setToast({
             id: `notify-${Date.now()}`,

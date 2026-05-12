@@ -68,6 +68,18 @@ upsertCollection('forms', forms);
 upsertCollection('users', users);
 upsertCollection('groups', groups);
 
+// gitea_settings: use $setOnInsert so re-seeds don't overwrite admin-edited values.
+// This differs from other seeds (which use replaceOne) because settings are
+// runtime admin config, not resettable demo fixtures.
+const settingsRaw = fs.readFileSync(`${seedPath}/settings.json`, 'utf8');
+const settingsData = JSON.parse(settingsRaw);
+database.gitea_settings.updateOne(
+  { _id: settingsData._id },
+  { $setOnInsert: settingsData },
+  { upsert: true }
+);
+print('  gitea_settings: seeded (setOnInsert)');
+
 print('\n--- Creating indexes ---\n');
 
 database.requests.createIndex({ formId: 1, status: 1 }, { name: 'idx_formId_status' });

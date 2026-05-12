@@ -24,7 +24,8 @@ export type RouteName =
   | 'request-detail'
   | 'approvals'
   | 'admin-forms'
-  | 'admin-users';
+  | 'admin-users'
+  | 'settings';
 
 export type RouteParams = {
   formId?: string;

@@ -1,0 +1,7 @@
+{
+  "_id": "gitea",
+  "endpoint": "https://gitea-gitea.apps.gdfkube.gov",
+  "owner": "gdfkube",
+  "token": "CHANGE_ME",
+  "updatedBy": "seed"
+}

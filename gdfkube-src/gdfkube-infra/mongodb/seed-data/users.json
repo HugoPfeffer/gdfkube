@@ -1,7 +1,6 @@
 [
   {
     "_id": "joao.silva",
-    "username": "joao.silva",
     "name": "João Silva",
     "fullName": "João Silva",
     "email": "joao.silva@saude.gov",
@@ -13,7 +12,6 @@
   },
   {
     "_id": "maria.costa",
-    "username": "maria.costa",
     "name": "Maria Costa",
     "fullName": "Maria Costa",
     "email": "m.costa@setic.gov",
@@ -25,7 +23,6 @@
   },
   {
     "_id": "carlos.mendes",
-    "username": "carlos.mendes",
     "name": "Carlos Mendes",
     "fullName": "Carlos Mendes",
     "email": "c.mendes@transportes.gov",
@@ -37,7 +34,6 @@
   },
   {
     "_id": "ana.rodrigues",
-    "username": "ana.rodrigues",
     "name": "Ana Rodrigues",
     "fullName": "Ana Rodrigues",
     "email": "ana.r@fazenda.gov",
@@ -49,7 +45,6 @@
   },
   {
     "_id": "pedro.almeida",
-    "username": "pedro.almeida",
     "name": "Pedro Almeida",
     "fullName": "Pedro Almeida",
     "email": "p.almeida@agricultura.gov",
@@ -61,7 +56,6 @@
   },
   {
     "_id": "lucia.fernandes",
-    "username": "lucia.fernandes",
     "name": "Lúcia Fernandes",
     "fullName": "Lúcia Fernandes",
     "email": "l.fernandes@seguranca.gov",
@@ -73,7 +67,6 @@
   },
   {
     "_id": "rafael.souza",
-    "username": "rafael.souza",
     "name": "Rafael Souza",
     "fullName": "Rafael Souza",
     "email": "r.souza@educacao.gov",
@@ -85,7 +78,6 @@
   },
   {
     "_id": "platform.bot",
-    "username": "platform.bot",
     "name": "Platform Service",
     "fullName": "Platform Service",
     "email": "platform@setic.gov",

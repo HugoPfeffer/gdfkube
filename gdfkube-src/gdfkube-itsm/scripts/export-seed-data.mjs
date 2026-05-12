@@ -13,7 +13,7 @@ const outDir = resolve(__dirname, '../../gdfkube-infra/mongodb/seed-data');
 
 async function main() {
   const { REQUESTS } = await import('../src/data/seeds.ts');
-  const { FORMS, FIELDS, USERS, GROUPS } = await import('../src/data/adminSeeds.ts');
+  const { FORMS, FIELDS, USERS, GROUPS, GITEA_SETTINGS } = await import('../src/data/adminSeeds.ts');
   const { DEFAULT_TEMPLATES } = await import('../src/data/defaultTemplates.ts');
 
   await mkdir(outDir, { recursive: true });
@@ -61,6 +61,7 @@ async function main() {
     writeFile(resolve(outDir, 'forms.json'), JSON.stringify(forms, null, 2)),
     writeFile(resolve(outDir, 'users.json'), JSON.stringify(users, null, 2)),
     writeFile(resolve(outDir, 'groups.json'), JSON.stringify(groups, null, 2)),
+    writeFile(resolve(outDir, 'settings.json'), JSON.stringify(GITEA_SETTINGS, null, 2)),
   ]);
 
   console.log(`Exported seed data to ${outDir}`);
@@ -68,6 +69,7 @@ async function main() {
   console.log(`  forms:    ${forms.length} docs`);
   console.log(`  users:    ${users.length} docs`);
   console.log(`  groups:   ${groups.length} docs`);
+  console.log(`  settings: 1 doc (singleton)`);
 }
 
 main().catch((err) => {
