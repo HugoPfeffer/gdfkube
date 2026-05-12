@@ -30,7 +30,7 @@
 ## 6. Frontend Settings page
 
 - [x] 6.1 Create `gdfkube-src/gdfkube-itsm/src/pages/admin/Settings.tsx` with admin-gating check (if `role !== 'admin'`, render "Admin only" notice, mirror `Dashboard.tsx:51` pattern)
-- [x] 6.2 Add three form fields: Gitea Endpoint URL (text, regex validation), Owner (text, regex validation), Personal Access Token (type="password", non-empty validation). Reuse `src/forms/validate.ts` for anchored-regex validation
+- [x] 6.2 Add three form fields: Gitea Endpoint URL (text, regex validation), Owner (text, regex validation), Personal Access Token (type="password", non-empty validation). Inline regex constants matching server-side `match` validators in `models/GiteaSettings.ts`
 - [x] 6.3 Add read-only metadata strip showing `updatedAt` and `updatedBy`
 - [x] 6.4 Add Save button → `PATCH /api/itsm/settings`. Toast on success/error using the existing `setToast` prop pattern
 - [x] 6.5 On mount, fetch `GET /api/itsm/settings?reveal=1` and populate the form fields

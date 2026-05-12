@@ -168,7 +168,7 @@ function App() {
     ) : route === 'admin-users' ? (
       <AdminUsers navigate={navigate} setToast={setToast} />
     ) : route === 'settings' ? (
-      <Settings role={role} navigate={navigate} setToast={setToast} />
+      <Settings role={role} setToast={setToast} />
     ) : (
       <div className="page-placeholder">{route}</div>
     );

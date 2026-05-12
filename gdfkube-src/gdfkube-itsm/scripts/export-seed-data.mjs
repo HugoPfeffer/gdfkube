@@ -36,6 +36,7 @@ async function main() {
 
   const users = USERS.map((user) => ({
     _id: user.username ?? user.id,
+    username: user.username,
     name: user.name,
     fullName: user.fullName,
     email: user.email,
@@ -50,18 +51,18 @@ async function main() {
     _id: group.id,
     name: group.name,
     fullName: group.fullName,
-    users: [],
-    forms: [],
+    users: group.users,
+    forms: group.forms,
     repo: group.repo,
-    clusters: typeof group.clusters === 'number' || group.clusters == null ? [] : group.clusters,
+    clusters: group.clusters,
   }));
 
   await Promise.all([
-    writeFile(resolve(outDir, 'requests.json'), JSON.stringify(requests, null, 2)),
-    writeFile(resolve(outDir, 'forms.json'), JSON.stringify(forms, null, 2)),
-    writeFile(resolve(outDir, 'users.json'), JSON.stringify(users, null, 2)),
-    writeFile(resolve(outDir, 'groups.json'), JSON.stringify(groups, null, 2)),
-    writeFile(resolve(outDir, 'settings.json'), JSON.stringify(GITEA_SETTINGS, null, 2)),
+    writeFile(resolve(outDir, 'requests.json'), JSON.stringify(requests, null, 2) + '\n'),
+    writeFile(resolve(outDir, 'forms.json'), JSON.stringify(forms, null, 2) + '\n'),
+    writeFile(resolve(outDir, 'users.json'), JSON.stringify(users, null, 2) + '\n'),
+    writeFile(resolve(outDir, 'groups.json'), JSON.stringify(groups, null, 2) + '\n'),
+    writeFile(resolve(outDir, 'settings.json'), JSON.stringify(GITEA_SETTINGS, null, 2) + '\n'),
   ]);
 
   console.log(`Exported seed data to ${outDir}`);

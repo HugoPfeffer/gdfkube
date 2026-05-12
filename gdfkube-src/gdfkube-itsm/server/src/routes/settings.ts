@@ -13,6 +13,9 @@ router.get('/', demoUser, requireAdmin, async (req, res, next) => {
       return;
     }
     const reveal = req.query.reveal === '1';
+    if (reveal) {
+      res.set('Cache-Control', 'no-store');
+    }
     res.json({ ...doc, token: reveal ? doc.token : '***' });
   } catch (err) {
     next(err);
@@ -21,6 +24,10 @@ router.get('/', demoUser, requireAdmin, async (req, res, next) => {
 
 router.patch('/', demoUser, requireAdmin, async (req, res, next) => {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      res.status(400).json({ error: 'invalid body' });
+      return;
+    }
     const { endpoint, owner, token } = req.body;
     const errors: string[] = [];
     if (!endpoint || !/^https?:\/\/.+$/.test(endpoint)) errors.push('endpoint');

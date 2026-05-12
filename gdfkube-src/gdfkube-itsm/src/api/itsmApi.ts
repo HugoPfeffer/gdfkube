@@ -144,6 +144,23 @@ export const itsmApi = {
     },
   },
 
+  settings: {
+    get(reveal?: boolean, signal?: AbortSignal) {
+      const q = reveal ? '?reveal=1' : '';
+      return api<Record<string, unknown>>(`/api/itsm/settings${q}`, { signal });
+    },
+    update(
+      body: { endpoint: string; owner: string; token: string },
+      signal?: AbortSignal,
+    ) {
+      return api<Record<string, unknown>>('/api/itsm/settings', {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+        signal,
+      });
+    },
+  },
+
   groups: {
     list(signal?: AbortSignal) {
       return api<Record<string, unknown>[]>('/api/itsm/groups', { signal }).then(

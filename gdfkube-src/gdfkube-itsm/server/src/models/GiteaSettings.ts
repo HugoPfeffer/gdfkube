@@ -1,15 +1,6 @@
-import { Schema, model, type Document } from 'mongoose';
+import { Schema, model } from 'mongoose';
 
-export interface IGiteaSettings extends Document {
-  _id: string;
-  endpoint: string;
-  owner: string;
-  token: string;
-  updatedAt?: Date;
-  updatedBy?: string;
-}
-
-const giteaSettingsSchema = new Schema<IGiteaSettings>(
+const giteaSettingsSchema = new Schema(
   {
     _id: { type: String, default: 'gitea' },
     endpoint: { type: String, required: true, match: /^https?:\/\/.+$/ },
@@ -25,7 +16,4 @@ const giteaSettingsSchema = new Schema<IGiteaSettings>(
   },
 );
 
-export const GiteaSettings = model<IGiteaSettings>(
-  'GiteaSettings',
-  giteaSettingsSchema,
-);
+export const GiteaSettings = model('GiteaSettings', giteaSettingsSchema);

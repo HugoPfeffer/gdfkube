@@ -3,63 +3,63 @@
     "_id": "saude",
     "name": "Saúde",
     "fullName": "Department of Health",
-    "users": [],
-    "forms": [],
+    "users": 8,
+    "forms": 4,
     "repo": "gdfkube-saude",
-    "clusters": []
+    "clusters": 2
   },
   {
     "_id": "educacao",
     "name": "Educação",
     "fullName": "Department of Education",
-    "users": [],
-    "forms": [],
+    "users": 6,
+    "forms": 4,
     "repo": "gdfkube-educacao",
-    "clusters": []
+    "clusters": 2
   },
   {
     "_id": "transportes",
     "name": "Transportes",
     "fullName": "Department of Transportation",
-    "users": [],
-    "forms": [],
+    "users": 4,
+    "forms": 4,
     "repo": "gdfkube-transportes",
-    "clusters": []
+    "clusters": 2
   },
   {
     "_id": "fazenda",
     "name": "Fazenda",
     "fullName": "Department of Finance",
-    "users": [],
-    "forms": [],
+    "users": 5,
+    "forms": 4,
     "repo": "gdfkube-fazenda",
-    "clusters": []
+    "clusters": 1
   },
   {
     "_id": "agricultura",
     "name": "Agricultura",
     "fullName": "Department of Agriculture",
-    "users": [],
-    "forms": [],
+    "users": 3,
+    "forms": 4,
     "repo": "gdfkube-agricultura",
-    "clusters": []
+    "clusters": 0
   },
   {
     "_id": "seguranca",
     "name": "Segurança",
     "fullName": "Department of Public Safety",
-    "users": [],
-    "forms": [],
+    "users": 4,
+    "forms": 4,
     "repo": "gdfkube-seguranca",
-    "clusters": []
+    "clusters": 1
   },
   {
     "_id": "setic",
     "name": "SETIC",
     "fullName": "Platform Engineering",
-    "users": [],
-    "forms": [],
+    "users": 3,
+    "forms": 6,
     "repo": "gdfkube-infra",
-    "clusters": []
+    "clusters": null
   }
 ]

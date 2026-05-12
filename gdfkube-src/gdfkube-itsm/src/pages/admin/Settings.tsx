@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { Navigate } from '../../router';
+import { ApiError, itsmApi } from '../../api/itsmApi';
 import type { Role } from '../../types';
 import type { Toast } from '../../shell/ToastStack';
 
 interface SettingsProps {
   role: Role;
-  navigate: Navigate;
   setToast: (toast: Toast | null) => void;
 }
 
@@ -47,36 +46,27 @@ export function Settings({ role, setToast }: SettingsProps) {
   useEffect(() => {
     if (role !== 'admin') return;
     const ctrl = new AbortController();
-    fetch('/api/itsm/settings?reveal=1', {
-      headers: { 'X-Demo-User': 'maria.costa' },
-      signal: ctrl.signal,
-    })
-      .then((res) => {
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error(res.statusText);
-        return res.json();
-      })
+    itsmApi.settings
+      .get(true, ctrl.signal)
       .then((data) => {
-        if (data) {
-          setForm({
-            endpoint: data.endpoint ?? '',
-            owner: data.owner ?? '',
-            token: data.token ?? '',
-          });
-          setMeta({
-            updatedAt: data.updatedAt,
-            updatedBy: data.updatedBy,
-          });
-        }
+        setForm({
+          endpoint: (data.endpoint as string) ?? '',
+          owner: (data.owner as string) ?? '',
+          token: (data.token as string) ?? '',
+        });
+        setMeta({
+          updatedAt: data.updatedAt as string | undefined,
+          updatedBy: data.updatedBy as string | undefined,
+        });
       })
       .catch((err) => {
-        if (err.name !== 'AbortError') {
-          setToast({
-            kind: 'error',
-            title: 'Failed to load settings',
-            body: String(err.message ?? err),
-          });
-        }
+        if (err instanceof ApiError && err.status === 404) return;
+        if (err.name === 'AbortError') return;
+        setToast({
+          kind: 'error',
+          title: 'Failed to load settings',
+          body: String(err.message ?? err),
+        });
       })
       .finally(() => setLoading(false));
     return () => ctrl.abort();
@@ -112,24 +102,21 @@ export function Settings({ role, setToast }: SettingsProps) {
     }
     setSaving(true);
     try {
-      const res = await fetch('/api/itsm/settings', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Demo-User': 'maria.costa',
-        },
-        body: JSON.stringify(form),
+      const data = await itsmApi.settings.update(form);
+      setMeta({
+        updatedAt: data.updatedAt as string | undefined,
+        updatedBy: data.updatedBy as string | undefined,
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? res.statusText);
-      }
-      const data = await res.json();
-      setMeta({ updatedAt: data.updatedAt, updatedBy: data.updatedBy });
       setToast({ kind: 'success', title: 'Settings saved' });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setToast({ kind: 'error', title: 'Save failed', body: msg });
+      if (err instanceof ApiError) {
+        const fields = (err.details as { fields?: string[] })?.fields;
+        const body = fields ? `Invalid fields: ${fields.join(', ')}` : err.message;
+        setToast({ kind: 'error', title: 'Save failed', body });
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        setToast({ kind: 'error', title: 'Save failed', body: msg });
+      }
     } finally {
       setSaving(false);
     }
@@ -154,7 +141,7 @@ export function Settings({ role, setToast }: SettingsProps) {
       </div>
 
       <div className="card" style={{ maxWidth: 600 }}>
-        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 20 }}>
+        <div className="card-body">
           <label className="field-label">
             <span>Gitea Endpoint URL</span>
             <input
@@ -195,7 +182,7 @@ export function Settings({ role, setToast }: SettingsProps) {
           </label>
 
           {(meta.updatedAt || meta.updatedBy) && (
-            <div style={{ fontSize: 12, color: 'var(--ink-500)', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+            <div className="field-help" style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
               {meta.updatedBy && <span>Last updated by <strong>{meta.updatedBy}</strong></span>}
               {meta.updatedAt && meta.updatedBy && <span> · </span>}
               {meta.updatedAt && <span>{new Date(meta.updatedAt).toLocaleString()}</span>}
@@ -217,5 +204,3 @@ export function Settings({ role, setToast }: SettingsProps) {
     </div>
   );
 }
-
-export default Settings;

@@ -500,6 +500,75 @@ paths:
                 $ref: "#/components/schemas/StageEvent"
         "404":
           description: Request not found
+  /api/itsm/settings:
+    get:
+      summary: Get Gitea settings (admin only)
+      security:
+        - DemoUser: []
+      parameters:
+        - in: query
+          name: reveal
+          schema:
+            type: string
+            enum: ["1"]
+          description: Pass reveal=1 to include the plaintext token
+      responses:
+        "200":
+          description: Settings object (token redacted unless reveal=1)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  endpoint:
+                    type: string
+                  owner:
+                    type: string
+                  token:
+                    type: string
+                  updatedAt:
+                    type: string
+                    format: date-time
+                  updatedBy:
+                    type: string
+        "403":
+          description: Admin role required
+        "404":
+          description: Settings not found
+    patch:
+      summary: Update Gitea settings (admin only)
+      security:
+        - DemoUser: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint, owner, token]
+              properties:
+                endpoint:
+                  type: string
+                  pattern: "^https?://.+$"
+                owner:
+                  type: string
+                  pattern: "^[a-zA-Z0-9_-]+$"
+                token:
+                  type: string
+                  minLength: 1
+      responses:
+        "200":
+          description: Updated settings (token redacted)
+          content:
+            application/json:
+              schema:
+                type: object
+        "400":
+          description: Validation error or invalid body
+        "403":
+          description: Admin role required
   /api/itsm/groups/{id}:
     get:
       summary: Get group by id (admin only)

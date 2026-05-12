@@ -29,7 +29,7 @@ The Settings form MUST render three required fields:
 | Owner | text | `^[a-zA-Z0-9_-]+$` | "User or organization under which forms will create repos" |
 | Personal Access Token | password (masked) | non-empty | "PAT with `write:repository` scope" |
 
-Field validation MUST reuse the existing anchored-regex helper at `src/forms/validate.ts`.
+Field validation regex constants MUST match the server-side `match` validators in `server/src/models/GiteaSettings.ts`.
 
 #### Scenario: Endpoint field rejects non-URL
 

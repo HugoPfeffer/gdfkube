@@ -13,6 +13,10 @@ export function errorMiddleware(
   res: Response,
   _next: NextFunction,
 ): void {
+  if ((err as { type?: string }).type === 'entity.parse.failed') {
+    res.status(400).json({ error: 'invalid body' });
+    return;
+  }
   const status = err.statusCode ?? 500;
   if (status >= 500) {
     logger.error({ err }, 'unhandled error');
