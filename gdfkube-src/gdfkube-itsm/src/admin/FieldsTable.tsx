@@ -225,13 +225,17 @@ export function FieldsTable({ formId, value, onChange }: FieldsTableProps) {
               const isEditing = editingKey === f.key;
               return [
                 <tr
-                  key={`${f.key}-row`}
+                  key={`row-${i}`}
                   data-testid={`field-row-${f.key}`}
                   {...rowVisualProps(i)}
                   {...dragProps(i)}
                 >
                   <td className="muted mono drag-handle" title="Drag to reorder">⋮⋮</td>
-                  <td><input type="text" aria-label={`Key for ${f.key}`} value={f.key} readOnly className="mono cell-input" /></td>
+                  <td><input type="text" aria-label={`Key for ${f.key}`} value={f.key} onChange={(e) => {
+                    const next = e.target.value.replace(/[^a-zA-Z0-9_]/g, '');
+                    if (editingKey === f.key) setEditingKey(next);
+                    patch(f.key, { key: next });
+                  }} className="mono cell-input" /></td>
                   <td><input type="text" aria-label={`Label for ${f.key}`} value={f.label} onChange={(e) => patch(f.key, { label: e.target.value })} className="cell-input" /></td>
                   <td>
                     <select aria-label={`Type for ${f.key}`} value={f.type} onChange={(e) => patch(f.key, { type: e.target.value as FieldType })} className="cell-input">
@@ -251,7 +255,7 @@ export function FieldsTable({ formId, value, onChange }: FieldsTableProps) {
                     <button type="button" className="icon-btn" title={isEditing ? 'Done editing' : 'Edit advanced'} aria-label={`Edit ${f.key}`} onClick={() => setEditingKey(isEditing ? null : f.key)}>⚙</button>
                   </td>
                 </tr>,
-                isEditing ? <AdvancedRow key={`${f.key}-adv`} f={f} patch={(p) => patch(f.key, p)} /> : null,
+                isEditing ? <AdvancedRow key={`adv-${i}`} f={f} patch={(p) => patch(f.key, p)} /> : null,
               ];
             })}
             {list.length === 0 && (
