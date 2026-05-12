@@ -7,8 +7,8 @@ const GroupSchema = new Schema(
     fullName: String,
     repo: String,
     clusters: Schema.Types.Mixed,
-    users: { type: [String], default: [] },
-    forms: { type: [String], default: [] },
+    users: Schema.Types.Mixed,
+    forms: Schema.Types.Mixed,
   },
   {
     _id: false,
