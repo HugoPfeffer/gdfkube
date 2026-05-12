@@ -7,7 +7,7 @@ import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.kafka.KafkaConstants;
-import org.apache.camel.component.kafka.KafkaManualCommit;
+import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
 import org.bson.Document;
 import org.jboss.logging.Logger;
 

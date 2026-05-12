@@ -3,7 +3,7 @@ package gov.gdf.camel.routes;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.kafka.KafkaConstants;
-import org.apache.camel.component.kafka.KafkaManualCommit;
+import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;

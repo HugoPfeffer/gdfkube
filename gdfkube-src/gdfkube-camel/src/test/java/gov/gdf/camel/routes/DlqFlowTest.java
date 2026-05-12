@@ -79,7 +79,7 @@ class DlqFlowTest {
     // ---- DlqHeaders.stamp() unit tests ----
 
     @Test
-    void stamp_setsErrorClassAndMessage() {
+    void stamp_setsErrorClassAndMessage() throws Exception {
         try (DefaultCamelContext testCtx = new DefaultCamelContext()) {
             Exchange exchange = new DefaultExchange(testCtx);
             exchange.setProperty(Exchange.EXCEPTION_CAUGHT,
@@ -95,7 +95,7 @@ class DlqFlowTest {
     }
 
     @Test
-    void stamp_setsTimestampAndReplayedFlag() {
+    void stamp_setsTimestampAndReplayedFlag() throws Exception {
         try (DefaultCamelContext testCtx = new DefaultCamelContext()) {
             Exchange exchange = new DefaultExchange(testCtx);
             exchange.setProperty(Exchange.EXCEPTION_CAUGHT, new IllegalStateException("err"));
@@ -111,7 +111,7 @@ class DlqFlowTest {
     }
 
     @Test
-    void stamp_setsStageAndAttempts() {
+    void stamp_setsStageAndAttempts() throws Exception {
         try (DefaultCamelContext testCtx = new DefaultCamelContext()) {
             Exchange exchange = new DefaultExchange(testCtx);
             exchange.setProperty(Exchange.EXCEPTION_CAUGHT, new RuntimeException("err"));
@@ -127,7 +127,7 @@ class DlqFlowTest {
     }
 
     @Test
-    void stamp_withNullException_setsUnknown() {
+    void stamp_withNullException_setsUnknown() throws Exception {
         try (DefaultCamelContext testCtx = new DefaultCamelContext()) {
             Exchange exchange = new DefaultExchange(testCtx);
 

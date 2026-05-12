@@ -7,7 +7,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.kafka.KafkaConstants;
-import org.apache.camel.component.kafka.KafkaManualCommit;
+import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -108,8 +108,8 @@ public class RequestRouterRoute extends RouteBuilder {
         msg.setHeader("x-original-key", msg.getHeader(KafkaConstants.KEY));
         msg.setHeader("x-error-class", cause != null ? cause.getClass().getName() : "unknown");
         msg.setHeader("x-error-msg", cause != null ? cause.getMessage() : "unknown");
-        msg.setHeader("x-stage", exchange.getProperty("currentStage", "unknown"));
-        msg.setHeader("x-attempts", exchange.getProperty(Exchange.REDELIVERY_COUNTER, 0));
+        msg.setHeader("x-stage", exchange.getProperty("currentStage", "unknown", String.class));
+        msg.setHeader("x-attempts", exchange.getProperty(Exchange.REDELIVERY_COUNTER, 0, Integer.class));
         msg.setHeader("x-first-failure-at", Instant.now().toString());
         msg.setHeader("x-replayed", "false");
 
