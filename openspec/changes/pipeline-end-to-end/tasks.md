@@ -98,20 +98,22 @@
 
 ## 12. End-to-end verification
 
-- [ ] 12.1 Clean state: `docker compose down -v`
-- [ ] 12.2 Bring up the full stack: `docker compose up -d` and wait for healthy on `kafka1/2/3`, `mongo1/2/3`, `gdfkube-debezium-connect`, `gdfkube-camel`, `gdfkube-itsm-api`, `itsm`
-- [ ] 12.3 Verify Connect: `curl http://127.0.0.1:8083/connectors` returns `["gdfkube-mongo-source"]`; `/status` shows `RUNNING`
-- [ ] 12.4 Verify collections: `mongosh` confirms `audit_log` (TTL on `at`, compound index) and `dlq_log` (2 indexes, no TTL)
-- [ ] 12.5 Verify snapshot replay: seed a row in `gdfkube.requests` BEFORE the connector registers; on cold start, the `op=r` flows through `request-router` → `helm-render` → `git-push` → `status-emitter`; `audit_log` records the path; no infinite loop
-- [ ] 12.6 Verify golden path: `POST /api/itsm/requests` with a valid `cluster-request` payload; Express writes to MongoDB only; Debezium emits `op=c` to `dbz.gdfkube.requests`; Camel renders, commits to `MockGitProvider`, emits 7-stage batch to `gdfkube.pipeline.status`; `audit_log` has ≥4 rows
-- [ ] 12.7 Verify SSE: open `GET /api/itsm/requests/:id/events` from `curl -N`; observe the synthetic first event then 7 stage events in order
-- [ ] 12.8 Verify approval-loop guard: update an existing request `status` from `approval` → `provisioning`; Camel re-runs once; subsequent `stage` write-backs (`provisioning` → `provisioning`) are dropped; no infinite loop in logs
+> **Note:** Items 12.1–12.8 and 12.10–12.17 are deferred to a running Docker Compose environment. See `verify.md` §6 for details. Item 12.9 was completed during the Helm chart task (Task 4).
+
+- [ ] 12.1 Clean state: `docker compose down -v` *(deferred — requires running environment)*
+- [ ] 12.2 Bring up the full stack: `docker compose up -d` and wait for healthy on `kafka1/2/3`, `mongo1/2/3`, `gdfkube-debezium-connect`, `gdfkube-camel`, `gdfkube-itsm-api`, `itsm` *(deferred — requires running environment)*
+- [ ] 12.3 Verify Connect: `curl http://127.0.0.1:8083/connectors` returns `["gdfkube-mongo-source"]`; `/status` shows `RUNNING` *(deferred — requires running environment)*
+- [ ] 12.4 Verify collections: `mongosh` confirms `audit_log` (TTL on `at`, compound index) and `dlq_log` (2 indexes, no TTL) *(deferred — requires running environment)*
+- [ ] 12.5 Verify snapshot replay: seed a row in `gdfkube.requests` BEFORE the connector registers; on cold start, the `op=r` flows through `request-router` → `helm-render` → `git-push` → `status-emitter`; `audit_log` records the path; no infinite loop *(deferred — requires running environment)*
+- [ ] 12.6 Verify golden path: `POST /api/itsm/requests` with a valid `cluster-request` payload; Express writes to MongoDB only; Debezium emits `op=c` to `dbz.gdfkube.requests`; Camel renders, commits to `MockGitProvider`, emits 7-stage batch to `gdfkube.pipeline.status`; `audit_log` has ≥4 rows *(deferred — requires running environment)*
+- [ ] 12.7 Verify SSE: open `GET /api/itsm/requests/:id/events` from `curl -N`; observe the synthetic first event then 7 stage events in order *(deferred — requires running environment)*
+- [ ] 12.8 Verify approval-loop guard: update an existing request `status` from `approval` → `provisioning`; Camel re-runs once; subsequent `stage` write-backs (`provisioning` → `provisioning`) are dropped; no infinite loop in logs *(deferred — requires running environment)*
 - [x] 12.9 Verify all 5 charts render and lint clean (`helm template` + `kubectl --dry-run=client -f -`)
-- [ ] 12.10 Verify form-cache reload: update a document in `gdfkube.forms`; observe `FormDefCache invalidated` log line in `gdfkube-camel`
-- [ ] 12.11 Verify Camel DLQ flow: produce a malformed payload to `dbz.gdfkube.requests` (via `kafka-console-producer.sh`); observe 3 redeliveries then landing on `dlq.gdfkube.requests` with 9 headers; `dlq_log` records it
-- [ ] 12.12 Verify Debezium DLQ flow: stop `mongo2` temporarily to induce a connector error; observe landing on `dlq.gdfkube.debezium` with context headers; restart `mongo2`
-- [ ] 12.13 Verify manual-commit semantics: `docker compose kill gdfkube-camel` mid-route; restart; assert message redelivered (offset not committed) and `audit_log` has exactly one row per side-effecting route (not duplicated)
-- [ ] 12.14 Verify SSE late-subscriber: trigger a request, wait until `stage=5` (git), then open SSE; first event is `stage: 5, stageName: "git"` synthetic
-- [ ] 12.15 Verify SSE synthetic on stage=0: insert a `requests` document directly with `stage=0`, open SSE; first event is `stage: 0, stageName: "form"`
-- [ ] 12.16 Verify idempotence: `docker compose up -d` against a populated stack — no duplicate connector (PUT no-op), `--if-not-exists` skips topics, `init-camel-collections.js` skips indexes, Camel routes start clean
-- [ ] 12.17 Verify reset path: `docker compose down -v` then `docker compose up -d` reaches the same end state as 12.2
+- [ ] 12.10 Verify form-cache reload: update a document in `gdfkube.forms`; observe `FormDefCache invalidated` log line in `gdfkube-camel` *(deferred — requires running environment)*
+- [ ] 12.11 Verify Camel DLQ flow: produce a malformed payload to `dbz.gdfkube.requests` (via `kafka-console-producer.sh`); observe 3 redeliveries then landing on `dlq.gdfkube.requests` with 9 headers; `dlq_log` records it *(deferred — requires running environment)*
+- [ ] 12.12 Verify Debezium DLQ flow: stop `mongo2` temporarily to induce a connector error; observe landing on `dlq.gdfkube.debezium` with context headers; restart `mongo2` *(deferred — requires running environment)*
+- [ ] 12.13 Verify manual-commit semantics: `docker compose kill gdfkube-camel` mid-route; restart; assert message redelivered (offset not committed) and `audit_log` has exactly one row per side-effecting route (not duplicated) *(deferred — requires running environment)*
+- [ ] 12.14 Verify SSE late-subscriber: trigger a request, wait until `stage=5` (git), then open SSE; first event is `stage: 5, stageName: "git"` synthetic *(deferred — requires running environment)*
+- [ ] 12.15 Verify SSE synthetic on stage=0: insert a `requests` document directly with `stage=0`, open SSE; first event is `stage: 0, stageName: "form"` *(deferred — requires running environment)*
+- [ ] 12.16 Verify idempotence: `docker compose up -d` against a populated stack — no duplicate connector (PUT no-op), `--if-not-exists` skips topics, `init-camel-collections.js` skips indexes, Camel routes start clean *(deferred — requires running environment)*
+- [ ] 12.17 Verify reset path: `docker compose down -v` then `docker compose up -d` reaches the same end state as 12.2 *(deferred — requires running environment)*
