@@ -115,6 +115,27 @@ components:
           type: array
           items:
             type: string
+    StageEvent:
+      type: object
+      required: [requestId, stage, stageName, status, at]
+      properties:
+        requestId:
+          type: string
+        stage:
+          type: integer
+          minimum: 0
+          maximum: 6
+        stageName:
+          type: string
+          enum: [form, mongo, debezium, kafka, camel, git, argocd]
+        status:
+          type: string
+          enum: [ok, fail]
+        at:
+          type: string
+          format: date-time
+        detail:
+          type: string
 security:
   - DemoUser: []
 paths:
@@ -461,6 +482,24 @@ paths:
           description: Admin role required
         "409":
           description: Duplicate id
+  /api/itsm/requests/{id}/events:
+    get:
+      summary: Subscribe to pipeline stage events via SSE
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/StageEvent"
+        "404":
+          description: Request not found
   /api/itsm/groups/{id}:
     get:
       summary: Get group by id (admin only)
