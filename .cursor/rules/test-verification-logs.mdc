@@ -1,0 +1,51 @@
+---
+description: Verify container and application logs during testing, and use sg docker for Docker socket access
+alwaysApply: true
+---
+
+# Test Verification & Docker Access
+
+## Docker socket access
+
+The current user is not in the `docker` group. Always use `sg docker` to run Docker commands:
+
+```bash
+# ✅ GOOD
+sg docker "docker ps"
+sg docker "docker logs <container>"
+sg docker "docker compose up -d"
+
+# ❌ BAD — will fail with permission denied
+docker ps
+docker logs <container>
+```
+
+## Log verification before completing tasks
+
+Before marking any task or spec as complete, check all relevant logs for errors, warnings, or unexpected behavior.
+
+### Container logs
+
+1. List running containers: `sg docker "docker compose ps"` or `sg docker "docker ps"`
+2. Check logs for every container involved in the change: `sg docker "docker logs --tail 100 <container>"`
+3. Look for: stack traces, error-level messages, connection failures, restart loops, unhealthy status
+
+### Application logs
+
+1. Check application-level log output (stdout, log files) for the services under test
+2. Verify no unexpected warnings or deprecations were introduced
+
+### What to look for
+
+- Unhandled exceptions or stack traces
+- Connection refused / timeout errors
+- Container restart loops (`Restarting` status in `docker ps`)
+- Health check failures (`unhealthy` status)
+- Kafka consumer lag or deserialization errors
+- MongoDB connection failures or auth errors
+- Camel route failures or dead letter channel activity
+
+### When to skip
+
+- Changes that don't touch containerized services or runtime behavior
+- Pure documentation or manifest-only changes with no running components

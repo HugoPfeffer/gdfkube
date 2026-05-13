@@ -28,7 +28,12 @@ services:
       - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/mongodb/seed-data:/seed-data:ro
     networks:
       - gdfkube-net
-    entrypoint: ["mongosh", "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0", "/scripts/seed-collections.js"]
+    entrypoint:
+      [
+        "mongosh",
+        "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0",
+        "/scripts/seed-collections.js",
+      ]
 
   mongo-collections-init:
     image: mongo:7.0
@@ -42,7 +47,12 @@ services:
       - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/mongodb/init-camel-collections.js:/init-camel-collections.js:ro
     networks:
       - gdfkube-net
-    entrypoint: ["mongosh", "mongodb://mongo1:27017/gdfkube?replicaSet=rs0", "/init-camel-collections.js"]
+    entrypoint:
+      [
+        "mongosh",
+        "mongodb://mongo1:27017/gdfkube?replicaSet=rs0",
+        "/init-camel-collections.js",
+      ]
 
   gdfkube-itsm-api:
     build: ./gdfkube-src/gdfkube-itsm/server
@@ -77,7 +87,8 @@ services:
     networks:
       - gdfkube-net
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test:
+        ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -91,7 +102,8 @@ services:
     networks:
       - gdfkube-net
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test:
+        ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -105,7 +117,8 @@ services:
     networks:
       - gdfkube-net
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test:
+        ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -148,7 +161,11 @@ services:
     networks:
       - gdfkube-net
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 | grep -q ApiVersion"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 | grep -q ApiVersion",
+        ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -173,7 +190,11 @@ services:
     networks:
       - gdfkube-net
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 | grep -q ApiVersion"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 | grep -q ApiVersion",
+        ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -198,7 +219,11 @@ services:
     networks:
       - gdfkube-net
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 | grep -q ApiVersion"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 | grep -q ApiVersion",
+        ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -290,7 +315,8 @@ services:
       GITEA__service__DISABLE_REGISTRATION: "true"
       GITEA__log__LEVEL: warn
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/v1/version || exit 1"]
+      test:
+        ["CMD-SHELL", "curl -sf http://localhost:3000/api/v1/version || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 18
@@ -308,7 +334,7 @@ services:
       - ${COMPOSE_HOST_WORKSPACE:-.}/gdfkube-src/gdfkube-infra/gitea/bootstrap.sh:/bootstrap.sh:ro
     environment:
       GITEA_ADMIN_USERNAME: "${GITEA_ADMIN_USERNAME:-gdfkube-admin}"
-      GITEA_ADMIN_PASSWORD: "${GITEA_ADMIN_PASSWORD:-ChangeMeLocally123!}"
+      GITEA_ADMIN_PASSWORD: "${GITEA_ADMIN_PASSWORD:-admin}"
       GITEA_ADMIN_EMAIL: "${GITEA_ADMIN_EMAIL:-admin@gdfkube.local}"
       GITEA_TOKEN_NAME: "${GITEA_TOKEN_NAME:-itsm-local}"
       GITEA_ORG: "${GITEA_ORG:-gdfkube}"
@@ -370,7 +396,11 @@ services:
     networks:
       - gdfkube-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/q/health/ready | grep -q UP"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf http://localhost:8080/q/health/ready | grep -q UP",
+        ]
       interval: 10s
       timeout: 5s
       retries: 18
