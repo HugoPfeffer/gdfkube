@@ -57,9 +57,7 @@ public class RequestRouterRoute extends RouteBuilder {
                 boolean accepted = false;
                 String body = exchange.getIn().getBody(String.class);
 
-                if ("c".equals(op) || "r".equals(op)) {
-                    accepted = true;
-                } else if ("u".equals(op)) {
+                if ("c".equals(op) || "r".equals(op) || "u".equals(op)) {
                     JsonNode node = MAPPER.readTree(body);
                     String status = node.path("status").asText("");
                     boolean isStageWriteback = node.path("_stageWriteback").asBoolean(false);

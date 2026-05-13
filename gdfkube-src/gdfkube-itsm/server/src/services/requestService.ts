@@ -150,7 +150,8 @@ export async function decide({ id, demoUser, body }: DecideInput) {
   };
 
   if (body.action === 'approved') {
-    update.$set = { status: 'provisioning', stage: 1 };
+    update.$set = { status: 'provisioning' };
+    update.$max = { stage: 1 };
   } else if (body.action === 'rejected') {
     update.$set = {
       status: 'failed',

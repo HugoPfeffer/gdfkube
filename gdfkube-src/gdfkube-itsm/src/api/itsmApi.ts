@@ -16,7 +16,15 @@ export class ApiError extends Error {
 // carried the stale operator username and returned 403. The ref pattern lets
 // `App.tsx` update the identity in its render body, before any child effect
 // can fire a fetch.
-const demoUserRef = { current: 'joao.silva' };
+//
+// The default is the seeded admin (`maria.costa`) because `Bootstrap` runs
+// before `App` mounts and fetches admin-gated data: `/users`, `/groups`, and
+// `/forms?include=disabled`. With an operator default Bootstrap deadlocks on
+// 403 and `App` never mounts, so the topbar role switcher can never recover.
+// App.tsx synchronously overrides this in its render body the moment it
+// mounts (operator role → `joao.silva`), so the admin grace only spans the
+// Bootstrap phase.
+const demoUserRef = { current: 'maria.costa' };
 
 export function setDemoUser(username: string) {
   demoUserRef.current = username;

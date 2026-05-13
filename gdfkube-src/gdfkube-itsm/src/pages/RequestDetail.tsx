@@ -1,10 +1,12 @@
+import { useEffect, useRef } from 'react';
 import { Pipeline } from '../components/Pipeline';
 import { StatusPill } from '../components/StatusPill';
 import { ORGS } from '../data/seeds';
 import { Icons } from '../icons/Icons';
+import { itsmApi } from '../api/itsmApi';
 import type { Navigate } from '../router';
-import { useGdfData } from '../state/dataContext';
-import type { ApprovalDecision, Request, Tweaks } from '../types';
+import { useGdfData, useGdfDispatch } from '../state/dataContext';
+import type { ApprovalDecision, Request, RequestStatus, Tweaks } from '../types';
 
 interface RequestDetailProps {
   id: string | undefined;
@@ -47,7 +49,29 @@ const ACTION_LABEL: Record<ApprovalDecision['action'], string> = {
 
 export function RequestDetail({ id, navigate, tweaks, role }: RequestDetailProps) {
   const { requests } = useGdfData();
+  const dispatch = useGdfDispatch();
   const request = id ? requests.find((r) => r.id === id) : undefined;
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!request || request.status !== 'provisioning') {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      return;
+    }
+    const poll = () => {
+      itsmApi.requests.get(request.id).then((raw) => {
+        const doc = raw as Record<string, unknown>;
+        const newStage = typeof doc.stage === 'number' ? doc.stage : undefined;
+        const newStatus = doc.status as RequestStatus;
+        if (newStage !== request.stage || newStatus !== request.status) {
+          dispatch({ type: 'UPDATE_REQUEST_STATUS', id: request.id, status: newStatus, stage: newStage });
+        }
+      }).catch(() => {});
+    };
+    poll();
+    pollRef.current = setInterval(poll, 3000);
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+  }, [request?.id, request?.status, request?.stage, dispatch]);
 
   if (!request) {
     return (
