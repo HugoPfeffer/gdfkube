@@ -11,7 +11,7 @@ export const FORMS: FormDef[] = [
     topic: 'dbz.gdfkube.requests',
     status: 'active',
     submissions: 47,
-    fieldCount: 4,
+    fieldCount: 3,
     updated: '2026-04-22',
     lastEdited: '2026-04-22',
   },
@@ -21,7 +21,7 @@ export const FORMS: FormDef[] = [
     topic: 'dbz.gdfkube.requests',
     status: 'active',
     submissions: 23,
-    fieldCount: 6,
+    fieldCount: 5,
     updated: '2026-04-19',
     lastEdited: '2026-04-19',
   },
@@ -31,7 +31,7 @@ export const FORMS: FormDef[] = [
     topic: 'dbz.gdfkube.requests',
     status: 'active',
     submissions: 12,
-    fieldCount: 4,
+    fieldCount: 3,
     updated: '2026-04-15',
     lastEdited: '2026-04-15',
   },
@@ -39,17 +39,6 @@ export const FORMS: FormDef[] = [
 
 export const FIELDS: Record<string, Field[]> = {
   'cluster-request': [
-    {
-      id: 4,
-      key: 'requesterGroupName',
-      label: 'Department / Organization',
-      type: 'select',
-      required: true,
-      bucket: 'meta',
-      options:
-        'saude|Saúde — Department of Health; educacao|Educação — Department of Education; transportes|Transportes — Transit Authority; fazenda|Fazenda — Treasury Department; agricultura|Agricultura — Agriculture Department; seguranca|Segurança — Public Safety',
-      help: 'Determines the customer Git repo (gdfkube-{requesterGroupName}) and RHACM cluster set.',
-    },
     {
       id: 1,
       key: 'clusterName',
@@ -86,16 +75,6 @@ export const FIELDS: Record<string, Field[]> = {
     },
   ],
   'namespace-request': [
-    {
-      id: 10,
-      key: 'requesterGroupName',
-      label: 'Department',
-      type: 'select',
-      required: true,
-      bucket: 'meta',
-      options: 'saude, educacao, transportes, fazenda, agricultura, seguranca',
-      help: 'Maps to customer Git repo.',
-    },
     {
       id: 11,
       key: 'targetCluster',
@@ -149,15 +128,6 @@ export const FIELDS: Record<string, Field[]> = {
     },
   ],
   'scale-request': [
-    {
-      id: 20,
-      key: 'requesterGroupName',
-      label: 'Department',
-      type: 'select',
-      required: true,
-      bucket: 'meta',
-      options: 'saude, educacao, transportes, fazenda, agricultura, seguranca',
-    },
     {
       id: 21,
       key: 'clusterName',
