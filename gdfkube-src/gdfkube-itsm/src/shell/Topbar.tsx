@@ -16,6 +16,8 @@ interface TopbarProps {
   role: Role;
   setRole: (r: Role) => void;
   user: User;
+  users: User[];
+  setUser: (username: string) => void;
   navigate: Navigate;
   onNotify?: () => void;
 }
@@ -30,7 +32,7 @@ function roleLabel(role: Role): string {
   return role === 'admin' ? 'Platform Admin' : 'Operator';
 }
 
-export function Topbar({ crumbs, role, setRole, user, navigate, onNotify }: TopbarProps) {
+export function Topbar({ crumbs, role, setRole, user, users, setUser, navigate, onNotify }: TopbarProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -117,6 +119,45 @@ export function Topbar({ crumbs, role, setRole, user, navigate, onNotify }: Topb
                 fontWeight: 600,
               }}
             >
+              Switch user
+            </div>
+            {users
+              .filter((u) => u.status !== 'disabled' && u.active !== false)
+              .sort((a, b) => (a.fullName ?? a.name).localeCompare(b.fullName ?? b.name))
+              .map((u) => (
+                <button
+                  key={u.username ?? u.id}
+                  type="button"
+                  role="menuitem"
+                  className={'menu-item' + (u.username === user.username ? ' active' : '')}
+                  onClick={() => {
+                    setUser(u.username ?? u.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Icons.user />
+                  <div>
+                    <div>{u.fullName ?? u.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--ink-500)' }}>
+                      @ {u.group}
+                    </div>
+                  </div>
+                  {u.username === user.username && (
+                    <Icons.check className="menu-check" />
+                  )}
+                </button>
+              ))}
+            <div className="menu-sep"></div>
+            <div
+              style={{
+                padding: '10px 10px 6px',
+                fontSize: 11,
+                color: 'var(--ink-500)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontWeight: 600,
+              }}
+            >
               Switch role
             </div>
             <button
@@ -129,12 +170,7 @@ export function Topbar({ crumbs, role, setRole, user, navigate, onNotify }: Topb
               }}
             >
               <Icons.user />
-              <div>
-                <div>Operator</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-500)' }}>
-                  joao.silva @ saude
-                </div>
-              </div>
+              <div>Operator perspective</div>
               {role === 'operator' && (
                 <Icons.check className="menu-check" />
               )}
@@ -149,12 +185,7 @@ export function Topbar({ crumbs, role, setRole, user, navigate, onNotify }: Topb
               }}
             >
               <Icons.shield />
-              <div>
-                <div>Platform Admin</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-500)' }}>
-                  m.costa @ setic
-                </div>
-              </div>
+              <div>Admin perspective</div>
               {role === 'admin' && <Icons.check className="menu-check" />}
             </button>
             <div className="menu-sep"></div>

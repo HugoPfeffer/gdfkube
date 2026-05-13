@@ -15,13 +15,28 @@ function makeUser(overrides: Partial<User> = {}): User {
   };
 }
 
+const defaultUsers: User[] = [
+  makeUser(),
+  makeUser({
+    id: 'u-2',
+    name: 'Maria Costa',
+    fullName: 'Maria Costa',
+    email: 'm.costa@setic.gov',
+    role: 'admin',
+    group: 'setic',
+    username: 'maria.costa',
+  }),
+];
+
 describe('Topbar', () => {
   const navigate = vi.fn();
   const setRole = vi.fn();
+  const setUser = vi.fn();
 
   beforeEach(() => {
     navigate.mockClear();
     setRole.mockClear();
+    setUser.mockClear();
   });
 
   function renderTopbar(overrides: Partial<Parameters<typeof Topbar>[0]> = {}) {
@@ -31,6 +46,8 @@ describe('Topbar', () => {
         role="operator"
         setRole={setRole}
         user={makeUser()}
+        users={defaultUsers}
+        setUser={setUser}
         navigate={navigate}
         {...overrides}
       />,
@@ -59,20 +76,21 @@ describe('Topbar', () => {
     expect(screen.queryByText('Switch role')).not.toBeInTheDocument();
   });
 
-  it('opens the role menu when the role switcher is clicked', () => {
+  it('opens the menu with Switch user and Switch role sections', () => {
     const { container } = renderTopbar();
 
     fireEvent.click(container.querySelector('.role-switch')!);
+    expect(screen.getByText('Switch user')).toBeInTheDocument();
     expect(screen.getByText('Switch role')).toBeInTheDocument();
-    expect(screen.getByText('Operator')).toBeInTheDocument();
-    expect(screen.getByText('Platform Admin')).toBeInTheDocument();
+    expect(screen.getByText('Operator perspective')).toBeInTheDocument();
+    expect(screen.getByText('Admin perspective')).toBeInTheDocument();
   });
 
   it('clicking a role menu item calls setRole and closes the menu', () => {
     const { container } = renderTopbar();
 
     fireEvent.click(container.querySelector('.role-switch')!);
-    fireEvent.click(screen.getByText('Platform Admin'));
+    fireEvent.click(screen.getByText('Admin perspective'));
     expect(setRole).toHaveBeenCalledWith('admin' satisfies Role);
     expect(screen.queryByText('Switch role')).not.toBeInTheDocument();
   });
@@ -111,6 +129,8 @@ describe('Topbar', () => {
         role="admin"
         setRole={setRole}
         user={makeUser({ role: 'admin', group: 'setic' })}
+        users={defaultUsers}
+        setUser={setUser}
         navigate={navigate}
       />,
     );
