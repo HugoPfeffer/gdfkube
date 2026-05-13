@@ -7,7 +7,7 @@
 // so the App can be exercised end-to-end before each page lands.
 
 import { useEffect, useMemo, useState } from 'react';
-import { setDemoUserResolver } from './api/itsmApi';
+import { setDemoUser } from './api/itsmApi';
 import { Approvals } from './pages/Approvals';
 import { Catalog } from './pages/Catalog';
 import { Dashboard } from './pages/Dashboard';
@@ -35,39 +35,24 @@ const DEFAULT_TWEAKS: Tweaks = {
   showDemoBanner: true,
 };
 
-const FALLBACK_OPERATOR: User = {
-  id: 'demo-operator',
-  name: 'João Silva',
-  fullName: 'João Silva',
-  email: 'joao.silva@saude.gov',
-  role: 'operator',
-  group: 'saude',
-};
-
-const FALLBACK_ADMIN: User = {
-  id: 'demo-admin',
-  name: 'Maria Costa',
-  fullName: 'Maria Costa',
-  email: 'm.costa@setic.gov',
-  role: 'admin',
-  group: 'setic',
-};
-
 function pickUser(users: User[], role: Role): User {
   if (role === 'admin') {
-    return (
+    const found =
       users.find(
         (u) => u.username === 'maria.costa' || u.username === 'm.costa',
-      ) ??
-      users.find((u) => u.role === 'admin') ??
-      FALLBACK_ADMIN
-    );
+      ) ?? users.find((u) => u.role === 'admin');
+    if (!found) {
+      throw new Error('pickUser: no admin user available in data.users');
+    }
+    return found;
   }
-  return (
+  const found =
     users.find((u) => u.username === 'joao.silva') ??
-    users.find((u) => u.role === 'operator') ??
-    FALLBACK_OPERATOR
-  );
+    users.find((u) => u.role === 'operator');
+  if (!found) {
+    throw new Error('pickUser: no operator user available in data.users');
+  }
+  return found;
 }
 
 function App() {
@@ -80,9 +65,13 @@ function App() {
 
   const user = useMemo(() => pickUser(data.users, role), [data.users, role]);
 
-  useEffect(() => {
-    setDemoUserResolver(() => user.username || user.name);
-  }, [user]);
+  // Synchronously update the X-Demo-User identity used by `itsmApi`. Running
+  // this in the render body — not a `useEffect` — guarantees the new value is
+  // visible to any child effect that fires after this render. The previous
+  // `useEffect([user])` introduced a race where child mount effects (e.g.
+  // Settings.tsx's `itsmApi.settings.get`) fired before the parent's effect,
+  // so the first call after a role flip carried the stale operator username.
+  setDemoUser(user.username ?? user.name);
 
   // Role-route guard: operators may not view admin/approval routes.
   useEffect(() => {

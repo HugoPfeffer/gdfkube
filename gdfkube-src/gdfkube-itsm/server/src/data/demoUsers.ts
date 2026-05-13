@@ -3,7 +3,7 @@ export interface DemoUser {
   name: string;
   fullName: string;
   email: string;
-  role: 'operator' | 'admin' | 'approver' | 'service';
+  role: 'operator' | 'admin';
   group: string;
 }
 
@@ -48,14 +48,6 @@ export const DEMO_USERS: Record<string, DemoUser> = {
     role: 'operator',
     group: 'agricultura',
   },
-  'lucia.fernandes': {
-    id: 'lucia.fernandes',
-    name: 'Lúcia Fernandes',
-    fullName: 'Lúcia Fernandes',
-    email: 'l.fernandes@seguranca.gov',
-    role: 'approver',
-    group: 'seguranca',
-  },
   'rafael.souza': {
     id: 'rafael.souza',
     name: 'Rafael Souza',
@@ -63,13 +55,5 @@ export const DEMO_USERS: Record<string, DemoUser> = {
     email: 'r.souza@educacao.gov',
     role: 'operator',
     group: 'educacao',
-  },
-  'platform.bot': {
-    id: 'platform.bot',
-    name: 'Platform Service',
-    fullName: 'Platform Service',
-    email: 'platform@setic.gov',
-    role: 'service',
-    group: 'setic',
   },
 };

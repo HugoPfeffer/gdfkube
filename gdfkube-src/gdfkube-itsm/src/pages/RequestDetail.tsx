@@ -10,7 +10,7 @@ interface RequestDetailProps {
   id: string | undefined;
   navigate: Navigate;
   tweaks: Tweaks;
-  role?: 'operator' | 'admin' | 'approver' | 'service';
+  role?: 'operator' | 'admin';
 }
 
 function requesterName(req: Request): string {

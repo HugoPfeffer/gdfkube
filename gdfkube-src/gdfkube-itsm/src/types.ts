@@ -1,6 +1,6 @@
 // Types for the ITSM portal demo. This file exports types only — no runtime values.
 
-export type Role = 'operator' | 'admin' | 'approver' | 'service';
+export type Role = 'operator' | 'admin';
 
 export type User = {
   id: string;

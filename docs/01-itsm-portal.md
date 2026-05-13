@@ -70,8 +70,13 @@ Two seeded users today (no auth):
 | João Silva (operator) | `operator` | Org user. Submits requests. Cannot approve. |
 | Maria Costa (admin) | `admin` | **SETIC platform admin.** Approves requests, manages forms/users. |
 
-The `approver` and `service` roles in `src/types.ts:Role` are reserved for
-post-demo expansion.
+`Role` (`src/types.ts:3`) is `'operator' | 'admin'`. Additional roles (a
+non-admin approver, machine identities) are out of scope for the demo and
+not represented in the enum.
+
+> **Future state — not yet implemented.** When real auth lands, expanded
+> roles can be added to the `Role` union and surfaced in the admin Users
+> editor; today the UI exposes only operator/admin.
 
 ### Pipeline Visualization
 

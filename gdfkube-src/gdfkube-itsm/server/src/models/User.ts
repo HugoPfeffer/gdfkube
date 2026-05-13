@@ -8,7 +8,7 @@ const UserSchema = new Schema(
     role: {
       type: String,
       required: true,
-      enum: ['operator', 'admin', 'approver', 'service'],
+      enum: ['operator', 'admin'],
     },
     fullName: String,
     group: String,

@@ -127,14 +127,12 @@ describe('NewUserPage', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('renders an info banner with all four role descriptions', () => {
+  it('renders an info banner with operator and admin role descriptions', () => {
     render(withProvider(makeState(), <NewUserPage onClose={vi.fn()} />));
     // Banner should contain a digestible description for each role.
     const text = (screen.getByTestId('role-info-banner') as HTMLElement).textContent ?? '';
     expect(text).toMatch(/Operator submits requests/i);
-    expect(text).toMatch(/Approver reviews/i);
     expect(text).toMatch(/Admin manages forms/i);
-    expect(text).toMatch(/Service is for/i);
   });
 
   it('renders an "Initial credentials" subsection with "Send invite email" checkbox checked by default and help text', () => {

@@ -40,6 +40,13 @@ All changes follow a spec-driven workflow powered by OpenSpec (primary framework
 - Config lives in `openspec/config.yaml`; schemas and templates in `openspec/schemas/`
 - Use the `openspec-propose` skill to start a new change, `openspec-apply-change` to implement tasks
 
+## Demo identity
+
+- `DEMO_USERS` in `gdfkube-src/gdfkube-itsm/server/src/data/demoUsers.ts` is the single source of truth for demo users. The SPA `Bootstrap` loads `/api/itsm/users` and `/api/itsm/groups`; do not add frontend fallback arrays.
+- The role enum is exactly `operator | admin`. No `approver`, no `service`. If a UI surface is needed for additional roles, expand the enum here first, then propagate to `Role` (`src/types.ts`) and the admin Users editor.
+- `X-Demo-User` is the only identity wire between SPA and Express. Set it synchronously via `setDemoUser(username)` from `src/api/itsmApi.ts` — never via an async resolver.
+- No `FALLBACK_USERS` / `FALLBACK_GROUPS` constants. If `/api/itsm/users` or `/api/itsm/groups` fails, Bootstrap surfaces the existing `phase === 'error'` UI — fail hard, don't paper over.
+
 ## Coding Standards
 
 - Prefer modifying existing functions/services over creating new ones

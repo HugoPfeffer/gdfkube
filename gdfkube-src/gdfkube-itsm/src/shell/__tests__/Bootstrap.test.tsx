@@ -136,7 +136,12 @@ describe('Bootstrap', () => {
     expect(screen.getByTestId('app-child')).toBeInTheDocument();
   });
 
-  it('falls back to built-in users/groups when admin endpoints fail', async () => {
+  it('shows the hard-error UI when admin endpoints fail (no silent fallback)', async () => {
+    // Regression: Bootstrap previously substituted a built-in FALLBACK_USERS /
+    // FALLBACK_GROUPS array when /users or /groups returned non-2xx, which
+    // masked Forbidden errors and produced a working-looking UI while every
+    // subsequent identity-bound call still failed. The catch was removed —
+    // failure now surfaces as the bootstrap-error phase with a Retry button.
     fetchMock.mockImplementation((url: string) => {
       if (url.includes('/forms')) return Promise.resolve(ok(FORMS_RESPONSE));
       if (url.includes('/requests')) return Promise.resolve(ok(REQUESTS_RESPONSE));
@@ -145,18 +150,17 @@ describe('Bootstrap', () => {
       return Promise.resolve(err(404));
     });
 
-    let captured: ReturnType<typeof useGdfData> | undefined;
     await act(async () => {
       render(
         <Bootstrap>
-          <DataProbe onData={(d) => { captured = d; }} />
+          <div data-testid="app-child">app</div>
         </Bootstrap>,
       );
     });
 
-    expect(captured).toBeDefined();
-    expect(captured!.users.length).toBeGreaterThanOrEqual(2);
-    expect(captured!.groups.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId('bootstrap-error')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-child')).toBeNull();
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
   });
 
   it('aborts fetch on unmount', async () => {

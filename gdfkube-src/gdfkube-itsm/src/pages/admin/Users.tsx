@@ -17,7 +17,7 @@ import type { Group, Role, User } from '../../types';
 
 type Tab = 'users' | 'groups';
 type RoleFilter = Role | 'all';
-const ROLES: RoleFilter[] = ['all', 'operator', 'approver', 'admin', 'service'];
+const ROLES: RoleFilter[] = ['all', 'operator', 'admin'];
 
 function avatar(user: User): string {
   return user.name.split(/\s+/).map((n) => n[0] ?? '').join('').slice(0, 2).toUpperCase();

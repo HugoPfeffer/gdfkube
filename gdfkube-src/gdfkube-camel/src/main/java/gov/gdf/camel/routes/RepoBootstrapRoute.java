@@ -6,6 +6,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.jboss.logging.Logger;
 
 import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.StageUpdater;
 import gov.gdf.camel.git.GitProvider;
 import gov.gdf.camel.git.RepoOptions;
 import gov.gdf.camel.model.RequestEvent;
@@ -18,6 +19,7 @@ public class RepoBootstrapRoute extends RouteBuilder {
 
     private static final Logger LOG = Logger.getLogger(RepoBootstrapRoute.class);
     private static final String ROUTE_ID = "repo-bootstrap";
+    private static final int STAGE_REPO_BOOTSTRAPPED = 5;
 
     @ConfigProperty(name = "app.system.gitea-owner")
     String giteaOwner;
@@ -27,6 +29,9 @@ public class RepoBootstrapRoute extends RouteBuilder {
 
     @Inject
     AuditInterceptor auditInterceptor;
+
+    @Inject
+    StageUpdater stageUpdater;
 
     @Override
     public void configure() {
@@ -55,6 +60,11 @@ public class RepoBootstrapRoute extends RouteBuilder {
                     auditInterceptor.emit(ROUTE_ID, event._id, 5, "create-repo",
                             Map.of("repo", giteaOwner + "/" + repoName));
                 }
+
+                // Stage 5: repo-bootstrapped. Only emitted on the success path —
+                // if createRepo throws, Camel's error handler routes to the DLQ
+                // and this line is never reached.
+                stageUpdater.updateStage(event._id, STAGE_REPO_BOOTSTRAPPED);
             });
     }
 }

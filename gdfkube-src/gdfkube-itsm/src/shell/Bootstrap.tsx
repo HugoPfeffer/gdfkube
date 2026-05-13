@@ -3,36 +3,6 @@ import { itsmApi } from '../api/itsmApi';
 import { GdfDataProvider, type DataState } from '../state/dataContext';
 import type { Field, FormDef, Group, TemplateFile, User } from '../types';
 
-const FALLBACK_USERS: User[] = [
-  {
-    id: '1',
-    username: 'joao.silva',
-    name: 'João Silva',
-    fullName: 'João Silva',
-    email: 'joao.silva@saude.gov',
-    group: 'saude',
-    role: 'operator',
-    status: 'active',
-    active: true,
-  },
-  {
-    id: '2',
-    username: 'maria.costa',
-    name: 'Maria Costa',
-    fullName: 'Maria Costa',
-    email: 'm.costa@setic.gov',
-    group: 'setic',
-    role: 'admin',
-    status: 'active',
-    active: true,
-  },
-];
-
-const FALLBACK_GROUPS: Group[] = [
-  { id: 'saude', name: 'Saúde', fullName: 'Department of Health', users: 0, forms: 0, repo: 'gdfkube-saude', clusters: 0 },
-  { id: 'setic', name: 'SETIC', fullName: 'Platform Engineering', users: 0, forms: 0, repo: 'gdfkube-infra', clusters: 0 },
-];
-
 interface BootstrapProps {
   children: ReactNode;
 }
@@ -87,17 +57,10 @@ export function Bootstrap({ children }: BootstrapProps) {
         itsmApi.requests.list(ac.signal),
       ]);
 
-      let rawUsers: Record<string, unknown>[];
-      let rawGroups: Record<string, unknown>[];
-      try {
-        [rawUsers, rawGroups] = await Promise.all([
-          itsmApi.users.list(ac.signal),
-          itsmApi.groups.list(ac.signal),
-        ]);
-      } catch {
-        rawUsers = FALLBACK_USERS as unknown as Record<string, unknown>[];
-        rawGroups = FALLBACK_GROUPS as unknown as Record<string, unknown>[];
-      }
+      const [rawUsers, rawGroups] = await Promise.all([
+        itsmApi.users.list(ac.signal),
+        itsmApi.groups.list(ac.signal),
+      ]);
 
       const { forms, fields, templates } = extractForms(rawForms);
 

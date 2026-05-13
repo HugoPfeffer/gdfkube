@@ -43,7 +43,8 @@ Specifically:
 
 - **D12 (Real MongoDB in tests, no memory server)**: The intent was to catch rs0 quirks, but in practice it makes 4/10 test files unrunnable without Docker. Consider a hybrid: memory server for unit-level schema tests, real DB only for the integration/CDC-specific tests.
 - **D6 (Non-admin fallback in Bootstrap)**: The tiny built-in user/group list works for the demo but is a maintenance burden if the seed data grows. Consider a public read-only `/api/itsm/users/me` endpoint that returns the current persona's data without admin privileges.
-- **Approval idempotency**: The spec accepts duplicate POSTs appending duplicate decisions (per `docs/02-express-api.md:119`). If this causes operational confusion, a server-side dedupe (by approver+action within a time window) would be low-cost.
+  - *Superseded by fix-itsm-portal-bug-batch (2026-05-13)* — the SPA fallback constants were removed; Bootstrap now fails hard via the existing `phase === 'error'` UI when `/api/itsm/users` or `/api/itsm/groups` is unavailable.
+- **Approval idempotency**: The spec accepts duplicate POSTs appending duplicate decisions (per `docs/02-express-api.md:119`). If this causes operational confusion, a server-side dedupe (by admin signoff + action within a time window) would be low-cost.
 
 ## Technical debt introduced
 

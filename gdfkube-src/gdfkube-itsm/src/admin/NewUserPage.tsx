@@ -15,13 +15,11 @@ interface NewUserPageProps {
   onClose: () => void;
 }
 
-const ROLES: Role[] = ['operator', 'approver', 'admin', 'service'];
+const ROLES: Role[] = ['operator', 'admin'];
 
 const ROLE_DESCRIPTIONS: Record<Role, string> = {
   operator: 'Operator submits requests',
-  approver: 'Approver reviews and approves',
   admin: 'Admin manages forms and users',
-  service: 'Service is for automation accounts',
 };
 
 export function NewUserPage({ onClose }: NewUserPageProps) {
@@ -111,7 +109,7 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
           fontSize: 12,
         }}
       >
-        Operator submits requests · Approver reviews and approves · Admin manages forms and users · Service is for automation accounts
+        Operator submits requests · Admin manages forms and users
       </div>
 
       <div className="form-grid">

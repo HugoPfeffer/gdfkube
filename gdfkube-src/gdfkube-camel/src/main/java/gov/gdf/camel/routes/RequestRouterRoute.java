@@ -13,8 +13,10 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.gdf.camel.bean.StageUpdater;
 import gov.gdf.camel.model.RequestEvent;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class RequestRouterRoute extends RouteBuilder {
@@ -23,8 +25,12 @@ public class RequestRouterRoute extends RouteBuilder {
     private static final String ROUTE_ID = "request-router";
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final long TTL_MS = 60_000;
+    private static final int STAGE_ROUTED = 4;
 
     private final ConcurrentHashMap<String, Long> recentlyProcessed = new ConcurrentHashMap<>();
+
+    @Inject
+    StageUpdater stageUpdater;
 
     @Override
     public void configure() {
@@ -72,6 +78,9 @@ public class RequestRouterRoute extends RouteBuilder {
                         recentlyProcessed.put(requestId, System.currentTimeMillis());
                         exchange.setProperty("requestEvent", event);
                         exchange.setProperty("requestId", requestId);
+                        // Stage 4: routed-from-kafka. Persisted with $max so retries
+                        // and re-processed CDC events never roll the stage back.
+                        stageUpdater.updateStage(requestId, STAGE_ROUTED);
                     }
                 }
 

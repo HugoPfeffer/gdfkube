@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import { demoUser } from '../src/middleware/demoUser.js';
+import { DEMO_USERS } from '../src/data/demoUsers.js';
 
 function mockReqRes(headers: Record<string, string> = {}) {
   const req = { headers } as unknown as Request;
@@ -42,5 +43,24 @@ describe('demoUser middleware', () => {
     demoUser(req, res, next);
     expect(next).toHaveBeenCalled();
     expect(req.demoUser!.role).toBe('admin');
+  });
+});
+
+describe('DEMO_USERS catalog (operator|admin only)', () => {
+  // Regression: the previous catalog included 'approver' and 'service' roles
+  // and a service-bot account. Those drove drift between the wire-level role
+  // enum and the UI. The catalog is now narrowed to operator|admin only.
+  it('does not contain the approver entry', () => {
+    expect(DEMO_USERS['lucia.fernandes']).toBeUndefined();
+  });
+
+  it('does not contain the service-bot entry', () => {
+    expect(DEMO_USERS['platform.bot']).toBeUndefined();
+  });
+
+  it('every demo user has role operator or admin', () => {
+    for (const user of Object.values(DEMO_USERS)) {
+      expect(['operator', 'admin']).toContain(user.role);
+    }
   });
 });

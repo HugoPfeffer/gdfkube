@@ -21,13 +21,6 @@ describe('requireAdmin middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('returns 403 for approver', () => {
-    const { req, res, next } = mockReqRes({ role: 'approver' });
-    requireAdmin(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(next).not.toHaveBeenCalled();
-  });
-
   it('calls next() for admin', () => {
     const { req, res, next } = mockReqRes({ role: 'admin' });
     requireAdmin(req, res, next);

@@ -1,5 +1,15 @@
 # gdfkube ITSM Portal — Implementation vs Reference Audit
 
+> **Historical — superseded by the Express API.** This report predates
+> `2026-05-11-add-itsm-express-api`. Any guidance below that treats the SPA
+> as the source of truth for ITSM state (frontend-only seeds, in-memory
+> reducers as the canonical store, `FALLBACK_USERS`, etc.) is superseded:
+> all ITSM state now lives behind `/api/itsm/*` and `DEMO_USERS` in
+> `gdfkube-src/gdfkube-itsm/server/src/data/demoUsers.ts` is the single
+> source of truth for identity. See `docs/02-express-api.md` and
+> `CLAUDE.md` § "Demo identity". Findings about visual/UX fidelity (layout
+> scaffolding, tweaks panel, page-level affordances) remain valid.
+
 **Date:** 2026-05-05
 **Reference (desired state):** `/.tmp/handoff/gdfkube-remix/project/` (extracted from `gdfkube (Remix)-handoff.zip`, anchor file `gdfkube ITSM Portal.html`)
 **Implementation:** `/workspace/gdfkube-src/gdfkube-itsm/src/`

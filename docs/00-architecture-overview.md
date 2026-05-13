@@ -108,7 +108,7 @@ The full list lives in the per-component docs. Highlights:
 - **All ArgoCD syncs are manual.** No auto-sync on either repo.
 - **Kafka is at-least-once**, with manual offset commits + idempotent downstream operations.
 - **Helm is template-only.** No releases, no Tiller, no in-cluster state.
-- **Approvals require a SETIC platform admin.** One approver is enough for the demo.
+- **Approvals require a SETIC platform admin.** One admin signoff is enough for the demo.
 - **Gitea is the only Git provider**, behind a pluggable `GitProvider` interface.
 - **One Quarkus-Camel app**, not multiple Camel K Integrations.
 - **Per-org RHACM ClusterSets are exclusive.** Dynamic targeting uses Placement, not LabelSelector on the set.

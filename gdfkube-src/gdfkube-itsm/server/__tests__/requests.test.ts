@@ -150,7 +150,7 @@ describe('Requests endpoints', () => {
       expect(res.headers.location).toContain('/api/itsm/requests/');
     });
 
-    it('assigns a ULID as the id', async () => {
+    it('assigns a REQ-pattern id with form-type letter suffix', async () => {
       const res = await request(app)
         .post('/api/itsm/requests')
         .set('X-Demo-User', OPERATOR)
@@ -162,7 +162,39 @@ describe('Requests endpoints', () => {
           environment: 'staging',
           nodeCount: 1,
         });
-      expect(res.body.id).toMatch(/^[0-9A-Z]{26}$/);
+      expect(res.body.id).toMatch(/^REQ\d{7}[CNSX]$/);
+    });
+
+    it('assigns sequential REQ ids to concurrent submissions', async () => {
+      const payload = {
+        formId: 'cluster-request',
+        env: 'production',
+        requesterGroupName: 'saude',
+        clusterName: 'concurrent-test',
+        environment: 'production',
+        nodeCount: 2,
+      };
+
+      const [resA, resB] = await Promise.all([
+        request(app)
+          .post('/api/itsm/requests')
+          .set('X-Demo-User', OPERATOR)
+          .send({ ...payload, clusterName: 'concurrent-a' }),
+        request(app)
+          .post('/api/itsm/requests')
+          .set('X-Demo-User', OPERATOR)
+          .send({ ...payload, clusterName: 'concurrent-b' }),
+      ]);
+
+      expect(resA.status).toBe(201);
+      expect(resB.status).toBe(201);
+      expect(resA.body.id).toMatch(/^REQ\d{7}[CNSX]$/);
+      expect(resB.body.id).toMatch(/^REQ\d{7}[CNSX]$/);
+      expect(resA.body.id).not.toBe(resB.body.id);
+
+      const numA = parseInt(resA.body.id.slice(3, 10), 10);
+      const numB = parseInt(resB.body.id.slice(3, 10), 10);
+      expect(Math.abs(numA - numB)).toBe(1);
     });
 
     it('sets meta.correlationId to _id', async () => {

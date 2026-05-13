@@ -5,7 +5,7 @@
 // token or a hex value — both render via the same inline `background` style.
 // Cards are activated via Enter / Space (button semantics).
 
-import type { CSSProperties, KeyboardEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import type { Field, SelectOption } from '../types';
 import { parseSelectOptions } from './parseSelectOptions';
 
@@ -13,10 +13,6 @@ interface RadioCardsProps {
   field: Field;
   value: string;
   onChange: (next: string) => void;
-}
-
-function dotStyle(color: string): CSSProperties {
-  return { background: color };
 }
 
 export function RadioCards({ field, value, onChange }: RadioCardsProps) {
@@ -45,9 +41,14 @@ export function RadioCards({ field, value, onChange }: RadioCardsProps) {
             <div className="rc-title">
               {opt.dotColor && (
                 <span
-                  className="dot"
                   aria-hidden="true"
-                  style={dotStyle(opt.dotColor)}
+                  style={{
+                    display: 'inline-block',
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: opt.dotColor,
+                  }}
                 />
               )}
               <span>{opt.label}</span>
