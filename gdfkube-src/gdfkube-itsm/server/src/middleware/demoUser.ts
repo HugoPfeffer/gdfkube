@@ -15,11 +15,16 @@ export function demoUser(req: Request, res: Response, next: NextFunction): void 
     res.status(401).json({ error: 'X-Demo-User required' });
     return;
   }
-  const user = DEMO_USERS[username];
-  if (!user) {
+  const matched = DEMO_USERS[username];
+  if (!matched) {
     res.status(401).json({ error: 'unknown demo user' });
     return;
   }
-  req.demoUser = user;
+  const roleHeader = (req.headers['x-demo-role'] as string | undefined)?.trim();
+  if (roleHeader === 'operator' || roleHeader === 'admin') {
+    req.demoUser = { ...matched, role: roleHeader };
+  } else {
+    req.demoUser = { ...matched };
+  }
   next();
 }
