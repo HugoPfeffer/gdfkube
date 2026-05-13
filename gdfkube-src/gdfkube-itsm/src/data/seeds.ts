@@ -56,6 +56,14 @@ function makeChecks(items: { label: string; ok: boolean; detail?: string }[]): P
 // Form id used by the bundle for un-tagged cluster requests (status: provisioning/ready/failed).
 const CLUSTER_FORM_ID = 'cluster-request';
 
+// Map of usernames whose role differs from the default 'operator'. Add
+// entries here when seed data introduces a new admin user. Keeping this
+// alongside `buildRequester` (rather than importing the server's DEMO_USERS)
+// keeps the frontend seed data self-contained.
+const KNOWN_ROLES: Record<string, 'operator' | 'admin'> = {
+  'maria.costa': 'admin',
+};
+
 function buildRequester(username: string, fullName: string, group: string): User {
   return {
     id: username,
@@ -63,7 +71,7 @@ function buildRequester(username: string, fullName: string, group: string): User
     name: username,
     fullName,
     email: `${username}@${group}.gov`,
-    role: 'operator',
+    role: KNOWN_ROLES[username] ?? 'operator',
     group,
   };
 }
@@ -370,7 +378,7 @@ export const RECENT_ACTIVITY: ActivityEntry[] = [
   {
     id: 'a3',
     at: '1h ago',
-    actor: 'approver',
+    actor: 'system',
     verb: 'awaiting approval from M. Costa',
     objectId: 'REQ0010241C',
     detail: 'REQ0010241C awaiting approval from M. Costa',

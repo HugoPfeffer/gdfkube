@@ -9,16 +9,23 @@ export class ApiError extends Error {
   }
 }
 
-let demoUserResolver: () => string = () => 'maria.costa';
+// The current X-Demo-User identity is held in a module-level ref that callers
+// mutate synchronously via `setDemoUser`. The previous getter-resolver pattern
+// was driven by a `useEffect([user])` in App.tsx, which fired AFTER child
+// effects — meaning the first `itsmApi.settings.get()` call after a role flip
+// carried the stale operator username and returned 403. The ref pattern lets
+// `App.tsx` update the identity in its render body, before any child effect
+// can fire a fetch.
+const demoUserRef = { current: 'joao.silva' };
 
-export function setDemoUserResolver(fn: () => string) {
-  demoUserResolver = fn;
+export function setDemoUser(username: string) {
+  demoUserRef.current = username;
 }
 
 function mapId<T extends Record<string, unknown>>(doc: T): T {
   if ('_id' in doc) {
-    const { _id, ...rest } = doc;
-    return { ...rest, id: _id } as T;
+    const { _id, ...rest } = doc as T & { _id: unknown };
+    return { ...rest, id: _id } as unknown as T;
   }
   return doc;
 }
@@ -28,7 +35,7 @@ async function api<T>(
   init: RequestInit & { signal?: AbortSignal } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
-    'X-Demo-User': demoUserResolver(),
+    'X-Demo-User': demoUserRef.current,
   };
   if (init.body) {
     headers['Content-Type'] = 'application/json';

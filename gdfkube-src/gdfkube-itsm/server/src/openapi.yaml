@@ -97,7 +97,7 @@ components:
           type: string
         role:
           type: string
-          enum: [operator, admin, approver, service]
+          enum: [operator, admin]
     Group:
       type: object
       properties:

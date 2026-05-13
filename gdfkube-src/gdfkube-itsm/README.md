@@ -121,7 +121,7 @@ All data (requests, forms, users, groups) is persisted through the Express API b
 
 ```
 src/
-  api/          # itsmApi client, setDemoUserResolver
+  api/          # itsmApi client, setDemoUser
   data/         # seed exports: GDF_DATA, GDF_ADMIN_DATA, DEFAULT_TEMPLATES
   state/        # data context + reducer
   router.ts     # in-app reducer router

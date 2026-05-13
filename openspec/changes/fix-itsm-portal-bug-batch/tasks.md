@@ -24,15 +24,15 @@
 
 ## 4. Demo-user identity hardening (Bug #4)
 
-- [ ] 4.1 In `gdfkube-src/gdfkube-itsm/src/api/itsmApi.ts`, replace the `demoUserResolver` getter pattern with a module-level ref `demoUserRef = { current: 'joao.silva' }` and export `setDemoUser(username: string)` that mutates `current`. The `api()` function reads `demoUserRef.current` directly.
-- [ ] 4.2 In `gdfkube-src/gdfkube-itsm/src/App.tsx`, remove the `useEffect([user])` resolver-update. Call `setDemoUser(user.username ?? user.name)` synchronously in render (above the JSX return).
-- [ ] 4.3 In `gdfkube-src/gdfkube-itsm/src/App.tsx`, remove `FALLBACK_OPERATOR` and `FALLBACK_ADMIN` constants and the corresponding fallback paths in `pickUser` — assert non-null.
-- [ ] 4.4 In `gdfkube-src/gdfkube-itsm/src/shell/Bootstrap.tsx`, remove `FALLBACK_USERS` and `FALLBACK_GROUPS` and the `try/catch` that uses them. Let the existing `phase === 'error'` branch handle user/group fetch failures.
-- [ ] 4.5 In `gdfkube-src/gdfkube-itsm/src/data/seeds.ts:59-68`, update `buildRequester` to derive `role` from a `KNOWN_ROLES: Record<string, 'operator'|'admin'>` map (e.g., `{ 'maria.costa': 'admin' }`), defaulting to `'operator'`.
-- [ ] 4.6 In `gdfkube-src/gdfkube-itsm/server/src/data/demoUsers.ts`, remove the `lucia.fernandes` (approver) and `platform.bot` (service) entries. Narrow the `DemoUser['role']` union to `'operator' | 'admin'`.
-- [ ] 4.7 In `gdfkube-src/gdfkube-itsm/server/__tests__/demoUser.test.ts`, drop tests that exercise approver/service roles. Add a test for the role enum narrowing.
-- [ ] 4.8 Update `gdfkube-src/gdfkube-itsm/src/api/__tests__/itsmApi.test.ts` for the renamed `setDemoUser` API.
-- [ ] 4.9 Add an integration test asserting that flipping role from operator to admin in the React tree results in the next `itsmApi.settings.get()` call carrying `X-Demo-User: maria.costa` (regression test for the original race).
+- [x] 4.1 In `gdfkube-src/gdfkube-itsm/src/api/itsmApi.ts`, replace the `demoUserResolver` getter pattern with a module-level ref `demoUserRef = { current: 'joao.silva' }` and export `setDemoUser(username: string)` that mutates `current`. The `api()` function reads `demoUserRef.current` directly.
+- [x] 4.2 In `gdfkube-src/gdfkube-itsm/src/App.tsx`, remove the `useEffect([user])` resolver-update. Call `setDemoUser(user.username ?? user.name)` synchronously in render (above the JSX return).
+- [x] 4.3 In `gdfkube-src/gdfkube-itsm/src/App.tsx`, remove `FALLBACK_OPERATOR` and `FALLBACK_ADMIN` constants and the corresponding fallback paths in `pickUser` — assert non-null.
+- [x] 4.4 In `gdfkube-src/gdfkube-itsm/src/shell/Bootstrap.tsx`, remove `FALLBACK_USERS` and `FALLBACK_GROUPS` and the `try/catch` that uses them. Let the existing `phase === 'error'` branch handle user/group fetch failures.
+- [x] 4.5 In `gdfkube-src/gdfkube-itsm/src/data/seeds.ts:59-68`, update `buildRequester` to derive `role` from a `KNOWN_ROLES: Record<string, 'operator'|'admin'>` map (e.g., `{ 'maria.costa': 'admin' }`), defaulting to `'operator'`.
+- [x] 4.6 In `gdfkube-src/gdfkube-itsm/server/src/data/demoUsers.ts`, remove the `lucia.fernandes` (approver) and `platform.bot` (service) entries. Narrow the `DemoUser['role']` union to `'operator' | 'admin'`.
+- [x] 4.7 In `gdfkube-src/gdfkube-itsm/server/__tests__/demoUser.test.ts`, drop tests that exercise approver/service roles. Add a test for the role enum narrowing.
+- [x] 4.8 Update `gdfkube-src/gdfkube-itsm/src/api/__tests__/itsmApi.test.ts` for the renamed `setDemoUser` API.
+- [x] 4.9 Add an integration test asserting that flipping role from operator to admin in the React tree results in the next `itsmApi.settings.get()` call carrying `X-Demo-User: maria.costa` (regression test for the original race).
 
 ## 5. Remove leftover debug-ingest code (Bug #5)
 

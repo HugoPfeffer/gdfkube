@@ -32,7 +32,7 @@ function synthesizeSessions(user: User): Session[] {
   ];
 }
 
-const ROLES: Role[] = ['operator', 'approver', 'admin', 'service'];
+const ROLES: Role[] = ['operator', 'admin'];
 const STATUSES: Array<'active' | 'disabled'> = ['active', 'disabled'];
 
 function initials(name: string): string {

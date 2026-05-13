@@ -1,7 +1,7 @@
 import { UserModel } from '../models/User.js';
 import type { AppError } from '../middleware/error.js';
 
-const VALID_ROLES = new Set(['operator', 'admin', 'approver', 'service']);
+const VALID_ROLES = new Set(['operator', 'admin']);
 
 const PATCH_WHITELIST = new Set([
   'name',

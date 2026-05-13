@@ -130,15 +130,13 @@ describe('UserEditor', () => {
     expect(banner!.textContent).toMatch(/m\.costa\s*·\s*m\.costa@gdf\.gov\.br/);
   });
 
-  it('renders role as radio-cards with all four roles', () => {
+  it('renders role as radio-cards with operator and admin roles', () => {
     const user = makeUser();
     render(
       withProvider(makeState(user), <UserEditor user={user} onClose={vi.fn()} />),
     );
     expect(screen.getByRole('radio', { name: /operator/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /approver/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /admin/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /service/i })).toBeInTheDocument();
   });
 
   it('clicking a role radio-card dispatches UPDATE_USER with the new role', () => {
@@ -146,9 +144,9 @@ describe('UserEditor', () => {
     render(
       withProvider(makeState(user), <UserEditor user={user} onClose={vi.fn()} />),
     );
-    fireEvent.click(screen.getByRole('radio', { name: /approver/i }));
-    // The role card for approver should now be checked.
-    expect(screen.getByRole('radio', { name: /approver/i }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getByRole('radio', { name: /operator/i }));
+    // The role card for operator should now be checked.
+    expect(screen.getByRole('radio', { name: /operator/i }).getAttribute('aria-checked')).toBe('true');
     expect(screen.getByRole('radio', { name: /admin/i }).getAttribute('aria-checked')).toBe('false');
   });
 
@@ -161,9 +159,9 @@ describe('UserEditor', () => {
     fireEvent.keyDown(operatorCard, { key: 'Enter' });
     expect(operatorCard.getAttribute('aria-checked')).toBe('true');
 
-    const approverCard = screen.getByRole('radio', { name: /approver/i });
-    fireEvent.keyDown(approverCard, { key: ' ' });
-    expect(approverCard.getAttribute('aria-checked')).toBe('true');
+    const adminCard = screen.getByRole('radio', { name: /admin/i });
+    fireEvent.keyDown(adminCard, { key: ' ' });
+    expect(adminCard.getAttribute('aria-checked')).toBe('true');
   });
 
   it('renders status as radio-cards (active / disabled)', () => {

@@ -56,8 +56,8 @@ function makeState(): DataState {
       makeUser({ id: '1', username: 'joao.silva', name: 'João Silva', email: 'joao.silva@saude.gov', role: 'operator', group: 'saude' }),
       makeUser({ id: '2', username: 'maria.costa', name: 'Maria Costa', email: 'm.costa@setic.gov', role: 'admin', group: 'setic' }),
       makeUser({ id: '3', username: 'carlos.mendes', name: 'Carlos Mendes', email: 'c.mendes@transportes.gov', role: 'operator', group: 'transportes' }),
-      makeUser({ id: '4', username: 'lucia.fernandes', name: 'Lúcia Fernandes', email: 'l.fernandes@seguranca.gov', role: 'approver', group: 'seguranca' }),
-      makeUser({ id: '5', username: 'platform.bot', name: 'Platform Service', email: 'platform@setic.gov', role: 'service', group: 'setic' }),
+      makeUser({ id: '4', username: 'lucia.fernandes', name: 'Lúcia Fernandes', email: 'l.fernandes@seguranca.gov', role: 'operator', group: 'seguranca' }),
+      makeUser({ id: '5', username: 'platform.bot', name: 'Platform Service', email: 'platform@setic.gov', role: 'operator', group: 'setic' }),
     ],
     groups: [
       makeGroup({ id: 'saude', name: 'Saúde' }),
@@ -88,8 +88,6 @@ describe('Users admin page', () => {
     const text = container.textContent ?? '';
     expect(text).toMatch(/operator/);
     expect(text).toMatch(/admin/);
-    expect(text).toMatch(/approver/);
-    expect(text).toMatch(/service/);
   });
 
   it('renders Users / Groups tabs', () => {

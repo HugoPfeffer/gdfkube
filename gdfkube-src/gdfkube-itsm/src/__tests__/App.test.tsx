@@ -12,7 +12,7 @@ import type { FormDef, User } from '../types';
 
 vi.mock('../api/itsmApi', () => ({
   itsmApi: { requests: { create: vi.fn(), get: vi.fn(), decide: vi.fn() } },
-  setDemoUserResolver: vi.fn(),
+  setDemoUser: vi.fn(),
 }));
 
 function makeUser(overrides: Partial<User> = {}): User {

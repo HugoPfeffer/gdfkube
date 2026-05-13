@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, itsmApi, setDemoUserResolver } from '../itsmApi';
+import { ApiError, itsmApi, setDemoUser } from '../itsmApi';
 
 function ok(body: unknown, status = 200): Response {
   return {
@@ -23,7 +23,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   fetchMock = vi.fn();
   vi.stubGlobal('fetch', fetchMock);
-  setDemoUserResolver(() => 'maria.costa');
+  setDemoUser('maria.costa');
 });
 
 afterEach(() => {
@@ -167,17 +167,16 @@ describe('itsmApi', () => {
   });
 
   describe('X-Demo-User header', () => {
-    it('sends X-Demo-User from the configured resolver', async () => {
-      setDemoUserResolver(() => 'joao.silva');
+    it('sends X-Demo-User from the configured user', async () => {
+      setDemoUser('joao.silva');
       fetchMock.mockResolvedValueOnce(ok([]));
       await itsmApi.requests.list();
       const headers = lastCallInit().headers as Record<string, string>;
       expect(headers['X-Demo-User']).toBe('joao.silva');
     });
 
-    it('picks up resolver changes between calls', async () => {
-      let user = 'joao.silva';
-      setDemoUserResolver(() => user);
+    it('picks up identity changes between calls', async () => {
+      setDemoUser('joao.silva');
       fetchMock.mockResolvedValue(ok([]));
 
       await itsmApi.requests.list();
@@ -186,7 +185,7 @@ describe('itsmApi', () => {
         'joao.silva',
       );
 
-      user = 'maria.costa';
+      setDemoUser('maria.costa');
       await itsmApi.requests.list();
       expect((fetchMock.mock.calls[1]![1] as RequestInit).headers).toHaveProperty(
         'X-Demo-User',

@@ -13,7 +13,7 @@ const SYSTEM_VARS: { token: string; desc: string }[] = [
   { token: '{{ meta.requesterName }}', desc: 'Username of the submitter' },
   { token: '{{ meta.requesterFullName }}', desc: 'Display name of the submitter' },
   { token: '{{ meta.requesterEmail }}', desc: 'Email of the submitter' },
-  { token: '{{ meta.requesterRole }}', desc: 'Role: operator | approver | admin' },
+  { token: '{{ meta.requesterRole }}', desc: 'Role: operator | admin' },
   { token: '{{ meta.submittedAt }}', desc: 'ISO-8601 timestamp' },
   { token: '{{ meta.formId }}', desc: 'Form identifier' },
 ];
