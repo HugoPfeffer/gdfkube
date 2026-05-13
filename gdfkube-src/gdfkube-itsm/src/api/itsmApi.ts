@@ -24,10 +24,17 @@ export class ApiError extends Error {
 // App.tsx synchronously overrides this in its render body the moment it
 // mounts (operator role → `joao.silva`), so the admin grace only spans the
 // Bootstrap phase.
+import type { Role } from '../types';
+
 const demoUserRef = { current: 'maria.costa' };
+const demoRoleRef: { current: Role } = { current: 'admin' };
 
 export function setDemoUser(username: string) {
   demoUserRef.current = username;
+}
+
+export function setDemoRole(role: Role) {
+  demoRoleRef.current = role;
 }
 
 function mapId<T extends Record<string, unknown>>(doc: T): T {
@@ -44,6 +51,7 @@ async function api<T>(
 ): Promise<T> {
   const headers: Record<string, string> = {
     'X-Demo-User': demoUserRef.current,
+    'X-Demo-Role': demoRoleRef.current,
   };
   if (init.body) {
     headers['Content-Type'] = 'application/json';
