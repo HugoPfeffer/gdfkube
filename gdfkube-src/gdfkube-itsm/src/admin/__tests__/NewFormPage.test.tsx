@@ -1,11 +1,7 @@
 // Component tests for the New Form creation page.
 //
-// Covers spec scenarios from `itsm-admin-forms`:
-//   - Create button is disabled until both Form ID and Display name are
-//     non-empty AND the id does not collide with an existing form.
-//   - Typing a colliding id renders an inline collision error.
-//   - On Create the page dispatches ADD_FORM and the new form lands in
-//     `state.forms`. The page also calls onClose to navigate back.
+// ID is now read-only, derived from Display name via slugify().
+// All tests drive the Display name input and assert on the ID output.
 
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -67,6 +63,9 @@ function FormsProbe({ onState }: { onState: (s: DataState) => void }) {
   return null;
 }
 
+const typeName = (v: string) =>
+  fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: v } });
+
 describe('NewFormPage', () => {
   it('Create button is disabled when fields are empty', () => {
     render(
@@ -76,36 +75,47 @@ describe('NewFormPage', () => {
     expect((create as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('Create button is disabled until both id and name are non-empty', () => {
+  it('Create button is enabled when Display name produces a non-colliding slug', () => {
     render(
       withProvider(makeState(), <NewFormPage onClose={vi.fn()} />),
     );
     const idInput = screen.getByLabelText(/form id/i) as HTMLInputElement;
-    const nameInput = screen.getByLabelText(/display name/i) as HTMLInputElement;
     const create = screen.getByRole('button', { name: /create form/i }) as HTMLButtonElement;
 
-    fireEvent.change(idInput, { target: { value: 'backup-restore' } });
-    expect(create.disabled).toBe(true);
-
-    fireEvent.change(nameInput, { target: { value: 'Backup & Restore' } });
+    typeName('Backup & Restore');
+    expect(idInput.value).toBe('backup-restore');
     expect(create.disabled).toBe(false);
   });
 
   it('id collision blocks Create and renders an inline collision error', () => {
     render(
-      withProvider(makeState(), <NewFormPage onClose={vi.fn()} />),
+      withProvider(
+        makeState({ forms: [makeForm({ id: 'cultura', name: 'Cultura' })] }),
+        <NewFormPage onClose={vi.fn()} />,
+      ),
     );
     const idInput = screen.getByLabelText(/form id/i) as HTMLInputElement;
-    const nameInput = screen.getByLabelText(/display name/i) as HTMLInputElement;
     const create = screen.getByRole('button', { name: /create form/i }) as HTMLButtonElement;
 
-    fireEvent.change(nameInput, { target: { value: 'Cluster v2' } });
-    fireEvent.change(idInput, { target: { value: 'cluster-request' } });
+    typeName('Cultura');
 
+    expect(idInput.value).toBe('cultura');
     expect(create.disabled).toBe(true);
     const help = screen.getByTestId('new-form-id-help');
     expect(help.textContent).toMatch(/already exists/i);
     expect(idInput.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('empty slug disables Create', () => {
+    render(
+      withProvider(makeState(), <NewFormPage onClose={vi.fn()} />),
+    );
+    const idInput = screen.getByLabelText(/form id/i) as HTMLInputElement;
+    const create = screen.getByRole('button', { name: /create form/i }) as HTMLButtonElement;
+
+    typeName('...');
+    expect(idInput.value).toBe('');
+    expect(create.disabled).toBe(true);
   });
 
   it('Create dispatches ADD_FORM and seeds an empty fields slice', async () => {
@@ -121,11 +131,7 @@ describe('NewFormPage', () => {
       ),
     );
 
-    const idInput = screen.getByLabelText(/form id/i) as HTMLInputElement;
-    const nameInput = screen.getByLabelText(/display name/i) as HTMLInputElement;
-
-    fireEvent.change(idInput, { target: { value: 'backup-restore' } });
-    fireEvent.change(nameInput, { target: { value: 'Backup & Restore' } });
+    typeName('Backup & Restore');
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /create form/i }));
     });
@@ -135,15 +141,6 @@ describe('NewFormPage', () => {
     expect(last?.forms.map((f) => f.id)).toContain('backup-restore');
     expect(last?.fields['backup-restore']).toEqual([]);
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('id input lowercases and strips invalid characters as the user types', () => {
-    render(
-      withProvider(makeState(), <NewFormPage onClose={vi.fn()} />),
-    );
-    const idInput = screen.getByLabelText(/form id/i) as HTMLInputElement;
-    fireEvent.change(idInput, { target: { value: 'Backup_Restore!' } });
-    expect(idInput.value).toBe('backuprestore');
   });
 
   it('clicking Cancel calls onClose without dispatching', () => {
@@ -184,7 +181,6 @@ describe('NewFormPage', () => {
     );
     fireEvent.click(screen.getByRole('tab', { name: /Fields/i }));
     expect(screen.getByTestId('fields-table')).toBeInTheDocument();
-    // Add field button is visible in the draft Fields tab.
     expect(screen.getByRole('button', { name: /add field/i })).toBeInTheDocument();
   });
 
@@ -201,23 +197,14 @@ describe('NewFormPage', () => {
       ),
     );
 
-    // Definition
-    fireEvent.change(screen.getByLabelText(/form id/i), {
-      target: { value: 'newform' },
-    });
-    fireEvent.change(screen.getByLabelText(/display name/i), {
-      target: { value: 'New Form' },
-    });
+    typeName('New Form');
 
-    // Fields tab — add 2 draft fields.
     fireEvent.click(screen.getByRole('tab', { name: /Fields/i }));
     const addField = screen.getByRole('button', { name: /add field/i });
     fireEvent.click(addField);
     fireEvent.click(addField);
 
-    // Template tab — add a draft template (default file already provided; add a new manifest).
     fireEvent.click(screen.getByRole('tab', { name: /Template/i }));
-    // The template editor renders at least one default file.
     expect(screen.getByTestId('template-textarea')).toBeInTheDocument();
 
     await act(async () => {
@@ -225,9 +212,9 @@ describe('NewFormPage', () => {
     });
 
     const last = observed[observed.length - 1]!;
-    expect(last.forms.map((f) => f.id)).toContain('newform');
-    expect(last.fields['newform']?.length).toBe(2);
-    expect(last.templates['newform']?.length).toBeGreaterThanOrEqual(1);
+    expect(last.forms.map((f) => f.id)).toContain('new-form');
+    expect(last.fields['new-form']?.length).toBe(2);
+    expect(last.templates['new-form']?.length).toBeGreaterThanOrEqual(1);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

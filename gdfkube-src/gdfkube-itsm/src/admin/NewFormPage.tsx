@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { itsmApi } from '../api/itsmApi';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
 import type { Field, FormDef, TemplateFile } from '../types';
+import { slugify } from '../utils/slug';
 import { FieldsTable } from './FieldsTable';
 import { TemplateEditor } from './TemplateEditor';
 
@@ -32,7 +33,6 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
 
   const [subtab, setSubtab] = useState<SubTab>('definition');
 
-  const [id, setId] = useState('');
   const [name, setName] = useState('');
   const [topic, setTopic] = useState('dbz.gdfkube.requests');
   const [description, setDescription] = useState('');
@@ -44,9 +44,9 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
   ]);
   const [isSaving, setIsSaving] = useState(false);
 
-  const trimmedId = id.trim();
-  const idCollision = trimmedId !== '' && forms.some((f) => f.id === trimmedId);
-  const canCreate = trimmedId !== '' && name.trim() !== '' && !idCollision;
+  const id = slugify(name);
+  const idCollision = id !== '' && forms.some((f) => f.id === id);
+  const canCreate = id !== '' && name.trim() !== '' && !idCollision;
 
   const handleCreate = async () => {
     if (!canCreate || isSaving) return;
@@ -54,7 +54,7 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
     const today = todayIso();
     try {
       const body: Record<string, unknown> = {
-        _id: trimmedId,
+        _id: id,
         name: name.trim(),
         topic: topic.trim() || 'dbz.gdfkube.requests',
         description: description.trim() || undefined,
@@ -65,7 +65,7 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
       const created = await itsmApi.forms.create(body);
 
       const form: FormDef = {
-        id: (created.id as string) ?? trimmedId,
+        id: (created.id as string) ?? id,
         name: (created.name as string) ?? name.trim(),
         topic: (created.topic as string) ?? topic.trim(),
         description: created.description as string | undefined,
@@ -105,7 +105,7 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
           onClick={handleCreate}
           title={
             idCollision
-              ? `A form with id "${trimmedId}" already exists`
+              ? `A form with id "${id}" already exists`
               : !canCreate
                 ? 'Form ID and Display name are required'
                 : 'Create form'
@@ -147,10 +147,8 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
               id="new-form-id"
               type="text"
               value={id}
-              onChange={(e) =>
-                setId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
-              }
-              placeholder="e.g. backup-restore"
+              disabled
+              readOnly
               aria-invalid={idCollision || undefined}
             />
             <div
@@ -159,7 +157,7 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
               style={idCollision ? { color: 'var(--red-700, #b91c1c)' } : undefined}
             >
               {idCollision
-                ? `A form with id "${trimmedId}" already exists.`
+                ? `A form with id "${id}" already exists.`
                 : 'Lowercase, dash-separated. Immutable once created.'}
             </div>
           </div>

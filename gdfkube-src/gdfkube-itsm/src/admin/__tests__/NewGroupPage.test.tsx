@@ -1,14 +1,7 @@
 // Component tests for the New Group creation page.
 //
-// Covers spec scenarios from `itsm-admin-users` (incl. fix-itsm-portal-design-drift):
-//   - Typing into the id input auto-populates Git repo as `gdfkube-{id}`.
-//   - Manual edit of Git repo persists; subsequent id changes do NOT
-//     overwrite once the user has edited the repo (dirty flag).
-//   - Live preview block renders four lines: Keycloak group, AppProject,
-//     ManagedClusterSetBinding, Git repo.
-//   - Create disabled until id and displayName are non-empty.
-//   - ManagedClusterSet is a `<select>` with seeded options
-//     `default`, `production`, `staging`, `internal`.
+// ID is now read-only, derived from Display name via slugify().
+// All tests drive the Display name input and assert on the ID output.
 
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -57,27 +50,30 @@ function GroupsProbe({ onState }: { onState: (s: DataState) => void }) {
   return null;
 }
 
+const typeName = (v: string) =>
+  fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: v } });
+
 describe('NewGroupPage', () => {
-  it('typing into id auto-populates Git repo as gdfkube-{id}', () => {
+  it('typing into Display name auto-populates ID and Git repo', () => {
     render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
+    typeName('Cultura');
     const idInput = screen.getByLabelText(/^id$/i) as HTMLInputElement;
     const repoInput = screen.getByLabelText(/git repo/i) as HTMLInputElement;
-    fireEvent.change(idInput, { target: { value: 'cultura' } });
+    expect(idInput.value).toBe('cultura');
     expect(repoInput.value).toBe('gdfkube-cultura');
   });
 
-  it('manual edit of Git repo persists; later id changes do NOT overwrite', () => {
+  it('manual edit of Git repo persists; later Display name changes do NOT overwrite', () => {
     render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
-    const idInput = screen.getByLabelText(/^id$/i) as HTMLInputElement;
     const repoInput = screen.getByLabelText(/git repo/i) as HTMLInputElement;
 
-    fireEvent.change(idInput, { target: { value: 'cultura' } });
+    typeName('Cultura');
     expect(repoInput.value).toBe('gdfkube-cultura');
 
     fireEvent.change(repoInput, { target: { value: 'custom-repo' } });
     expect(repoInput.value).toBe('custom-repo');
 
-    fireEvent.change(idInput, { target: { value: 'turismo' } });
+    typeName('Turismo');
     expect(repoInput.value).toBe('custom-repo');
   });
 
@@ -93,9 +89,8 @@ describe('NewGroupPage', () => {
 
   it('preview block renders four lines: Keycloak group / AppProject / ManagedClusterSetBinding / Git repo', () => {
     render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
-    const idInput = screen.getByLabelText(/^id$/i) as HTMLInputElement;
     const select = screen.getByLabelText(/managedclusterset/i) as HTMLSelectElement;
-    fireEvent.change(idInput, { target: { value: 'cultura' } });
+    typeName('Cultura');
     fireEvent.change(select, { target: { value: 'staging' } });
 
     const preview = screen.getByTestId('group-preview');
@@ -105,19 +100,21 @@ describe('NewGroupPage', () => {
     expect(preview.textContent).toMatch(/Git repo:\s*gdfkube-cultura/);
   });
 
-  it('Create disabled until id and displayName are non-empty', () => {
+  it('Create disabled when Display name empty, disabled when slug empty, enabled when slug non-empty', () => {
     render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
     const create = screen.getByRole('button', {
       name: /create group/i,
     }) as HTMLButtonElement;
-    expect(create.disabled).toBe(true);
-
     const idInput = screen.getByLabelText(/^id$/i) as HTMLInputElement;
-    fireEvent.change(idInput, { target: { value: 'cultura' } });
+
     expect(create.disabled).toBe(true);
 
-    const displayName = screen.getByLabelText(/display name/i) as HTMLInputElement;
-    fireEvent.change(displayName, { target: { value: 'Cultura' } });
+    typeName('...');
+    expect(idInput.value).toBe('');
+    expect(create.disabled).toBe(true);
+
+    typeName('Cultura');
+    expect(idInput.value).toBe('cultura');
     expect(create.disabled).toBe(false);
   });
 
@@ -134,10 +131,7 @@ describe('NewGroupPage', () => {
       ),
     );
 
-    fireEvent.change(screen.getByLabelText(/^id$/i), { target: { value: 'cultura' } });
-    fireEvent.change(screen.getByLabelText(/display name/i), {
-      target: { value: 'Cultura' },
-    });
+    typeName('Cultura');
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /create group/i }));
     });
@@ -146,5 +140,17 @@ describe('NewGroupPage', () => {
     const last = observed[observed.length - 1];
     expect(last?.groups.map((g) => g.id)).toContain('cultura');
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('Display name with spaces and punctuation derives kebab-case ID', () => {
+    render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
+    typeName('Min. da fazenda');
+    const idInput = screen.getByLabelText(/^id$/i) as HTMLInputElement;
+    const repoInput = screen.getByLabelText(/git repo/i) as HTMLInputElement;
+    const preview = screen.getByTestId('group-preview');
+
+    expect(idInput.value).toBe('min-da-fazenda');
+    expect(repoInput.value).toBe('gdfkube-min-da-fazenda');
+    expect(preview.textContent).toMatch(/Keycloak group:\s*gdf-min-da-fazenda/);
   });
 });

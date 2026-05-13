@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { itsmApi } from '../api/itsmApi';
 import { useGdfDispatch } from '../state/dataContext';
 import type { Group } from '../types';
+import { slugify } from '../utils/slug';
 
 interface NewGroupPageProps {
   onClose: () => void;
@@ -22,49 +23,42 @@ const MANAGED_CLUSTER_SETS = ['default', 'production', 'staging', 'internal'] as
 export function NewGroupPage({ onClose }: NewGroupPageProps) {
   const dispatch = useGdfDispatch();
 
-  const [id, setId] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [fullName, setFullName] = useState('');
-  const [repo, setRepo] = useState('');
+  const [manualRepo, setManualRepo] = useState('');
   const [repoDirty, setRepoDirty] = useState(false);
   const [managedClusterSet, setManagedClusterSet] = useState<typeof MANAGED_CLUSTER_SETS[number]>('default');
   const [autoProvision, setAutoProvision] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const onIdChange = (next: string) => {
-    const cleaned = next.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    setId(cleaned);
-    if (!repoDirty) {
-      setRepo(cleaned === '' ? '' : `gdfkube-${cleaned}`);
-    }
-  };
+  const id = slugify(displayName);
+  const repo = repoDirty ? manualRepo : (id === '' ? '' : `gdfkube-${id}`);
 
   const onRepoChange = (next: string) => {
     setRepoDirty(true);
-    setRepo(next);
+    setManualRepo(next);
   };
 
-  const trimmedId = id.trim();
-  const canCreate = trimmedId !== '' && displayName.trim() !== '';
+  const canCreate = id !== '' && displayName.trim() !== '';
 
   const handleCreate = async () => {
     if (!canCreate || isSaving) return;
     setIsSaving(true);
     try {
       const body: Record<string, unknown> = {
-        _id: trimmedId,
+        _id: id,
         name: displayName.trim(),
         fullName: fullName.trim() || displayName.trim(),
-        repo: repo.trim() || `gdfkube-${trimmedId}`,
+        repo: repo.trim() || `gdfkube-${id}`,
       };
       const created = await itsmApi.groups.create(body);
       const group: Group = {
-        id: (created.id as string) ?? trimmedId,
+        id: (created.id as string) ?? id,
         name: (created.name as string) ?? displayName.trim(),
         fullName: (created.fullName as string) ?? (fullName.trim() || displayName.trim()),
         users: 0,
         forms: 0,
-        repo: (created.repo as string) ?? (repo.trim() || `gdfkube-${trimmedId}`),
+        repo: (created.repo as string) ?? (repo.trim() || `gdfkube-${id}`),
         clusters: 0,
       };
       dispatch({ type: 'ADD_GROUP', group });
@@ -74,7 +68,7 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
     }
   };
 
-  const idDisplay = trimmedId || '{id}';
+  const idDisplay = id || '{id}';
   const repoDisplay = repo || `gdfkube-${idDisplay}`;
 
   return (
@@ -91,9 +85,8 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
       <div className="form-grid">
         <div className="field">
           <label htmlFor="new-group-id">ID</label>
-          <input id="new-group-id" type="text" value={id} required
-            onChange={(e) => onIdChange(e.target.value)} placeholder="e.g. cultura" />
-          <div className="help">Lowercase, dash-separated. Used for Keycloak group, repo, and AppProject names.</div>
+          <input id="new-group-id" type="text" value={id} disabled readOnly />
+          <div className="help">Auto-derived from Display name. Used for Keycloak group, repo, and AppProject names.</div>
         </div>
         <div className="field">
           <label htmlFor="new-group-name">Display name</label>
