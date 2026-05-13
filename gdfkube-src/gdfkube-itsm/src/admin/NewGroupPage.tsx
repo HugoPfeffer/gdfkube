@@ -11,16 +11,18 @@
 import { useState } from 'react';
 import { itsmApi } from '../api/itsmApi';
 import { useGdfDispatch } from '../state/dataContext';
+import type { Toast } from '../shell/ToastStack';
 import type { Group } from '../types';
 import { slugify } from '../utils/slug';
 
 interface NewGroupPageProps {
   onClose: () => void;
+  setToast?: (t: Toast) => void;
 }
 
 const MANAGED_CLUSTER_SETS = ['default', 'production', 'staging', 'internal'] as const;
 
-export function NewGroupPage({ onClose }: NewGroupPageProps) {
+export function NewGroupPage({ onClose, setToast }: NewGroupPageProps) {
   const dispatch = useGdfDispatch();
 
   const [displayName, setDisplayName] = useState('');
@@ -62,8 +64,20 @@ export function NewGroupPage({ onClose }: NewGroupPageProps) {
         clusters: 0,
       };
       dispatch({ type: 'ADD_GROUP', group });
+      setToast?.({
+        id: `create-${Date.now()}`,
+        kind: 'info',
+        title: 'Created',
+        body: `Group "${group.name}" created.`,
+      });
       onClose();
-    } catch {
+    } catch (err) {
+      setToast?.({
+        id: `create-err-${Date.now()}`,
+        kind: 'warn',
+        title: 'Create failed',
+        body: err instanceof Error ? err.message : String(err),
+      });
       setIsSaving(false);
     }
   };
