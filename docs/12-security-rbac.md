@@ -16,12 +16,16 @@ each component is allowed to do.
 |---|---|---|---|
 | **Org operator** | `operator` | Portal | Submit requests for their own org. View their org's requests. Cannot approve. |
 | **SETIC platform admin** | `admin` | Portal, ArgoCD UI, hub kubectl, RHACM | Approve any request. Manage forms, users, groups. Sync ArgoCD Applications. Read all clusters. |
-| **Approver** | `approver` | (reserved) | Future role — a non-admin who can approve specific form types. Not used in demo. |
-| **Service** | `service` | (reserved) | Future role for machine identities. Not used in demo. |
 
-Roles are declared in `gdfkube-src/gdfkube-itsm/src/types.ts:3`. The demo
-hardcodes two real users (saude operator + setic admin); real auth is
-deferred (see [01-itsm-portal.md](./01-itsm-portal.md), [02-express-api.md](./02-express-api.md)).
+Roles are declared in `gdfkube-src/gdfkube-itsm/src/types.ts:3` and are
+exactly `operator | admin`. The demo hardcodes two real users (saude
+operator + setic admin); real auth is deferred (see
+[01-itsm-portal.md](./01-itsm-portal.md),
+[02-express-api.md](./02-express-api.md)).
+
+> **Future state — not yet implemented.** A non-admin approver role (for
+> per-form-type signoff) and a machine-identity service role were
+> considered but are explicitly out of scope until real auth lands.
 
 ## Authorization Layers
 
@@ -153,7 +157,7 @@ Three secret families, each with its own distribution path.
 - Per-org isolation enforced at five layers (Git, AppProject, Casbin, ManagedClusterSet, Kubernetes RBAC).
 - ArgoCD enforcement = AppProject scope + Casbin policies (two layers, not just one).
 - Demo auth is a static user list. Real auth (Keycloak / OIDC) is deferred to a future PRD.
-- Approval requires SETIC platform admin (single approver). Demo: ITSM `admin` user.
+- Approval requires SETIC platform admin. Demo: ITSM `admin` user — single signoff.
 
 ## Open Questions
 

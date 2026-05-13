@@ -253,18 +253,6 @@ export const USERS: User[] = [
   },
   {
     id: '6',
-    username: 'lucia.fernandes',
-    name: 'Lúcia Fernandes',
-    fullName: 'Lúcia Fernandes',
-    email: 'l.fernandes@seguranca.gov',
-    group: 'seguranca',
-    role: 'operator',
-    status: 'active',
-    active: true,
-    last: 'yesterday',
-  },
-  {
-    id: '7',
     username: 'rafael.souza',
     name: 'Rafael Souza',
     fullName: 'Rafael Souza',
@@ -274,18 +262,6 @@ export const USERS: User[] = [
     status: 'active',
     active: true,
     last: '5h ago',
-  },
-  {
-    id: '8',
-    username: 'platform.bot',
-    name: 'Platform Service',
-    fullName: 'Platform Service',
-    email: 'platform@setic.gov',
-    group: 'setic',
-    role: 'operator',
-    status: 'active',
-    active: true,
-    last: 'now',
   },
 ];
 

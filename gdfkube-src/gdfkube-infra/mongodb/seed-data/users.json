@@ -60,18 +60,6 @@
     "last": "3d ago"
   },
   {
-    "_id": "lucia.fernandes",
-    "username": "lucia.fernandes",
-    "name": "Lúcia Fernandes",
-    "fullName": "Lúcia Fernandes",
-    "email": "l.fernandes@seguranca.gov",
-    "role": "approver",
-    "group": "seguranca",
-    "status": "active",
-    "mfa": null,
-    "last": "yesterday"
-  },
-  {
     "_id": "rafael.souza",
     "username": "rafael.souza",
     "name": "Rafael Souza",
@@ -82,17 +70,5 @@
     "status": "active",
     "mfa": null,
     "last": "5h ago"
-  },
-  {
-    "_id": "platform.bot",
-    "username": "platform.bot",
-    "name": "Platform Service",
-    "fullName": "Platform Service",
-    "email": "platform@setic.gov",
-    "role": "service",
-    "group": "setic",
-    "status": "active",
-    "mfa": null,
-    "last": "now"
   }
 ]

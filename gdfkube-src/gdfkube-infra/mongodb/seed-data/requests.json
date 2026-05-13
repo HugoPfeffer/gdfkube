@@ -46,7 +46,7 @@
       "name": "maria.costa",
       "fullName": "Maria Costa",
       "email": "maria.costa@educacao.gov",
-      "role": "operator",
+      "role": "admin",
       "group": "educacao"
     },
     "requesterGroupName": "educacao",
@@ -305,41 +305,5 @@
     "policyChecks": [],
     "progress": 70,
     "requestId": "01HQ3D4E5F6G7H8J9K0L1M2N3P"
-  },
-  {
-    "_id": "REQ0010230C",
-    "id": "REQ0010230C",
-    "formId": "cluster-request",
-    "env": "staging",
-    "requester": {
-      "id": "lucia.fernandes",
-      "username": "lucia.fernandes",
-      "name": "lucia.fernandes",
-      "fullName": "Lúcia Fernandes",
-      "email": "lucia.fernandes@seguranca.gov",
-      "role": "operator",
-      "group": "seguranca"
-    },
-    "requesterGroupName": "seguranca",
-    "status": "ready",
-    "stage": 7,
-    "submittedAt": "2026-04-25 09:05:31",
-    "vars": {
-      "clusterName": "ocorrencias",
-      "environment": "staging",
-      "nodeCount": 2
-    },
-    "meta": {
-      "requestId": "01HQ3A6B7C8D9E0F1G2H3J4K5L",
-      "requesterGroupName": "seguranca",
-      "requesterUsername": "lucia.fernandes",
-      "requesterFullName": "Lúcia Fernandes",
-      "formId": "cluster-request",
-      "submittedAt": "2026-04-25 09:05:31",
-      "correlationId": "01HQ3A6B7C8D9E0F1G2H3J4K5L"
-    },
-    "policyChecks": [],
-    "progress": 100,
-    "requestId": "01HQ3A6B7C8D9E0F1G2H3J4K5L"
   }
 ]

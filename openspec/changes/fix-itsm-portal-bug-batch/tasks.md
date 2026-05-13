@@ -42,12 +42,12 @@
 
 ## 6. Reference docs amendment
 
-- [ ] 6.1 Sweep `/workspace/docs/00-architecture-overview.md` through `13-observability.md` for stale references: `FALLBACK_USERS`, `setDemoUserResolver`, `approver`/`service`/`lucia.fernandes`/`platform.bot`, ULID-shaped request id examples (`01[HJ-NP-TV-Z]{25}`), and over-stated ArgoCD readiness. Fix in place; mark sections "Future state" where appropriate.
-- [ ] 6.2 Update `/workspace/CLAUDE.md` to add a short "Demo identity" section: `DEMO_USERS` is the single source of truth, role enum is `operator | admin`, `X-Demo-User` is the only identity wire.
-- [ ] 6.3 Update `/workspace/openspec/specs/itsm-portal-shell/spec.md`, `itsm-express-api/spec.md`, `itsm-users-collection/spec.md`, `itsm-admin-users/spec.md` per the deltas in this change (this happens automatically on archive, but verify the deltas apply cleanly via `openspec validate fix-itsm-portal-bug-batch --strict`).
-- [ ] 6.4 In `/workspace/.tmp/REPORT-ISSUES.md`, add a header note that the audit predates the Express API migration and guidance assuming frontend-only state is superseded.
-- [ ] 6.5 In archived OpenSpec change docs that prescribed the now-removed patterns (e.g., `/workspace/openspec/changes/archive/2026-05-11-add-itsm-express-api/{design.md,retrospective.md}`), append a one-line "Superseded by fix-itsm-portal-bug-batch (2026-05-13)" annotation. Do not rewrite history.
-- [ ] 6.6 Verify: `git grep -n "FALLBACK_USERS\|setDemoUserResolver\|approver\|platform.bot\|lucia.fernandes" openspec/ docs/ CLAUDE.md gdfkube-src/gdfkube-itsm/` returns no hits except in superseded/historical-annotated entries.
+- [x] 6.1 Sweep `/workspace/docs/00-architecture-overview.md` through `13-observability.md` for stale references: `FALLBACK_USERS`, `setDemoUserResolver`, `approver`/`service`/`lucia.fernandes`/`platform.bot`, ULID-shaped request id examples (`01[HJ-NP-TV-Z]{25}`), and over-stated ArgoCD readiness. Fix in place; mark sections "Future state" where appropriate.
+- [x] 6.2 Update `/workspace/CLAUDE.md` to add a short "Demo identity" section: `DEMO_USERS` is the single source of truth, role enum is `operator | admin`, `X-Demo-User` is the only identity wire.
+- [x] 6.3 Update `/workspace/openspec/specs/itsm-portal-shell/spec.md`, `itsm-express-api/spec.md`, `itsm-users-collection/spec.md`, `itsm-admin-users/spec.md` per the deltas in this change (this happens automatically on archive, but verify the deltas apply cleanly via `openspec validate fix-itsm-portal-bug-batch --strict`).
+- [x] 6.4 In `/workspace/.tmp/REPORT-ISSUES.md`, add a header note that the audit predates the Express API migration and guidance assuming frontend-only state is superseded.
+- [x] 6.5 In archived OpenSpec change docs that prescribed the now-removed patterns (e.g., `/workspace/openspec/changes/archive/2026-05-11-add-itsm-express-api/{design.md,retrospective.md}`), append a one-line "Superseded by fix-itsm-portal-bug-batch (2026-05-13)" annotation. Do not rewrite history.
+- [x] 6.6 Verify: `git grep -n "FALLBACK_USERS\|setDemoUserResolver\|approver\|platform.bot\|lucia.fernandes" openspec/ docs/ CLAUDE.md gdfkube-src/gdfkube-itsm/` returns no hits except in superseded/historical-annotated entries.
 
 ## 7. End-to-end verification
 

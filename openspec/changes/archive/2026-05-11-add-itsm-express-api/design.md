@@ -66,6 +66,7 @@
 - *Alternative considered*: `LOAD_*` actions per slice. Rejected — bigger blast radius, no functional gain.
 
 **D6. `users`/`groups` admin-only, with non-admin fallback in Bootstrap.**
+- *Superseded by fix-itsm-portal-bug-batch (2026-05-13)* — `FALLBACK_USERS`/`FALLBACK_GROUPS` were removed; Bootstrap now fails hard via the existing `phase === 'error'` UI if `/api/itsm/users` or `/api/itsm/groups` fails, and the endpoints are accessible to all authenticated demo users.
 - *Rationale*: `docs/02-express-api.md:53-55` makes admin endpoints admin-only (return 403 for non-admin). For non-admin personas, the role switcher and group lookups still need data; we ship a tiny built-in fallback list in `Bootstrap` (just enough to render the UI) rather than relaxing the API.
 - *Alternative considered*: open `GET /users` and `GET /groups` to all roles. Rejected — contradicts the doc and leaks admin data unnecessarily.
 
@@ -74,6 +75,7 @@
 - *Alternative considered*: Joi/Zod schema per form. Rejected — duplicates the FormDef as the source of truth; would drift from `forms[].fields[]`.
 
 **D8. `X-Demo-User` header (no body), demo-user list at boot.**
+- *Superseded by fix-itsm-portal-bug-batch (2026-05-13)* — the async `setDemoUserResolver(fn)` pattern was replaced with synchronous `setDemoUser(username)` (module-level ref) called during render. `DEMO_USERS` was trimmed to `operator | admin` (the `approver`/`service` users `lucia.fernandes`/`platform.bot` were unreachable from the UI and are removed).
 - *Rationale*: Stable identity surface that real auth (Keycloak/OIDC) can replace by swapping the middleware. List is statically populated from `seeds.ts` + `adminSeeds.ts` so the role switcher just works for every persona.
 - *Alternative considered*: JWT with a static demo signing key. Rejected — over-engineered for demo identity; the docs explicitly name the header approach (`docs/02-express-api.md:104`).
 

@@ -234,20 +234,6 @@ const RAW_REQUESTS: RawRequest[] = [
     stage: 5,
     progress: 70,
   },
-  {
-    id: 'REQ0010230C',
-    requestId: '01HQ3A6B7C8D9E0F1G2H3J4K5L',
-    cluster: 'ocorrencias',
-    org: 'seguranca',
-    env: 'staging',
-    nodes: 2,
-    requester: 'lucia.fernandes',
-    requesterFull: 'Lúcia Fernandes',
-    submitted: '2026-04-25 09:05:31',
-    status: 'ready',
-    stage: 7,
-    progress: 100,
-  },
 ];
 
 export const REQUESTS: Request[] = RAW_REQUESTS.map((r) => {
