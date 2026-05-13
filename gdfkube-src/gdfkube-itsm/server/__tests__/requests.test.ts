@@ -15,14 +15,6 @@ const SEED_FORM = {
   status: 'active',
   fields: [
     {
-      key: 'requesterGroupName',
-      label: 'Department',
-      type: 'select',
-      bucket: 'meta',
-      required: true,
-      options: 'saude|Saúde; educacao|Educação; transportes|Transportes',
-    },
-    {
       key: 'clusterName',
       label: 'Cluster',
       type: 'text',
@@ -139,7 +131,6 @@ describe('Requests endpoints', () => {
         .send({
           formId: 'cluster-request',
           env: 'production',
-          requesterGroupName: 'saude',
           clusterName: 'test-cluster',
           environment: 'production',
           nodeCount: 3,
@@ -157,7 +148,6 @@ describe('Requests endpoints', () => {
         .send({
           formId: 'cluster-request',
           env: 'staging',
-          requesterGroupName: 'saude',
           clusterName: 'ulid-test',
           environment: 'staging',
           nodeCount: 1,
@@ -169,7 +159,6 @@ describe('Requests endpoints', () => {
       const payload = {
         formId: 'cluster-request',
         env: 'production',
-        requesterGroupName: 'saude',
         clusterName: 'concurrent-test',
         environment: 'production',
         nodeCount: 2,
@@ -197,6 +186,27 @@ describe('Requests endpoints', () => {
       expect(Math.abs(numA - numB)).toBe(1);
     });
 
+    it('injects meta.requesterGroupName from demoUser.group', async () => {
+      const createRes = await request(app)
+        .post('/api/itsm/requests')
+        .set('X-Demo-User', OPERATOR)
+        .send({
+          formId: 'cluster-request',
+          env: 'development',
+          clusterName: 'meta-group-test',
+          environment: 'development',
+          nodeCount: 2,
+        });
+      expect(createRes.status).toBe(201);
+
+      const getRes = await request(app)
+        .get(`/api/itsm/requests/${createRes.body.id}`)
+        .set('X-Demo-User', OPERATOR);
+      expect(getRes.body.requesterGroupName).toBe('saude');
+      expect(getRes.body.meta.requesterGroupName).toBe('saude');
+      expect(getRes.body.meta.correlationId).toBe(createRes.body.id);
+    });
+
     it('sets meta.correlationId to _id', async () => {
       const createRes = await request(app)
         .post('/api/itsm/requests')
@@ -204,7 +214,6 @@ describe('Requests endpoints', () => {
         .send({
           formId: 'cluster-request',
           env: 'development',
-          requesterGroupName: 'saude',
           clusterName: 'corr-test',
           environment: 'development',
           nodeCount: 2,
@@ -233,7 +242,6 @@ describe('Requests endpoints', () => {
         .send({
           formId: 'cluster-request',
           env: 'invalid-env',
-          requesterGroupName: 'saude',
           clusterName: 'x',
           environment: 'production',
           nodeCount: 1,
