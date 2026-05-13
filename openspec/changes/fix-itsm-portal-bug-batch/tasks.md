@@ -36,9 +36,9 @@
 
 ## 5. Remove leftover debug-ingest code (Bug #5)
 
-- [ ] 5.1 Delete the `#region agent log` / `#endregion` block in `gdfkube-src/gdfkube-itsm/server/src/services/requestService.ts:53-55` (the entire `fetch('http://localhost:7430/ingest/…')` call and its bracketing comments).
-- [ ] 5.2 Run `git grep -n "7430/ingest\|60f88a58-2925-43f9-b28f-bcec8ca13914\|X-Debug-Session-Id\|sessionId:'df73a6'"` and remove any other hits.
-- [ ] 5.3 Delete `.cursor/debug-df73a6.log` and `.cursor/rules/test-verification-logs.mdc` (untracked debug artefacts).
+- [x] 5.1 Delete the `#region agent log` / `#endregion` block in `gdfkube-src/gdfkube-itsm/server/src/services/requestService.ts:53-55` (the entire `fetch('http://localhost:7430/ingest/…')` call and its bracketing comments).
+- [x] 5.2 Run `git grep -n "7430/ingest\|60f88a58-2925-43f9-b28f-bcec8ca13914\|X-Debug-Session-Id\|sessionId:'df73a6'"` and remove any other hits.
+- [x] 5.3 Delete `.cursor/debug-df73a6.log` and `.cursor/rules/test-verification-logs.mdc` (untracked debug artefacts).
 
 ## 6. Reference docs amendment
 

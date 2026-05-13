@@ -52,10 +52,6 @@ export async function submit({ demoUser, body }: SubmitInput) {
     unknown
   >;
 
-  // #region agent log
-  fetch('http://localhost:7430/ingest/60f88a58-2925-43f9-b28f-bcec8ca13914',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'df73a6'},body:JSON.stringify({sessionId:'df73a6',location:'requestService.ts:submit',message:'incoming body and destructured values',data:{rawBody:body,formId,env,justification,fieldValuesKeys:Object.keys(fieldValues),fieldValues},timestamp:Date.now(),hypothesisId:'H1,H2,H4'})}).catch(()=>{});
-  // #endregion
-
   if (!formId || typeof formId !== 'string') {
     const e: AppError = new Error('formId required');
     e.statusCode = 400;
@@ -75,18 +71,11 @@ export async function submit({ demoUser, body }: SubmitInput) {
     throw e;
   }
 
-  // #region agent log
-  fetch('http://localhost:7430/ingest/60f88a58-2925-43f9-b28f-bcec8ca13914',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'df73a6'},body:JSON.stringify({sessionId:'df73a6',location:'requestService.ts:pre-validation',message:'form fields vs fieldValues',data:{formFields:(form.fields as any).map((f:any)=>({key:f.key,bucket:f.bucket,required:f.required})),fieldValuesKeys:Object.keys(fieldValues)},timestamp:Date.now(),hypothesisId:'H1,H3'})}).catch(()=>{});
-  // #endregion
-
   const validation = validateAgainstFormDef(
     { fields: form.fields as any },
     fieldValues,
   );
   if (!validation.ok) {
-    // #region agent log
-    fetch('http://localhost:7430/ingest/60f88a58-2925-43f9-b28f-bcec8ca13914',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'df73a6'},body:JSON.stringify({sessionId:'df73a6',location:'requestService.ts:validation-failed',message:'validation errors',data:{errors:validation.errors},timestamp:Date.now(),hypothesisId:'H1,H2,H3'})}).catch(()=>{});
-    // #endregion
     const e: AppError = new Error('Validation failed');
     e.statusCode = 400;
     e.details = validation.errors;

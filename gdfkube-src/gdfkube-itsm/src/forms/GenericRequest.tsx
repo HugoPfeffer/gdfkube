@@ -158,10 +158,6 @@ export function GenericRequest({
     const thinBody: Record<string, unknown> = { formId, env, ...fieldValues };
     if (justification) thinBody.justification = justification;
 
-    // #region agent log
-    fetch('http://localhost:7430/ingest/60f88a58-2925-43f9-b28f-bcec8ca13914',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'df73a6'},body:JSON.stringify({sessionId:'df73a6',location:'GenericRequest.tsx:onSubmit',message:'payload sent to API',data:{thinBody,metaKeys:Object.keys(meta),varsKeys:Object.keys(vars)},timestamp:Date.now(),hypothesisId:'H1,H2'})}).catch(()=>{});
-    // #endregion
-
     try {
       const { id } = await itsmApi.requests.create(thinBody);
       const doc = await itsmApi.requests.get(id);
