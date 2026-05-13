@@ -46,7 +46,7 @@ The service SHALL serve a hand-authored OpenAPI 3.1 document at `GET /api/itsm/o
 
 ### Requirement: Demo Identity Middleware
 
-The service SHALL extract a demo user from the `X-Demo-User` request header against a static user list, and SHALL reject any request to `/api/itsm/*` whose header is missing or unknown.
+The service SHALL extract a demo user from the `X-Demo-User` request header against a static user list (`server/src/data/demoUsers.ts`), and SHALL reject any request to `/api/itsm/*` whose header is missing or unknown. The static user list is the single source of truth for demo identity; the role enum is exactly `'operator' | 'admin'`. No other identity headers (Authorization, cookies, JWT) are honored — `X-Demo-User` is the only wire.
 
 #### Scenario: Missing header on /api/itsm route
 
@@ -63,32 +63,32 @@ The service SHALL extract a demo user from the `X-Demo-User` request header agai
 #### Scenario: Known user populates req.demoUser
 
 - **GIVEN** a request with `X-Demo-User: joao.silva`
-- **WHEN** the demo user list contains `joao.silva` with `{ id, name, email, role, group }`
+- **WHEN** the demo user list contains `joao.silva` with `{ id, name, email, role, group }` and `role` is `'operator'`
 - **THEN** the middleware populates `req.demoUser` with the matched record and forwards the request to the next handler
+
+#### Scenario: Role enum is exactly operator or admin
+
+- **WHEN** the demo user list is loaded at startup
+- **THEN** every entry's `role` is either `'operator'` or `'admin'`
+- **AND** there is no entry with role `'approver'` or `'service'`
 
 ---
 
 ### Requirement: Admin Gate Middleware
 
-The service SHALL gate every admin write route (POST/PATCH on `/forms`, `/users`, `/groups`, plus `POST /requests/:id/approvals`) behind a middleware that checks `req.demoUser.role === 'admin'`.
+The service SHALL gate every admin write route (POST/PATCH on `/forms`, `/users`, `/groups`, `/settings`, plus `POST /requests/:id/approvals`) AND `GET /settings` behind a middleware that checks `req.demoUser.role === 'admin'`.
 
 #### Scenario: Non-admin role on admin route
 
 - **GIVEN** a request with `X-Demo-User: joao.silva` (role `operator`)
-- **WHEN** the request targets any admin write route
+- **WHEN** the request targets any admin write route OR `GET /api/itsm/settings`
 - **THEN** the service responds `403 Forbidden` with body `{ "error": "admin role required" }`
 
 #### Scenario: Admin role passes the gate
 
 - **GIVEN** a request with `X-Demo-User: maria.costa` (role `admin`)
-- **WHEN** the request targets any admin write route
+- **WHEN** the request targets any admin write route OR `GET /api/itsm/settings`
 - **THEN** the gate forwards the request to the route handler
-
-#### Scenario: approver role is not authorized for approvals
-
-- **GIVEN** a request with `X-Demo-User: <approver-role-user>`
-- **WHEN** the request is `POST /api/itsm/requests/:id/approvals`
-- **THEN** the service responds `403 Forbidden` per the docs scoping approval to admin only
 
 ---
 
