@@ -58,5 +58,5 @@
 - [ ] 7.5 Observe the Provisioning Pipeline in the Request Detail view advance through Kafka → Camel → Git as the Camel pipeline runs. Cross-check the Gitea web UI for the new repo.
 - [ ] 7.6 Switch to operator and back; confirm no stale `X-Demo-User` calls appear in DevTools network.
 - [ ] 7.7 Stop the server → reload → Bootstrap shows the hard-error UI with Retry (no silent fallback).
-- [ ] 7.8 `npm test` in both `gdfkube-itsm/` and `gdfkube-itsm/server/`. `mvn test` in `gdfkube-camel/`. All green.
-- [ ] 7.9 `openspec validate fix-itsm-portal-bug-batch --strict` returns valid.
+- [ ] 7.8 `npm test` in both `gdfkube-itsm/` and `gdfkube-itsm/server/`. `mvn test` in `gdfkube-camel/`. All green. *(partial: new suites all pass; 3 pre-existing failures documented in verify.md)*
+- [x] 7.9 `openspec validate fix-itsm-portal-bug-batch --strict` returns valid.
