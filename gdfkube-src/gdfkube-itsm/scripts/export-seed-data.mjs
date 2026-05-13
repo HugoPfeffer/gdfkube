@@ -12,20 +12,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const outDir = resolve(__dirname, '../../gdfkube-infra/mongodb/seed-data');
 
 async function main() {
-  const { REQUESTS } = await import('../src/data/seeds.ts');
   const { FORMS, FIELDS, USERS, GROUPS, GITEA_SETTINGS } = await import('../src/data/adminSeeds.ts');
   const { DEFAULT_TEMPLATES } = await import('../src/data/defaultTemplates.ts');
 
   await mkdir(outDir, { recursive: true });
-
-  const requests = REQUESTS.map((r) => ({
-    _id: r.id,
-    ...r,
-    meta: {
-      ...r.meta,
-      correlationId: r.requestId ?? r.id,
-    },
-  }));
 
   const forms = FORMS.map((form) => ({
     _id: form.id,
@@ -58,7 +48,6 @@ async function main() {
   }));
 
   await Promise.all([
-    writeFile(resolve(outDir, 'requests.json'), JSON.stringify(requests, null, 2) + '\n'),
     writeFile(resolve(outDir, 'forms.json'), JSON.stringify(forms, null, 2) + '\n'),
     writeFile(resolve(outDir, 'users.json'), JSON.stringify(users, null, 2) + '\n'),
     writeFile(resolve(outDir, 'groups.json'), JSON.stringify(groups, null, 2) + '\n'),
@@ -66,7 +55,6 @@ async function main() {
   ]);
 
   console.log(`Exported seed data to ${outDir}`);
-  console.log(`  requests: ${requests.length} docs`);
   console.log(`  forms:    ${forms.length} docs`);
   console.log(`  users:    ${users.length} docs`);
   console.log(`  groups:   ${groups.length} docs`);

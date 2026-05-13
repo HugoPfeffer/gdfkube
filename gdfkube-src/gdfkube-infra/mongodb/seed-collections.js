@@ -58,12 +58,10 @@ function upsertCollection(collectionName, docs) {
 
 print(`\n=== Seeding database: ${dbName} ===\n`);
 
-const requests = loadSeedFile('requests.json');
 const forms = loadSeedFile('forms.json');
 const users = loadSeedFile('users.json');
 const groups = loadSeedFile('groups.json');
 
-upsertCollection('requests', requests);
 upsertCollection('forms', forms);
 upsertCollection('users', users);
 upsertCollection('groups', groups);
