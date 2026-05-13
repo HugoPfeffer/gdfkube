@@ -6,3 +6,4 @@
 .worktrees
 .cursor/debug-*.log
 **/target/
+.claude/worktrees/
