@@ -6,13 +6,12 @@ import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.bson.Document;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.client.MongoClient;
 
 import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.StageUpdater;
 import gov.gdf.camel.model.RequestEvent;
 import gov.gdf.camel.model.StageEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -26,7 +25,7 @@ public class StatusEmitterRoute extends RouteBuilder {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Inject
-    MongoClient mongoClient;
+    StageUpdater stageUpdater;
 
     @Inject
     AuditInterceptor auditInterceptor;
@@ -96,17 +95,8 @@ public class StatusEmitterRoute extends RouteBuilder {
             producer.close();
         } catch (Exception ignored) { }
 
-        updateStageInMongo(requestId, currentStage);
+        stageUpdater.updateStage(requestId, currentStage);
         LOG.infof("Emitted %d stage events and updated MongoDB stage=%d for requestId=%s",
                 StageEvent.STAGE_NAMES.length, currentStage, requestId);
-    }
-
-    private void updateStageInMongo(String requestId, int stage) {
-        mongoClient.getDatabase("gdfkube")
-                .getCollection("requests")
-                .updateOne(
-                        new Document("_id", requestId),
-                        new Document("$set", new Document("stage", stage)
-                                .append("_stageWriteback", true)));
     }
 }

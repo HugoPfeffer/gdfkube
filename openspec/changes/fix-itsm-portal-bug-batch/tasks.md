@@ -1,10 +1,10 @@
 ## 1. Pipeline stage drift (Bug #1)
 
-- [ ] 1.1 In `gdfkube-camel/src/main/java/gov/gdf/camel/routes/RequestRouterRoute.java`, call `updateStageInMongo(requestId, 4)` immediately after the route receives the Kafka message (before any business work).
-- [ ] 1.2 In `gdfkube-camel/src/main/java/gov/gdf/camel/routes/RepoBootstrapRoute.java`, call `updateStageInMongo(requestId, 5)` after the Gitea repo is successfully created/pushed.
-- [ ] 1.3 In `gdfkube-camel/src/main/java/gov/gdf/camel/routes/StatusEmitterRoute.java`, change the Mongo update from `$set: { stage }` to `$max: { stage }` so out-of-order events cannot decrement stage.
-- [ ] 1.4 Confirm `updateStageInMongo` itself uses `$max` (not `$set`) on the stage field; update the helper if needed.
-- [ ] 1.5 Add a Camel route test (Testcontainers Mongo) asserting that two events arriving for stages 4 then 3 leave the document at stage 4.
+- [x] 1.1 In `gdfkube-camel/src/main/java/gov/gdf/camel/routes/RequestRouterRoute.java`, call `updateStageInMongo(requestId, 4)` immediately after the route receives the Kafka message (before any business work).
+- [x] 1.2 In `gdfkube-camel/src/main/java/gov/gdf/camel/routes/RepoBootstrapRoute.java`, call `updateStageInMongo(requestId, 5)` after the Gitea repo is successfully created/pushed.
+- [x] 1.3 In `gdfkube-camel/src/main/java/gov/gdf/camel/routes/StatusEmitterRoute.java`, change the Mongo update from `$set: { stage }` to `$max: { stage }` so out-of-order events cannot decrement stage.
+- [x] 1.4 Confirm `updateStageInMongo` itself uses `$max` (not `$set`) on the stage field; update the helper if needed.
+- [x] 1.5 Add a Camel route test (Testcontainers Mongo) asserting that two events arriving for stages 4 then 3 leave the document at stage 4.
 
 ## 2. Radio dot rendering (Bug #2)
 
