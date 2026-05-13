@@ -98,7 +98,7 @@ type RawRequest = {
 
 const RAW_REQUESTS: RawRequest[] = [
   {
-    id: 'REQ0010247',
+    id: 'REQ0010247C',
     requestId: '01HQ3K5M7N8P9Q0R1S2T3U4V5W',
     cluster: 'vacinacao',
     org: 'saude',
@@ -112,7 +112,7 @@ const RAW_REQUESTS: RawRequest[] = [
     progress: 58,
   },
   {
-    id: 'REQ0010244',
+    id: 'REQ0010244C',
     requestId: '01HQ3J2K8L9M0N1P2Q3R4S5T6U',
     cluster: 'matricula-portal',
     org: 'educacao',
@@ -126,7 +126,7 @@ const RAW_REQUESTS: RawRequest[] = [
     progress: 100,
   },
   {
-    id: 'REQ0010241',
+    id: 'REQ0010241C',
     requestId: '01HQ3H8N9P0Q1R2S3T4U5V6W7X',
     cluster: 'tracking-frota',
     org: 'transportes',
@@ -140,7 +140,7 @@ const RAW_REQUESTS: RawRequest[] = [
     progress: 100,
   },
   {
-    id: 'REQ0010238',
+    id: 'REQ0010238C',
     requestId: '01HQ3F1G2H3J4K5L6M7N8P9Q0R',
     cluster: 'tributos-api',
     org: 'fazenda',
@@ -165,7 +165,7 @@ const RAW_REQUESTS: RawRequest[] = [
     ],
   },
   {
-    id: 'REQ0010249',
+    id: 'REQ0010249C',
     requestId: '01HQ3M9P2Q3R4S5T6U7V8W9X0Y',
     cluster: 'agendamento-v2',
     org: 'saude',
@@ -190,7 +190,7 @@ const RAW_REQUESTS: RawRequest[] = [
     ],
   },
   {
-    id: 'REQ0010251',
+    id: 'REQ0010251C',
     requestId: '01HQ3N4R5S6T7U8V9W0X1Y2Z3A',
     cluster: 'transito-realtime',
     org: 'transportes',
@@ -213,7 +213,7 @@ const RAW_REQUESTS: RawRequest[] = [
     ],
   },
   {
-    id: 'REQ0010235',
+    id: 'REQ0010235C',
     requestId: '01HQ3D4E5F6G7H8J9K0L1M2N3P',
     cluster: 'safra-monitor',
     org: 'agricultura',
@@ -227,7 +227,7 @@ const RAW_REQUESTS: RawRequest[] = [
     progress: 70,
   },
   {
-    id: 'REQ0010230',
+    id: 'REQ0010230C',
     requestId: '01HQ3A6B7C8D9E0F1G2H3J4K5L',
     cluster: 'ocorrencias',
     org: 'seguranca',
@@ -354,8 +354,8 @@ export const RECENT_ACTIVITY: ActivityEntry[] = [
     at: '2 min ago',
     actor: 'system',
     verb: 'entered Camel processing',
-    objectId: 'REQ0010247',
-    detail: 'REQ0010247 entered Camel processing',
+    objectId: 'REQ0010247C',
+    detail: 'REQ0010247C entered Camel processing',
     type: 'info',
   },
   {
@@ -363,8 +363,8 @@ export const RECENT_ACTIVITY: ActivityEntry[] = [
     at: '8 min ago',
     actor: 'ArgoCD',
     verb: 'cluster matricula-portal ready',
-    objectId: 'REQ0010244',
-    detail: 'REQ0010244 cluster matricula-portal ready',
+    objectId: 'REQ0010244C',
+    detail: 'REQ0010244C cluster matricula-portal ready',
     type: 'ok',
   },
   {
@@ -372,8 +372,8 @@ export const RECENT_ACTIVITY: ActivityEntry[] = [
     at: '1h ago',
     actor: 'approver',
     verb: 'awaiting approval from M. Costa',
-    objectId: 'REQ0010241',
-    detail: 'REQ0010241 awaiting approval from M. Costa',
+    objectId: 'REQ0010241C',
+    detail: 'REQ0010241C awaiting approval from M. Costa',
     type: 'warn',
   },
   {
@@ -381,8 +381,8 @@ export const RECENT_ACTIVITY: ActivityEntry[] = [
     at: '2h ago',
     actor: 'joao.silva',
     verb: 'submitted by ana.rodrigues@fazenda',
-    objectId: 'REQ0010238',
-    detail: 'REQ0010238 submitted by ana.rodrigues@fazenda',
+    objectId: 'REQ0010238C',
+    detail: 'REQ0010238C submitted by ana.rodrigues@fazenda',
     type: 'info',
   },
   {
@@ -390,8 +390,8 @@ export const RECENT_ACTIVITY: ActivityEntry[] = [
     at: 'yesterday',
     actor: 'Camel',
     verb: 'failed at Git push (auth error)',
-    objectId: 'REQ0010235',
-    detail: 'REQ0010235 failed at Git push (auth error)',
+    objectId: 'REQ0010235C',
+    detail: 'REQ0010235C failed at Git push (auth error)',
     type: 'err',
   },
 ];

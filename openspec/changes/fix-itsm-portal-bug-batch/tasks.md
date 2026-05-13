@@ -14,13 +14,13 @@
 
 ## 3. Request number format (Bug #3)
 
-- [ ] 3.1 In `gdfkube-src/gdfkube-itsm/server/src/services/requestService.ts`, add a `FORM_TYPE_CODE: Record<string, 'C'|'N'|'S'>` map keyed by `formId` and a `nextRequestNumber(formId)` helper that queries the highest existing `REQ\d{7}[CNSX]` id, increments, pads, and appends the form-type letter (`X` + warning log for unknown form ids).
-- [ ] 3.2 Replace `const id = ulid()` at `requestService.ts:62` with `const id = await nextRequestNumber(formId)`. Keep `meta.correlationId = id`.
-- [ ] 3.3 Wrap `RequestModel.create(...)` in a retry-on-duplicate-key loop (up to 5 attempts) so concurrent submissions don't collide.
-- [ ] 3.4 In `gdfkube-src/gdfkube-itsm/src/data/seeds.ts`, append `C` to every `REQ\d{7}` id (lines 101-242) and update all matching references in `ACTIVITY_LOG.objectId`/`detail` (lines 357-396).
-- [ ] 3.5 Update `gdfkube-src/gdfkube-itsm/server/__tests__/requests.test.ts:165` regex from `/^[0-9A-Z]{26}$/` to `/^REQ\d{7}[CNSX]$/`.
-- [ ] 3.6 Update `gdfkube-src/gdfkube-camel/src/test/java/gov/gdf/camel/bean/HelmValuesBuilderTest.java:78,112` fixture from `REQ-HVB-001` to `REQ0010252C` (or extract into a shared constant).
-- [ ] 3.7 Add a server test that races two concurrent `POST /api/itsm/requests` calls and asserts both return distinct sequential REQ ids.
+- [x] 3.1 In `gdfkube-src/gdfkube-itsm/server/src/services/requestService.ts`, add a `FORM_TYPE_CODE: Record<string, 'C'|'N'|'S'>` map keyed by `formId` and a `nextRequestNumber(formId)` helper that queries the highest existing `REQ\d{7}[CNSX]` id, increments, pads, and appends the form-type letter (`X` + warning log for unknown form ids).
+- [x] 3.2 Replace `const id = ulid()` at `requestService.ts:62` with `const id = await nextRequestNumber(formId)`. Keep `meta.correlationId = id`.
+- [x] 3.3 Wrap `RequestModel.create(...)` in a retry-on-duplicate-key loop (up to 5 attempts) so concurrent submissions don't collide.
+- [x] 3.4 In `gdfkube-src/gdfkube-itsm/src/data/seeds.ts`, append `C` to every `REQ\d{7}` id (lines 101-242) and update all matching references in `ACTIVITY_LOG.objectId`/`detail` (lines 357-396).
+- [x] 3.5 Update `gdfkube-src/gdfkube-itsm/server/__tests__/requests.test.ts:165` regex from `/^[0-9A-Z]{26}$/` to `/^REQ\d{7}[CNSX]$/`.
+- [x] 3.6 Update `gdfkube-src/gdfkube-camel/src/test/java/gov/gdf/camel/bean/HelmValuesBuilderTest.java:78,112` fixture from `REQ-HVB-001` to `REQ0010252C` (or extract into a shared constant).
+- [x] 3.7 Add a server test that races two concurrent `POST /api/itsm/requests` calls and asserts both return distinct sequential REQ ids.
 
 ## 4. Demo-user identity hardening (Bug #4)
 

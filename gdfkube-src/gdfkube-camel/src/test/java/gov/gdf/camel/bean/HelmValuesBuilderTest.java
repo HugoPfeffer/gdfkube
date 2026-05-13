@@ -75,7 +75,7 @@ class HelmValuesBuilderTest {
         assertTrue(labels.containsKey("gdfkube.io/request-id"));
 
         assertEquals("sec-educ", labels.get("gdfkube.io/organization"));
-        assertEquals("REQ-HVB-001", labels.get("gdfkube.io/request-id"));
+        assertEquals("REQ0010252C", labels.get("gdfkube.io/request-id"));
 
         Files.deleteIfExists(Path.of(path));
     }
@@ -109,7 +109,7 @@ class HelmValuesBuilderTest {
         Map<String, Object> meta = (Map<String, Object>) values.get("meta");
 
         assertNotNull(meta, "meta must be present");
-        assertEquals("REQ-HVB-001", meta.get("requestId"));
+        assertEquals("REQ0010252C", meta.get("requestId"));
         assertEquals("cluster-request", meta.get("formId"));
         assertEquals("sec-educ", meta.get("org"));
         assertEquals("user@gdf.gov.br", meta.get("email"));
@@ -181,7 +181,7 @@ class HelmValuesBuilderTest {
 
     private static RequestEvent buildEvent() {
         RequestEvent event = new RequestEvent();
-        event._id = "REQ-HVB-001";
+        event._id = "REQ0010252C";
         event.formId = "cluster-request";
         event.status = "provisioning";
         event.env = "dev";

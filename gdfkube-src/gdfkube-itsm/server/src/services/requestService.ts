@@ -1,4 +1,3 @@
-import { ulid } from 'ulid';
 import { RequestModel } from '../models/Request.js';
 import { FormDefModel } from '../models/FormDef.js';
 import { validateAgainstFormDef } from './formValidator.js';
@@ -6,6 +5,41 @@ import type { DemoUser } from '../data/demoUsers.js';
 import type { AppError } from '../middleware/error.js';
 
 const VALID_ENVS = new Set(['production', 'staging', 'development']);
+
+const FORM_TYPE_CODE: Record<string, 'C' | 'N' | 'S'> = {
+  'cluster-request': 'C',
+  'namespace-request': 'N',
+  'scale-request': 'S',
+};
+
+const REQ_ID_PATTERN = /^REQ\d{7}[CNSX]$/;
+const REQ_ID_BASE_SEQ = 10251;
+const REQ_RETRY_LIMIT = 5;
+
+async function nextRequestNumber(formId: string): Promise<string> {
+  const doc = await RequestModel.findOne({ _id: REQ_ID_PATTERN })
+    .sort({ _id: -1 })
+    .select('_id')
+    .lean();
+
+  let seq = REQ_ID_BASE_SEQ;
+  if (doc && typeof doc._id === 'string') {
+    const parsed = parseInt(doc._id.slice(3, 10), 10);
+    if (Number.isFinite(parsed)) {
+      seq = parsed + 1;
+    }
+  }
+
+  const padded = String(seq).padStart(7, '0');
+  const suffix = FORM_TYPE_CODE[formId];
+  if (!suffix) {
+    console.warn(
+      `nextRequestNumber: unknown formId "${formId}", falling back to suffix "X"`,
+    );
+    return `REQ${padded}X`;
+  }
+  return `REQ${padded}${suffix}`;
+}
 
 interface SubmitInput {
   demoUser: DemoUser;
@@ -59,32 +93,43 @@ export async function submit({ demoUser, body }: SubmitInput) {
     throw e;
   }
 
-  const id = ulid();
-
-  const doc = await RequestModel.create({
-    _id: id,
-    formId,
-    env,
-    requester: {
-      id: demoUser.id,
-      name: demoUser.name,
-      fullName: demoUser.fullName,
-      email: demoUser.email,
-      role: demoUser.role,
-      group: demoUser.group,
-    },
-    requesterGroupName: demoUser.group,
-    status: 'approval',
-    stage: 0,
-    submittedAt: new Date().toISOString(),
-    justification: justification as string | undefined,
-    vars: validation.vars,
-    meta: { ...validation.meta, correlationId: id },
-    policyChecks: [],
-    approvalChain: [],
-  });
-
-  return doc;
+  let id = await nextRequestNumber(formId);
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < REQ_RETRY_LIMIT; attempt++) {
+    try {
+      const doc = await RequestModel.create({
+        _id: id,
+        formId,
+        env,
+        requester: {
+          id: demoUser.id,
+          name: demoUser.name,
+          fullName: demoUser.fullName,
+          email: demoUser.email,
+          role: demoUser.role,
+          group: demoUser.group,
+        },
+        requesterGroupName: demoUser.group,
+        status: 'approval',
+        stage: 0,
+        submittedAt: new Date().toISOString(),
+        justification: justification as string | undefined,
+        vars: validation.vars,
+        meta: { ...validation.meta, correlationId: id },
+        policyChecks: [],
+        approvalChain: [],
+      });
+      return doc;
+    } catch (err) {
+      lastErr = err;
+      const code = (err as { code?: number }).code;
+      if (code !== 11000) {
+        throw err;
+      }
+      id = await nextRequestNumber(formId);
+    }
+  }
+  throw lastErr;
 }
 
 interface DecideInput {
