@@ -8,9 +8,9 @@
 
 ## 2. Radio dot rendering (Bug #2)
 
-- [ ] 2.1 In `gdfkube-src/gdfkube-itsm/src/forms/RadioCards.tsx`, replace the `<span className="dot" …>` with the inline-style approach: `display: inline-block`, `width: 8`, `height: 8`, `borderRadius: '50%'`, `background: opt.dotColor`.
-- [ ] 2.2 Run `npm run dev` and visually confirm dots render on the OpenShift Cluster Request → Environment radio cards.
-- [ ] 2.3 Add a unit test (Vitest + RTL) asserting the rendered span has computed `width: 8px` and `border-radius: 50%`.
+- [x] 2.1 In `gdfkube-src/gdfkube-itsm/src/forms/RadioCards.tsx`, replace the `<span className="dot" …>` with the inline-style approach: `display: inline-block`, `width: 8`, `height: 8`, `borderRadius: '50%'`, `background: opt.dotColor`.
+- [x] 2.2 Run `npm run dev` and visually confirm dots render on the OpenShift Cluster Request → Environment radio cards.
+- [x] 2.3 Add a unit test (Vitest + RTL) asserting the rendered span has computed `width: 8px` and `border-radius: 50%`.
 
 ## 3. Request number format (Bug #3)
 

@@ -167,7 +167,9 @@ describe('GenericRequest', () => {
     // Description rendered.
     expect(cards[0]!.textContent).toContain('Live traffic, fully governed');
     // Dot present with the dotColor.
-    const dot = cards[0]!.querySelector('.dot') as HTMLElement | null;
+    const dot = cards[0]!.querySelector(
+      'span[aria-hidden="true"]',
+    ) as HTMLElement | null;
     expect(dot).not.toBeNull();
     expect(dot!.getAttribute('style') ?? '').toContain('red');
   });
@@ -206,7 +208,7 @@ describe('GenericRequest', () => {
     const cards = container.querySelectorAll('.radio-card');
     expect(cards.length).toBe(3);
     cards.forEach((card) => {
-      expect(card.querySelector('.dot')).not.toBeNull();
+      expect(card.querySelector('span[aria-hidden="true"]')).not.toBeNull();
     });
   });
 
