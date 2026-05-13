@@ -4,3 +4,5 @@
 .claude/plans
 .claude/scheduled_tasks.lock
 .worktrees
+.cursor/debug-*.log
+**/target/
