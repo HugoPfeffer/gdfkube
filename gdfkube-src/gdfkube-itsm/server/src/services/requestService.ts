@@ -104,7 +104,7 @@ export async function submit({ demoUser, body }: SubmitInput) {
         submittedAt: new Date().toISOString(),
         justification: justification as string | undefined,
         vars: validation.vars,
-        meta: { ...validation.meta, correlationId: id },
+        meta: { ...validation.meta, requesterGroupName: demoUser.group, correlationId: id },
         policyChecks: [],
         approvalChain: [],
       });

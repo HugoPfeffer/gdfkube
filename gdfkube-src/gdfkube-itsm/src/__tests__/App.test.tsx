@@ -13,6 +13,7 @@ import type { FormDef, User } from '../types';
 vi.mock('../api/itsmApi', () => ({
   itsmApi: { requests: { create: vi.fn(), get: vi.fn(), decide: vi.fn() } },
   setDemoUser: vi.fn(),
+  setDemoRole: vi.fn(),
 }));
 
 function makeUser(overrides: Partial<User> = {}): User {
@@ -112,17 +113,14 @@ describe('App', () => {
   it('redirects operator away from approvals when role switches from admin to operator', () => {
     render(withProvider(makeState(), <App />));
 
-    // Switch to admin via the role menu so the Approvals item appears.
     fireEvent.click(document.querySelector('.role-switch')!);
-    fireEvent.click(screen.getByText('Platform Admin'));
+    fireEvent.click(screen.getByText('Admin perspective'));
 
-    // Now click Approvals in the sidebar.
     fireEvent.click(screen.getByRole('button', { name: /Approvals/ }));
     expect(getCrumbs()).toContain('Approvals');
 
-    // Switch back to operator. The guard must redirect to home.
     fireEvent.click(document.querySelector('.role-switch')!);
-    fireEvent.click(screen.getByText('Operator'));
+    fireEvent.click(screen.getByText('Operator perspective'));
 
     expect(getCrumbs()).toBe('Home');
   });
@@ -131,30 +129,29 @@ describe('App', () => {
     render(withProvider(makeState(), <App />));
 
     fireEvent.click(document.querySelector('.role-switch')!);
-    fireEvent.click(screen.getByText('Platform Admin'));
+    fireEvent.click(screen.getByText('Admin perspective'));
 
     fireEvent.click(screen.getByRole('button', { name: /^Forms$/ }));
     expect(getCrumbs()).toContain('Forms');
 
     fireEvent.click(document.querySelector('.role-switch')!);
-    fireEvent.click(screen.getByText('Operator'));
+    fireEvent.click(screen.getByText('Operator perspective'));
 
     expect(getCrumbs()).toBe('Home');
   });
 
-  it('Topbar identity reflects the current role (operator -> joao.silva, admin -> m.costa)', () => {
+  it('Topbar identity reflects the active user independently of role', () => {
     render(withProvider(makeState(), <App />));
 
-    // Operator default
     const switcher = document.querySelector('.role-switch')!;
     expect(within(switcher as HTMLElement).getByText(/saude/)).toBeInTheDocument();
 
-    // Switch to admin
     fireEvent.click(switcher);
-    fireEvent.click(screen.getByText('Platform Admin'));
+    fireEvent.click(screen.getByText('Admin perspective'));
 
-    // After switch, identity line shows setic
-    expect(within(switcher as HTMLElement).getByText(/setic/)).toBeInTheDocument();
+    // After role switch, the user stays the same (joao.silva / saude)
+    expect(within(switcher as HTMLElement).getByText(/saude/)).toBeInTheDocument();
+    expect(within(switcher as HTMLElement).getByText(/Platform Admin/)).toBeInTheDocument();
   });
 
   it('applies data-theme attribute from persisted tweaks on initial mount', () => {

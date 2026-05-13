@@ -124,7 +124,13 @@ export function GenericRequest({
   const [values, setValues] = useState<FormValues>(() => seedDefaults(fields));
   const [isSaving, setIsSaving] = useState(false);
 
-  const stringValues = useMemo(() => asStringMap(values), [values]);
+  const stringValues = useMemo(() => {
+    const sv = asStringMap(values);
+    if (!fields.some((f) => f.key === 'requesterGroupName') && user.group) {
+      sv.requesterGroupName ??= user.group;
+    }
+    return sv;
+  }, [values, fields, user.group]);
   const { meta, vars } = useMemo(
     () => partitionByBucket(fields, values),
     [fields, values],

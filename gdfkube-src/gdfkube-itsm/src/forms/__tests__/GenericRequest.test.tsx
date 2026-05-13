@@ -279,6 +279,68 @@ describe('GenericRequest', () => {
     ).toBeInTheDocument();
   });
 
+  it('prefix falls back to user.group when requesterGroupName field is absent', () => {
+    const fields: Field[] = [
+      {
+        key: 'clusterName',
+        label: 'Cluster name',
+        type: 'text',
+        required: true,
+        bucket: 'vars',
+        prefix: 'hc-{requesterGroupName}-',
+      },
+    ];
+    const { container } = renderWithFields('cluster-request', fields, {
+      user: makeUser({ group: 'educ' }),
+    });
+
+    expect(container.querySelector('.input-prefix .pre')!.textContent).toBe(
+      'hc-educ-',
+    );
+  });
+
+  it('help text falls back to user.group when requesterGroupName field is absent', () => {
+    const fields: Field[] = [
+      {
+        key: 'clusterName',
+        label: 'Cluster name',
+        type: 'text',
+        bucket: 'vars',
+        help: 'namespace will be hc-{requesterGroupName}-{clusterName}',
+      },
+    ];
+    renderWithFields('cluster-request', fields, {
+      user: makeUser({ group: 'educ' }),
+    });
+
+    fireEvent.change(screen.getByLabelText(/Cluster name/), {
+      target: { value: 'vacinacao' },
+    });
+
+    expect(
+      screen.getByText('namespace will be hc-educ-vacinacao'),
+    ).toBeInTheDocument();
+  });
+
+  it('unrelated placeholder renders as empty when sibling field value is empty (no user.group fallback)', () => {
+    const fields: Field[] = [
+      {
+        key: 'clusterName',
+        label: 'Cluster name',
+        type: 'text',
+        bucket: 'vars',
+        help: 'target cluster: {clusterName}',
+      },
+    ];
+    const { container } = renderWithFields('cluster-request', fields, {
+      user: makeUser({ group: 'educ' }),
+    });
+
+    const helpDiv = container.querySelector('.help');
+    expect(helpDiv).not.toBeNull();
+    expect(helpDiv!.textContent).toMatch(/^target cluster:\s*$/);
+  });
+
   it('disables Submit when a required field is empty', () => {
     const fields: Field[] = [
       {

@@ -44,6 +44,46 @@ describe('demoUser middleware', () => {
     expect(next).toHaveBeenCalled();
     expect(req.demoUser!.role).toBe('admin');
   });
+
+  it('overrides role to admin via X-Demo-Role for an operator user (cloned)', () => {
+    const { req, res, next } = mockReqRes({
+      'x-demo-user': 'joao.silva',
+      'x-demo-role': 'admin',
+    });
+    demoUser(req, res, next);
+    expect(next).toHaveBeenCalled();
+    expect(req.demoUser!.role).toBe('admin');
+    expect(req.demoUser).not.toBe(DEMO_USERS['joao.silva']);
+    expect(DEMO_USERS['joao.silva']!.role).toBe('operator');
+  });
+
+  it('overrides role to operator via X-Demo-Role for an admin user', () => {
+    const { req, res, next } = mockReqRes({
+      'x-demo-user': 'maria.costa',
+      'x-demo-role': 'operator',
+    });
+    demoUser(req, res, next);
+    expect(next).toHaveBeenCalled();
+    expect(req.demoUser!.role).toBe('operator');
+  });
+
+  it('falls through to stored role for invalid X-Demo-Role value', () => {
+    const { req, res, next } = mockReqRes({
+      'x-demo-user': 'joao.silva',
+      'x-demo-role': 'bogus',
+    });
+    demoUser(req, res, next);
+    expect(next).toHaveBeenCalled();
+    expect(req.demoUser!.role).toBe('operator');
+  });
+
+  it('falls through to stored role when X-Demo-Role is absent', () => {
+    const { req, res, next } = mockReqRes({ 'x-demo-user': 'joao.silva' });
+    demoUser(req, res, next);
+    expect(next).toHaveBeenCalled();
+    expect(req.demoUser!.role).toBe('operator');
+    expect(req.demoUser).not.toBe(DEMO_USERS['joao.silva']);
+  });
 });
 
 describe('DEMO_USERS catalog (operator|admin only)', () => {

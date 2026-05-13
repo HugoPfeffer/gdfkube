@@ -7,7 +7,7 @@
 // so the App can be exercised end-to-end before each page lands.
 
 import { useEffect, useMemo, useState } from 'react';
-import { setDemoUser } from './api/itsmApi';
+import { setDemoUser, setDemoRole } from './api/itsmApi';
 import { Approvals } from './pages/Approvals';
 import { Catalog } from './pages/Catalog';
 import { Dashboard } from './pages/Dashboard';
@@ -35,43 +35,42 @@ const DEFAULT_TWEAKS: Tweaks = {
   showDemoBanner: true,
 };
 
-function pickUser(users: User[], role: Role): User {
-  if (role === 'admin') {
-    const found =
-      users.find(
-        (u) => u.username === 'maria.costa' || u.username === 'm.costa',
-      ) ?? users.find((u) => u.role === 'admin');
-    if (!found) {
-      throw new Error('pickUser: no admin user available in data.users');
-    }
-    return found;
-  }
-  const found =
-    users.find((u) => u.username === 'joao.silva') ??
-    users.find((u) => u.role === 'operator');
-  if (!found) {
-    throw new Error('pickUser: no operator user available in data.users');
-  }
-  return found;
-}
-
 function App() {
   const { route, params, navigate } = useRouter();
-  const [role, setRole] = useState<Role>('operator');
+  const [activeUsername, setActiveUsername] = useState<string>(
+    () => localStorage.getItem('gdfkube.demoUser') ?? '',
+  );
+  const [role, setRole] = useState<Role>(() => {
+    const v = localStorage.getItem('gdfkube.demoRole');
+    return v === 'operator' || v === 'admin' ? v : 'operator';
+  });
   const [toast, setToast] = useState<Toast | null>(null);
   const [tweaks, setTweaks] = useTweaks(DEFAULT_TWEAKS);
   const [tweaksOpen, setTweaksOpen] = useState(false);
   const data = useGdfData();
 
-  const user = useMemo(() => pickUser(data.users, role), [data.users, role]);
+  const user = useMemo(
+    () =>
+      data.users.find((u) => u.username === activeUsername) ??
+      data.users.find((u) => u.role === 'operator') ??
+      data.users[0]!,
+    [data.users, activeUsername],
+  );
 
-  // Synchronously update the X-Demo-User identity used by `itsmApi`. Running
-  // this in the render body — not a `useEffect` — guarantees the new value is
-  // visible to any child effect that fires after this render. The previous
-  // `useEffect([user])` introduced a race where child mount effects (e.g.
-  // Settings.tsx's `itsmApi.settings.get`) fired before the parent's effect,
-  // so the first call after a role flip carried the stale operator username.
+  // Synchronously update headers used by `itsmApi`. Running in the render
+  // body — not a `useEffect` — guarantees the new values are visible to any
+  // child effect that fires after this render (see comment history for the
+  // original stale-header race).
   setDemoUser(user.username ?? user.name);
+  setDemoRole(role);
+
+  useEffect(() => {
+    localStorage.setItem('gdfkube.demoUser', activeUsername);
+  }, [activeUsername]);
+
+  useEffect(() => {
+    localStorage.setItem('gdfkube.demoRole', role);
+  }, [role]);
 
   // Role-route guard: operators may not view admin/approval routes.
   useEffect(() => {
@@ -178,6 +177,8 @@ function App() {
         role={role}
         setRole={setRole}
         user={user}
+        users={data.users}
+        setUser={setActiveUsername}
         navigate={navigate}
         onNotify={() =>
           setToast({

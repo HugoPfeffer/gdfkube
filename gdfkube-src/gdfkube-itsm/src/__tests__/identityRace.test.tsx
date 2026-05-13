@@ -5,11 +5,12 @@
 // `itsmApi.settings.get()` call after a role flip carried the previous user's
 // X-Demo-User header (operator → 403 from /api/itsm/settings).
 //
-// The fix replaced the resolver pattern with a module-level ref mutated
-// synchronously in render (`setDemoUser(user.username)` just before the JSX
-// return). This test mounts the full App tree, switches role from operator
-// to admin via the Topbar role menu, and asserts that the very next
-// `fetch(/api/itsm/settings…)` call carries `X-Demo-User: maria.costa`.
+// The fix replaced the resolver pattern with module-level refs mutated
+// synchronously in render (`setDemoUser` + `setDemoRole` in the render body).
+// After the user/role split, switching role no longer changes the active user
+// — instead the X-Demo-Role header is updated, and the server honors the
+// override via the cloned demoUser. These tests verify that the headers are
+// updated synchronously after a role flip.
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -109,37 +110,31 @@ function findSettingsCall(): { url: string; init: RequestInit } | undefined {
 }
 
 describe('Demo-user identity race (regression: Settings Forbidden)', () => {
-  it('switching role operator -> admin synchronously updates X-Demo-User so the next /settings fetch carries maria.costa', async () => {
+  it('switching role operator -> admin synchronously updates X-Demo-Role so the next /settings fetch carries admin', async () => {
     render(withProvider(makeState(), <App />));
 
-    // Open role menu and select Platform Admin.
     fireEvent.click(document.querySelector('.role-switch')!);
-    fireEvent.click(screen.getByText('Platform Admin'));
+    fireEvent.click(screen.getByText('Admin perspective'));
 
-    // Re-open role menu and pick Settings — Settings.tsx fires
-    // `itsmApi.settings.get(true, …)` in its mount effect.
     fireEvent.click(document.querySelector('.role-switch')!);
     fireEvent.click(screen.getByRole('menuitem', { name: /Settings/ }));
 
-    // Wait until at least one /api/itsm/settings request has been made.
     await waitFor(() => {
       expect(findSettingsCall()).toBeDefined();
     });
 
     const call = findSettingsCall()!;
     const headers = call.init.headers as Record<string, string>;
-    expect(headers['X-Demo-User']).toBe('maria.costa');
+    expect(headers['X-Demo-User']).toBe('joao.silva');
+    expect(headers['X-Demo-Role']).toBe('admin');
   });
 
-  it('every fetch made anywhere in the tree after a role flip carries the NEW user (no stale header)', async () => {
+  it('every fetch after a role flip carries X-Demo-Role: admin (no stale header)', async () => {
     render(withProvider(makeState(), <App />));
 
-    // Switch role to admin.
     fireEvent.click(document.querySelector('.role-switch')!);
-    fireEvent.click(screen.getByText('Platform Admin'));
+    fireEvent.click(screen.getByText('Admin perspective'));
 
-    // Navigate through several admin pages, each of which fires fresh
-    // itsmApi calls in mount effects. Then navigate to Settings last.
     fireEvent.click(screen.getByRole('button', { name: /Approvals/ }));
     fireEvent.click(screen.getByRole('button', { name: /^Forms$/ }));
     fireEvent.click(document.querySelector('.role-switch')!);
@@ -149,18 +144,13 @@ describe('Demo-user identity race (regression: Settings Forbidden)', () => {
       expect(findSettingsCall()).toBeDefined();
     });
 
-    // Inspect ALL fetch calls made after the role switch — they MUST carry
-    // X-Demo-User: maria.costa. None may carry joao.silva (the stale value).
-    const adminCalls = fetchMock.mock.calls;
-    for (const call of adminCalls) {
-      const init = call[1] as RequestInit;
-      const headers = init?.headers as Record<string, string> | undefined;
-      // Initial Bootstrap calls before the switch can be operator; we filter
-      // by detecting any call whose URL is /api/itsm/settings — that one
-      // happens AFTER the role flip and MUST be maria.costa.
+    for (const call of fetchMock.mock.calls) {
       const url = call[0] as string;
       if (url.startsWith('/api/itsm/settings')) {
-        expect(headers?.['X-Demo-User']).toBe('maria.costa');
+        const init = call[1] as RequestInit;
+        const headers = init?.headers as Record<string, string> | undefined;
+        expect(headers?.['X-Demo-User']).toBe('joao.silva');
+        expect(headers?.['X-Demo-Role']).toBe('admin');
       }
     }
   });
