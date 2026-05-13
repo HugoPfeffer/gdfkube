@@ -10,6 +10,8 @@ const PATCH_WHITELIST = new Set([
   'role',
   'group',
   'status',
+  'username',
+  'active',
   'mfa',
   'last',
 ]);
