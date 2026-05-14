@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Connector SHALL emit CDC events from gdfkube.requests and gdfkube.forms
+### Requirement: Connector SHALL emit CDC events from gdfkube.requests, gdfkube.forms, and gdfkube.groups
 
 After successful registration, the connector MUST publish change events from `gdfkube.requests` to topic `dbz.gdfkube.requests`, from `gdfkube.forms` to topic `dbz.gdfkube.forms`, and from `gdfkube.groups` to topic `dbz.gdfkube.groups`. Events MUST include the `op`, `source.ts_ms`, and (for `op=u`) `before`/`after` document images. The MongoDB collections `gdfkube.requests`, `gdfkube.forms`, and `gdfkube.groups` MUST all be created with `changeStreamPreAndPostImages: true`. Connector-level errors MUST land on `dlq.gdfkube.debezium` with `context.headers` populated.
 
