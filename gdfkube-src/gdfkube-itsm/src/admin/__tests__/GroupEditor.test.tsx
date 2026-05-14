@@ -1,8 +1,8 @@
 // Component tests for the per-group editor.
 //
 // Covers spec scenarios from `itsm-admin-users`:
-//   - Editor renders inputs for id, display name, full name, mapped Git
-//     repo, ManagedClusterSet binding, and an auto-provision toggle.
+//   - Editor renders inputs for id (read-only), display name, full name,
+//     and mapped Git repo.
 
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -62,8 +62,6 @@ describe('GroupEditor', () => {
     expect((screen.getByLabelText(/display name/i) as HTMLInputElement).value).toBe('Saúde');
     expect((screen.getByLabelText(/full name/i) as HTMLInputElement).value).toBe('Department of Health');
     expect((screen.getByLabelText(/git repo/i) as HTMLInputElement).value).toBe('gdfkube-saude');
-    expect(screen.getByLabelText(/managedclusterset/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/auto.?provision/i)).toBeInTheDocument();
   });
 
   it('editing display name updates the input value', () => {

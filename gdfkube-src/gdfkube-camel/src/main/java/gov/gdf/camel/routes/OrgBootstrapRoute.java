@@ -1,0 +1,235 @@
+package gov.gdf.camel.routes;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.kafka.KafkaConstants;
+import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
+import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.GitRepoBootstrapper;
+import gov.gdf.camel.bean.HelmTemplateRunner;
+import gov.gdf.camel.bean.HelmValuesBuilder;
+import gov.gdf.camel.git.GitAuthor;
+import gov.gdf.camel.git.GitProvider;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+@ApplicationScoped
+public class OrgBootstrapRoute extends RouteBuilder {
+
+    private static final Logger LOG = Logger.getLogger(OrgBootstrapRoute.class);
+    private static final String ROUTE_ID = "org-bootstrap";
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final long TTL_MS = 60_000;
+    private static final ConcurrentHashMap<String, ReentrantLock> REPO_LOCKS = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<String, Long> dedupCache = new ConcurrentHashMap<>();
+
+    @ConfigProperty(name = "app.system.gitea-owner")
+    String giteaOwner;
+
+    @Inject
+    GitRepoBootstrapper gitRepoBootstrapper;
+
+    @Inject
+    HelmTemplateRunner helmTemplateRunner;
+
+    @Inject
+    HelmValuesBuilder helmValuesBuilder;
+
+    @Inject
+    GitProvider gitProvider;
+
+    @Inject
+    AuditInterceptor auditInterceptor;
+
+    @Override
+    public void configure() {
+        errorHandler(deadLetterChannel("kafka:dlq.gdfkube.groups")
+                .maximumRedeliveries(3)
+                .redeliveryDelay(1000)
+                .backOffMultiplier(5.0)
+                .useExponentialBackOff()
+                .logRetryAttempted(true)
+                .onPrepareFailure(DlqHeaders::stamp));
+
+        from("kafka:dbz.gdfkube.groups"
+                + "?groupId=gdfkube-camel"
+                + "&autoOffsetReset=earliest"
+                + "&autoCommitEnable=false"
+                + "&allowManualCommit=true")
+            .routeId(ROUTE_ID)
+            .process(exchange -> {
+                String op = exchange.getIn().getHeader("__op", String.class);
+                if (op == null) {
+                    op = exchange.getIn().getHeader("op", String.class);
+                }
+
+                if ("d".equals(op)) {
+                    LOG.debugf("groups.delete dropped: %s", exchange.getIn().getBody(String.class));
+                    exchange.setProperty("accepted", false);
+                } else {
+                    exchange.setProperty("accepted", true);
+                }
+            })
+            .choice()
+                .when(exchangeProperty("accepted").isEqualTo(true))
+                    .process(this::processGroupEvent)
+                .otherwise()
+                    .log("org-bootstrap: delete event dropped")
+            .end()
+            .process(this::commitKafkaOffset);
+    }
+
+    private void processGroupEvent(Exchange exchange) throws Exception {
+        String body = exchange.getIn().getBody(String.class);
+        JsonNode node = MAPPER.readTree(body);
+
+        String groupId = node.path("_id").asText();
+        String groupRepo = node.path("repo").asText("gdfkube-" + groupId);
+
+        evictExpired();
+        if (dedupCache.containsKey(groupId)) {
+            LOG.debugf("Dedup cache hit for groupId=%s, skipping", groupId);
+            return;
+        }
+        dedupCache.put(groupId, System.currentTimeMillis());
+
+        boolean perOrgCreated = gitRepoBootstrapper.ensure(
+                giteaOwner, "gdfkube-" + groupId, "GitOps manifests for " + groupId);
+        if (perOrgCreated) {
+            auditInterceptor.emit(ROUTE_ID, groupId, 0, "create-repo",
+                    Map.of("repo", giteaOwner + "/gdfkube-" + groupId));
+        }
+
+        boolean centralCreated = gitRepoBootstrapper.ensure(
+                giteaOwner, "gdfkube-orgs", "Org bootstrap manifests rendered by gdfkube-camel");
+        if (centralCreated) {
+            auditInterceptor.emit(ROUTE_ID, groupId, 0, "create-repo",
+                    Map.of("repo", giteaOwner + "/gdfkube-orgs"));
+        }
+
+        ReentrantLock lock = REPO_LOCKS.computeIfAbsent("gdfkube-orgs", k -> new ReentrantLock());
+        lock.lock();
+        try {
+            Path workTree = gitProvider.cloneOrPull(giteaOwner, "gdfkube-orgs", "main");
+
+            Path orgDir = workTree.resolve("orgs").resolve(groupId);
+            Path appProj = orgDir.resolve("appproject.yaml");
+            Path appSet = orgDir.resolve("applicationset.yaml");
+            Path clusterSet = orgDir.resolve(groupId + "-clusterset.yaml");
+
+            List<Path> missing = new ArrayList<>();
+            if (!Files.exists(appProj)) missing.add(appProj);
+            if (!Files.exists(appSet)) missing.add(appSet);
+            if (!Files.exists(clusterSet)) missing.add(clusterSet);
+
+            if (missing.isEmpty()) {
+                auditInterceptor.emit(ROUTE_ID, groupId, 0, "noop",
+                        Map.of("groupId", groupId));
+                return;
+            }
+
+            String valuesPath = helmValuesBuilder.buildForOrg(groupId, groupRepo);
+            String outputDir = "/tmp/" + groupId + "-bootstrap-out";
+
+            try {
+                helmTemplateRunner.render(
+                        helmValuesBuilder.getChartRef("argocd-org"),
+                        helmValuesBuilder.getReleaseName(groupId),
+                        valuesPath, outputDir);
+                helmTemplateRunner.render(
+                        helmValuesBuilder.getChartRef("rhacm-org"),
+                        helmValuesBuilder.getReleaseName(groupId),
+                        valuesPath, outputDir);
+            } finally {
+                Files.deleteIfExists(Path.of(valuesPath));
+            }
+
+            Files.createDirectories(orgDir);
+
+            List<Path> addedPaths = new ArrayList<>();
+            for (Path target : missing) {
+                if (target.equals(clusterSet)) {
+                    byte[] content = buildClusterSetContent(outputDir);
+                    Files.write(target, content);
+                } else {
+                    Path source = findRenderedFile(outputDir, target.getFileName().toString());
+                    if (source != null) {
+                        Files.write(target, Files.readAllBytes(source));
+                    }
+                }
+                addedPaths.add(target);
+            }
+
+            String message = "[gdfkube] GROUP-" + groupId + ": bootstrap org manifests";
+            gitProvider.commitAndPush(workTree, addedPaths, message, GitAuthor.CAMEL);
+
+            auditInterceptor.emit(ROUTE_ID, groupId, 0, "bootstrap",
+                    Map.of("groupId", groupId, "files", addedPaths.stream()
+                            .map(p -> workTree.relativize(p).toString())
+                            .toList()));
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private byte[] buildClusterSetContent(String outputDir) throws Exception {
+        Path outPath = Path.of(outputDir);
+        List<Path> rhacmFiles = new ArrayList<>();
+        if (Files.exists(outPath)) {
+            try (var walk = Files.walk(outPath)) {
+                walk.filter(Files::isRegularFile)
+                    .filter(p -> p.toString().contains("rhacm-org"))
+                    .sorted()
+                    .forEach(rhacmFiles::add);
+            }
+        }
+        if (rhacmFiles.isEmpty()) {
+            return new byte[0];
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < rhacmFiles.size(); i++) {
+            if (i > 0) sb.append("\n---\n");
+            sb.append(Files.readString(rhacmFiles.get(i)));
+        }
+        return sb.toString().getBytes();
+    }
+
+    private Path findRenderedFile(String outputDir, String fileName) throws Exception {
+        Path outPath = Path.of(outputDir);
+        if (!Files.exists(outPath)) return null;
+        try (var walk = Files.walk(outPath)) {
+            return walk.filter(Files::isRegularFile)
+                       .filter(p -> p.getFileName().toString().equals(fileName))
+                       .findFirst()
+                       .orElse(null);
+        }
+    }
+
+    private void evictExpired() {
+        long now = System.currentTimeMillis();
+        dedupCache.entrySet().removeIf(e -> (now - e.getValue()) > TTL_MS);
+    }
+
+    private void commitKafkaOffset(Exchange exchange) {
+        KafkaManualCommit commit = exchange.getIn().getHeader(
+                KafkaConstants.MANUAL_COMMIT, KafkaManualCommit.class);
+        if (commit != null) {
+            commit.commit();
+        }
+    }
+}

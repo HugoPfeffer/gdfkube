@@ -22,6 +22,7 @@ ensureCollection('audit_log');
 ensureCollection('dlq_log');
 ensurePreImage('requests');
 ensurePreImage('forms');
+ensurePreImage('groups');
 
 db.audit_log.createIndex({ at: 1 }, { expireAfterSeconds: 2592000 });
 db.audit_log.createIndex({ requestId: 1, at: -1 });

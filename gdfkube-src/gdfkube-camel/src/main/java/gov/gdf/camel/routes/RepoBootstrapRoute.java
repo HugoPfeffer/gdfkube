@@ -6,9 +6,8 @@ import org.apache.camel.builder.RouteBuilder;
 import org.jboss.logging.Logger;
 
 import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.GitRepoBootstrapper;
 import gov.gdf.camel.bean.StageUpdater;
-import gov.gdf.camel.git.GitProvider;
-import gov.gdf.camel.git.RepoOptions;
 import gov.gdf.camel.model.RequestEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -25,7 +24,7 @@ public class RepoBootstrapRoute extends RouteBuilder {
     String giteaOwner;
 
     @Inject
-    GitProvider gitProvider;
+    GitRepoBootstrapper gitRepoBootstrapper;
 
     @Inject
     AuditInterceptor auditInterceptor;
@@ -50,20 +49,13 @@ public class RepoBootstrapRoute extends RouteBuilder {
                 String org = event.requesterGroupName;
                 String repoName = giteaOwner + "-" + org;
 
-                if (!gitProvider.repoExists(giteaOwner, repoName)) {
-                    RepoOptions opts = new RepoOptions("main", true,
-                            "GitOps manifests for " + org);
-                    gitProvider.createRepo(giteaOwner, repoName, opts);
-                    LOG.infof("Bootstrapped repo %s/%s for org=%s",
-                            giteaOwner, repoName, org);
-
+                boolean created = gitRepoBootstrapper.ensure(
+                        giteaOwner, repoName, "GitOps manifests for " + org);
+                if (created) {
                     auditInterceptor.emit(ROUTE_ID, event._id, 5, "create-repo",
                             Map.of("repo", giteaOwner + "/" + repoName));
                 }
 
-                // Stage 5: repo-bootstrapped. Only emitted on the success path —
-                // if createRepo throws, Camel's error handler routes to the DLQ
-                // and this line is never reached.
                 stageUpdater.updateStage(event._id, STAGE_REPO_BOOTSTRAPPED);
             });
     }

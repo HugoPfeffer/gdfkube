@@ -77,26 +77,14 @@ describe('NewGroupPage', () => {
     expect(repoInput.value).toBe('custom-repo');
   });
 
-  it('ManagedClusterSet is a <select> with seeded options', () => {
-    render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
-    const select = screen.getByLabelText(/managedclusterset/i) as HTMLSelectElement;
-    expect(select.tagName).toBe('SELECT');
-    const optionValues = Array.from(select.options).map((o) => o.value);
-    expect(optionValues).toEqual(
-      expect.arrayContaining(['default', 'production', 'staging', 'internal']),
-    );
-  });
-
   it('preview block renders four lines: Keycloak group / AppProject / ManagedClusterSetBinding / Git repo', () => {
     render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
-    const select = screen.getByLabelText(/managedclusterset/i) as HTMLSelectElement;
     typeName('Cultura');
-    fireEvent.change(select, { target: { value: 'staging' } });
 
     const preview = screen.getByTestId('group-preview');
     expect(preview.textContent).toMatch(/Keycloak group:\s*gdf-cultura/);
     expect(preview.textContent).toMatch(/AppProject:\s*cultura-apps/);
-    expect(preview.textContent).toMatch(/ManagedClusterSetBinding:\s*staging\s*→\s*cultura/);
+    expect(preview.textContent).toMatch(/ManagedClusterSetBinding:\s*cultura\s*→\s*cultura/);
     expect(preview.textContent).toMatch(/Git repo:\s*gdfkube-cultura/);
   });
 

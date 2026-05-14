@@ -61,13 +61,20 @@ The Users tab MUST provide a primary "+" button that opens a New User page colle
 
 ### Requirement: Per-group editor and New group page
 
-Selecting a group row MUST open an editor with inputs for id, display name, full name, mapped Git repo (auto-suggested from id), ManagedClusterSet binding, and an auto-provision toggle. A "+" button MUST open a New Group page with the same fields plus a live preview of the Keycloak group, repo, AppProject, and binding to be created.
+Selecting a group row MUST open an editor with inputs for id, display name, full name, and mapped Git repo. A "+" button MUST open a New Group page with the same fields (with the Git repo input auto-suggested from id, editable to override) plus a live preview of the Keycloak group, repo, AppProject, and ManagedClusterSetBinding to be created.
 
 #### Scenario: git repo auto-suggested from id
 
 - **GIVEN** the New Group page has empty Git repo input
-- **WHEN** the user types `cultura` into the id input
+- **WHEN** the user types `cultura` into the Display name input
 - **THEN** the Git repo input is auto-populated with `gdfkube-cultura` (and may still be edited)
+
+#### Scenario: editor renders only the four persisted fields
+
+- **WHEN** the GroupEditor opens for an existing group
+- **THEN** inputs for id (read-only), display name, full name, and Git repo are present
+- **AND** no input labeled "ManagedClusterSet binding" is present
+- **AND** no input or toggle labeled "Auto-provision" is present
 
 ### Requirement: UserEditor avatar banner and role/status radio-cards
 
@@ -96,25 +103,28 @@ The NewUserPage MUST render an info banner above the form fields explaining the 
 - **THEN** an element with text matching "Operator submits requests" is present
 - **AND** elements with text matching "Approver reviews", "Admin manages forms", "Service is for" are also present
 
-### Requirement: NewGroupPage ManagedClusterSet seeded select and resource-creation preview
+### Requirement: NewGroupPage resource-creation preview
 
-The NewGroupPage MUST render the ManagedClusterSet input as a `<select>` with seeded options: `default`, `production`, `staging`, `internal`. The "Resources that will be created" preview block MUST list four lines showing the exact identifiers that will be provisioned, in this order:
+The "Resources that will be created" preview block on the NewGroupPage MUST list four lines showing the exact identifiers that will be provisioned downstream by the Camel automation, in this order:
 - `Keycloak group: gdf-{id}`
 - `AppProject: {id}-apps`
-- `ManagedClusterSetBinding: {selectedManagedClusterSet} → {id}`
+- `ManagedClusterSetBinding: {id} → {id}`
 - `Git repo: {gitRepo}`
 
-#### Scenario: ManagedClusterSet renders as a select with seeded options
+The NewGroupPage MUST NOT render a ManagedClusterSet `<select>` input — the binding ClusterSet is derived from the group id and is not user-selectable.
 
-- **WHEN** the NewGroupPage renders
-- **THEN** an element of type `<select>` with name `managedClusterSet` is present
-- **AND** its options include `default`, `production`, `staging`, `internal`
+#### Scenario: preview reflects current id
 
-#### Scenario: preview reflects current id and managedClusterSet
-
-- **GIVEN** the user has typed `cultura` into the id input and selected `staging` for ManagedClusterSet
+- **GIVEN** the user has typed `cultura` into the Display name input
 - **WHEN** the preview block renders
 - **THEN** an element with text `Keycloak group: gdf-cultura` is present
 - **AND** an element with text `AppProject: cultura-apps` is present
-- **AND** an element with text matching `ManagedClusterSetBinding: staging → cultura` is present
+- **AND** an element with text matching `ManagedClusterSetBinding: cultura → cultura` is present
+- **AND** an element with text `Git repo: gdfkube-cultura` is present
+
+#### Scenario: no ManagedClusterSet select rendered
+
+- **WHEN** the NewGroupPage renders
+- **THEN** no element of type `<select>` with name `managedClusterSet` is present
+- **AND** no input labeled "Auto-provision" is present
 

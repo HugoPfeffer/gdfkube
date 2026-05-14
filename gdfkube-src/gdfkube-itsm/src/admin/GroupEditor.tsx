@@ -1,8 +1,7 @@
 // Per-group editor.
 //
-// Inputs for id, display name, full name, mapped Git repo (auto-suggested
-// from id when the user has not edited the repo manually), the
-// ManagedClusterSet binding, and an auto-provision toggle.
+// Inputs for id (read-only), display name, full name, and mapped Git repo.
+// Persisted via PATCH /api/itsm/groups/:id with the {name, fullName, repo} whitelist.
 
 import { useState } from 'react';
 import { itsmApi } from '../api/itsmApi';
@@ -22,8 +21,6 @@ export function GroupEditor({ group: initial, onClose, setToast }: GroupEditorPr
   // Read the live group from state so dispatched edits round-trip into the
   // input values. The `group` prop only seeds the initial selection.
   const group = groups.find((g) => g.id === initial.id) ?? initial;
-  const [binding, setBinding] = useState('');
-  const [autoProvision, setAutoProvision] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(initial);
 
@@ -97,20 +94,6 @@ export function GroupEditor({ group: initial, onClose, setToast }: GroupEditorPr
           <label htmlFor="group-repo">Git repo</label>
           <input id="group-repo" type="text" value={group.repo}
             onChange={(e) => patch({ repo: e.target.value })} />
-        </div>
-        <div className="field">
-          <label htmlFor="group-binding">ManagedClusterSet binding</label>
-          <input id="group-binding" type="text" value={binding}
-            placeholder="e.g. tier-a"
-            onChange={(e) => setBinding(e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="group-auto">Auto-provision</label>
-          <label className="row" style={{ height: 36, alignItems: 'center', gap: 8 }}>
-            <input id="group-auto" type="checkbox" checked={autoProvision}
-              onChange={(e) => setAutoProvision(e.target.checked)} />
-            <span>Auto-provision repo + AppProject on save</span>
-          </label>
         </div>
       </div>
     </div>

@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Defines the Debezium Connect stack: a Kafka Connect worker running the MongoDB CDC connector for change-data-capture event streaming.
+
+## Requirements
 
 ### Requirement: Stack SHALL run a single Kafka Connect worker on gdfkube-net
 
@@ -77,7 +81,7 @@ The connector configuration MUST contain:
 | `mongodb.connection.string` | `mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0` |
 | `topic.prefix` | `dbz.gdfkube` |
 | `database.include.list` | `gdfkube` |
-| `collection.include.list` | `gdfkube.requests,gdfkube.forms` |
+| `collection.include.list` | `gdfkube.requests,gdfkube.forms,gdfkube.groups` |
 | `snapshot.mode` | `initial` |
 | `capture.mode` | `change_streams_update_full_with_pre_image` |
 | `signal.data.collection` | `gdfkube.debezium_signals` |
@@ -114,9 +118,11 @@ The connector configuration MUST contain:
 
 ---
 
-### Requirement: Connector SHALL emit CDC events from gdfkube.requests and gdfkube.forms
+### Requirement: Connector SHALL emit CDC events from gdfkube.requests, gdfkube.forms, and gdfkube.groups
 
-After successful registration, the connector MUST publish change events from `gdfkube.requests` to topic `dbz.gdfkube.requests` and from `gdfkube.forms` to topic `dbz.gdfkube.forms`. Events MUST include the `op`, `source.ts_ms`, and (for `op=u`) `before`/`after` document images. Connector-level errors MUST land on `dlq.gdfkube.debezium` with `context.headers` populated.
+After successful registration, the connector MUST publish change events from `gdfkube.requests` to topic `dbz.gdfkube.requests`, from `gdfkube.forms` to topic `dbz.gdfkube.forms`, and from `gdfkube.groups` to topic `dbz.gdfkube.groups`. Events MUST include the `op`, `source.ts_ms`, and (for `op=u`) `before`/`after` document images. The MongoDB collections `gdfkube.requests`, `gdfkube.forms`, and `gdfkube.groups` MUST all be created with `changeStreamPreAndPostImages: true`. Connector-level errors MUST land on `dlq.gdfkube.debezium` with `context.headers` populated.
+
+The connector configuration's `collection.include.list` MUST be `gdfkube.requests,gdfkube.forms,gdfkube.groups`. The existing `unwrap` + `reroute` SMTs apply to `gdfkube.groups` unchanged: the unwrapped message body is the group document directly (`_id`, `name`, `fullName`, `repo`, `clusters`, `users`, `forms`), with header `__op` ∈ `{c, r, u, d}`.
 
 #### Scenario: Snapshot replay on cold start
 
@@ -140,6 +146,21 @@ After successful registration, the connector MUST publish change events from `gd
 - **WHEN** an existing document's `status` field is updated from `approval` to `provisioning`
 - **THEN** an `op=u` event SHALL appear on `dbz.gdfkube.requests`
 - **AND** the event payload SHALL include `before.status == "approval"` and `after.status == "provisioning"`
+
+#### Scenario: Group create emits op=c on dbz.gdfkube.groups
+
+- **GIVEN** the connector is RUNNING
+- **AND** `gdfkube.groups` was created with `changeStreamPreAndPostImages: true`
+- **WHEN** a new document is inserted into `gdfkube.groups` via the Express API (e.g., `_id: "cultura"`, `repo: "gdfkube-cultura"`)
+- **THEN** an `op=c` event SHALL appear on `dbz.gdfkube.groups` keyed by `cultura`
+- **AND** the event payload SHALL include the full group document under `after`
+
+#### Scenario: Group snapshot replay emits op=r on dbz.gdfkube.groups
+
+- **GIVEN** the MongoDB `gdfkube.groups` collection contains pre-existing documents
+- **AND** the stack is brought up from a clean state with the updated `collection.include.list`
+- **WHEN** the connector finishes its initial snapshot
+- **THEN** each existing group document SHALL produce a corresponding `op=r` event on `dbz.gdfkube.groups`
 
 #### Scenario: Malformed event lands on the connector DLQ
 

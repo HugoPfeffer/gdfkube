@@ -1,21 +1,18 @@
 package gov.gdf.camel.routes;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.jboss.logging.Logger;
 
 import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.HelmTemplateRunner;
 import gov.gdf.camel.bean.HelmValuesBuilder;
 import gov.gdf.camel.model.RequestEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,6 +26,9 @@ public class HelmRenderRoute extends RouteBuilder {
 
     @Inject
     HelmValuesBuilder helmValuesBuilder;
+
+    @Inject
+    HelmTemplateRunner helmTemplateRunner;
 
     @Inject
     AuditInterceptor auditInterceptor;
@@ -73,18 +73,17 @@ public class HelmRenderRoute extends RouteBuilder {
                 String outputDir = "/tmp/" + requestId + "-out";
 
                 try {
-                    runHelmTemplate(releaseName, chartRef, valuesPath, outputDir);
+                    List<Path> renderedFiles = helmTemplateRunner.render(
+                            chartRef, releaseName, valuesPath, outputDir);
+                    LOG.infof("Helm rendered %d files for requestId=%s chart=%s",
+                            renderedFiles.size(), requestId, chartRef);
+                    exchange.setProperty("renderedFiles", renderedFiles);
                 } finally {
                     Files.deleteIfExists(Path.of(valuesPath));
                 }
 
-                List<Path> renderedFiles = collectRenderedFiles(outputDir);
-                LOG.infof("Helm rendered %d files for requestId=%s chart=%s",
-                        renderedFiles.size(), requestId, chartRef);
-
                 exchange.setProperty("releaseName", releaseName);
                 exchange.setProperty("chartRef", chartRef);
-                exchange.setProperty("renderedFiles", renderedFiles);
                 exchange.setProperty("outputDir", outputDir);
             })
             .process(exchange -> {
@@ -96,52 +95,4 @@ public class HelmRenderRoute extends RouteBuilder {
             .to("direct:git-push");
     }
 
-    private void runHelmTemplate(String releaseName, String chartRef,
-                                 String valuesPath, String outputDir) throws IOException, InterruptedException {
-        ProcessBuilder pb = new ProcessBuilder(
-                "helm", "template", releaseName,
-                "/opt/charts/" + chartRef,
-                "--values", valuesPath,
-                "--output-dir", outputDir,
-                "--include-crds");
-        pb.redirectErrorStream(true);
-
-        Process process = pb.start();
-        try {
-            CompletableFuture<byte[]> stdout = CompletableFuture.supplyAsync(() -> {
-                try { return process.getInputStream().readAllBytes(); }
-                catch (IOException e) { return new byte[0]; }
-            });
-
-            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
-            if (!finished) {
-                process.destroyForcibly();
-                process.waitFor(5, TimeUnit.SECONDS);
-                throw new RuntimeException("helm template timed out after 30 seconds");
-            }
-
-            String output = new String(stdout.join(), StandardCharsets.UTF_8);
-            int exitCode = process.exitValue();
-
-            if (exitCode != 0) {
-                throw new RuntimeException(
-                        "helm template failed (exit " + exitCode + "): " + output);
-            }
-            LOG.debugf("helm template output: %s", output);
-        } finally {
-            process.destroyForcibly();
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Path> collectRenderedFiles(String outputDir) throws IOException {
-        try (Stream<Path> walk = Files.walk(Path.of(outputDir))) {
-            return walk.filter(Files::isRegularFile)
-                       .filter(p -> {
-                           String name = p.toString();
-                           return name.endsWith(".yaml") || name.endsWith(".yml");
-                       })
-                       .toList();
-        }
-    }
 }

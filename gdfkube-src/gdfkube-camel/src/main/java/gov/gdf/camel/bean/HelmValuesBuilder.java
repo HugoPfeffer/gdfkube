@@ -2,6 +2,7 @@ package gov.gdf.camel.bean;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -52,8 +53,49 @@ public class HelmValuesBuilder {
         return event.formId;
     }
 
+    public String getChartRef(String chartName) {
+        return "infra/" + chartName;
+    }
+
     public String getReleaseName(RequestEvent event) {
         return resolveResourceName(event, event.requesterGroupName);
+    }
+
+    public String getReleaseName(String groupId) {
+        return groupId + "-bootstrap";
+    }
+
+    public String buildForOrg(String groupId, String groupRepo) throws IOException {
+        Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("requestId", "bootstrap-" + groupId);
+        meta.put("formId", "org-bootstrap");
+        meta.put("org", groupId);
+        meta.put("email", null);
+        meta.put("submittedAt", Instant.now().toString());
+        meta.put("correlationId", "bootstrap-" + groupId);
+
+        Map<String, Object> naming = new LinkedHashMap<>();
+        naming.put("appProject", groupId);
+        naming.put("clusterSet", groupId);
+        naming.put("hostedClusterName", groupId);
+        naming.put("namespace", groupId);
+
+        Map<String, Object> system = new LinkedHashMap<>();
+        system.put("giteaExternalUrl", giteaExternalUrl);
+        system.put("giteaOwner", giteaOwner);
+        system.put("naming", naming);
+        system.put("labels", buildLabels(groupId, "bootstrap-" + groupId));
+
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("meta", meta);
+        values.put("vars", Map.of());
+        values.put("system", system);
+
+        String path = "/tmp/" + groupId + "-bootstrap-values.yaml";
+        try (FileWriter writer = new FileWriter(path)) {
+            new Yaml().dump(values, writer);
+        }
+        return path;
     }
 
     private Map<String, Object> buildMeta(RequestEvent event, String org,
@@ -103,7 +145,7 @@ public class HelmValuesBuilder {
         return "hc-" + org + "-" + clusterName;
     }
 
-    private Map<String, String> buildLabels(String org, String requestId) {
+    Map<String, String> buildLabels(String org, String requestId) {
         Map<String, String> labels = new LinkedHashMap<>();
         labels.put("cluster.open-cluster-management.io/clusterset", org);
         labels.put("setic.gov.br/managed", "true");

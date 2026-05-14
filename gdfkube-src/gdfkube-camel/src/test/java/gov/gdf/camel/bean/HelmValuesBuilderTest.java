@@ -172,6 +172,59 @@ class HelmValuesBuilderTest {
         assertEquals("ns-sec-educ-dev-apps", builder.getReleaseName(event));
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void buildForOrg_writesCanonicalValues() throws Exception {
+        String path = builder.buildForOrg("cultura", "gdfkube-cultura");
+
+        try {
+            Map<String, Object> values = parseYaml(path);
+
+            Map<String, Object> meta = (Map<String, Object>) values.get("meta");
+            assertNotNull(meta, "meta must be present");
+            assertEquals("bootstrap-cultura", meta.get("requestId"));
+            assertEquals("org-bootstrap", meta.get("formId"));
+            assertEquals("cultura", meta.get("org"));
+            assertNull(meta.get("email"));
+            assertNotNull(meta.get("submittedAt"));
+            assertEquals("bootstrap-cultura", meta.get("correlationId"));
+
+            Map<String, Object> system = (Map<String, Object>) values.get("system");
+            assertNotNull(system, "system must be present");
+            Map<String, Object> naming = (Map<String, Object>) system.get("naming");
+            assertEquals("cultura", naming.get("appProject"));
+            assertEquals("cultura", naming.get("clusterSet"));
+            assertEquals("cultura", naming.get("hostedClusterName"));
+            assertEquals("cultura", naming.get("namespace"));
+
+            Map<String, String> labels = (Map<String, String>) system.get("labels");
+            assertNotNull(labels, "system.labels must be present");
+            assertEquals(6, labels.size(), "system.labels must have exactly 6 entries");
+            assertEquals("cultura", labels.get("gdfkube.io/organization"));
+            assertEquals("bootstrap-cultura", labels.get("gdfkube.io/request-id"));
+
+            assertEquals("https://gitea.apps.gdfkube.gov", system.get("giteaExternalUrl"));
+            assertEquals("gdfkube", system.get("giteaOwner"));
+
+            Map<String, Object> vars = (Map<String, Object>) values.get("vars");
+            assertNotNull(vars, "vars must be present");
+            assertTrue(vars.isEmpty(), "vars must be empty for org-bootstrap");
+        } finally {
+            Files.deleteIfExists(Path.of(path));
+        }
+    }
+
+    @Test
+    void getChartRef_stringOverload_prefixesInfra() {
+        assertEquals("infra/argocd-org", builder.getChartRef("argocd-org"));
+        assertEquals("infra/rhacm-org", builder.getChartRef("rhacm-org"));
+    }
+
+    @Test
+    void getReleaseName_stringOverload_appendsBootstrap() {
+        assertEquals("cultura-bootstrap", builder.getReleaseName("cultura"));
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> parseYaml(String path) throws Exception {
         try (FileReader reader = new FileReader(path)) {

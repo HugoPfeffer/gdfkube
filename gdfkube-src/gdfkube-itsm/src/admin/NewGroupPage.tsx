@@ -1,11 +1,10 @@
 // New Group creation page.
 //
 // Form for id, display name, full name, mapped Git repo (auto-suggested
-// from id when the repo has not been edited manually), ManagedClusterSet
-// binding (seeded select: default / production / staging / internal), and
-// an auto-provision toggle. A "Resources that will be created" preview
-// block lists the four artifacts the platform will provision in order:
-// Keycloak group, AppProject, ManagedClusterSetBinding, Git repo.
+// from id when the repo has not been edited manually). A "Resources that
+// will be created" preview block lists the four artifacts the Camel
+// automation will provision: Keycloak group, AppProject,
+// ManagedClusterSetBinding ({id} → {id}), Git repo.
 // Create disabled until id and display name are non-empty.
 
 import { useState } from 'react';
@@ -20,8 +19,6 @@ interface NewGroupPageProps {
   setToast?: (t: Toast) => void;
 }
 
-const MANAGED_CLUSTER_SETS = ['default', 'production', 'staging', 'internal'] as const;
-
 export function NewGroupPage({ onClose, setToast }: NewGroupPageProps) {
   const dispatch = useGdfDispatch();
 
@@ -29,8 +26,6 @@ export function NewGroupPage({ onClose, setToast }: NewGroupPageProps) {
   const [fullName, setFullName] = useState('');
   const [manualRepo, setManualRepo] = useState('');
   const [repoDirty, setRepoDirty] = useState(false);
-  const [managedClusterSet, setManagedClusterSet] = useState<typeof MANAGED_CLUSTER_SETS[number]>('default');
-  const [autoProvision, setAutoProvision] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   const id = slugify(displayName);
@@ -120,29 +115,6 @@ export function NewGroupPage({ onClose, setToast }: NewGroupPageProps) {
             placeholder="gdfkube-{id}" />
           <div className="help">Auto-suggested from id; edit to override.</div>
         </div>
-        <div className="field">
-          <label htmlFor="new-group-mcs">ManagedClusterSet</label>
-          <select
-            id="new-group-mcs"
-            name="managedClusterSet"
-            value={managedClusterSet}
-            onChange={(e) =>
-              setManagedClusterSet(e.target.value as typeof MANAGED_CLUSTER_SETS[number])
-            }
-          >
-            {MANAGED_CLUSTER_SETS.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="new-group-auto">Auto-provision</label>
-          <label className="row" style={{ height: 36, alignItems: 'center', gap: 8 }}>
-            <input id="new-group-auto" type="checkbox" checked={autoProvision}
-              onChange={(e) => setAutoProvision(e.target.checked)} />
-            <span>Auto-provision repo + AppProject on save</span>
-          </label>
-        </div>
       </div>
 
       <div className="card" data-testid="group-preview" style={{ marginTop: 18 }}>
@@ -150,7 +122,7 @@ export function NewGroupPage({ onClose, setToast }: NewGroupPageProps) {
         <ul className="mono" style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', fontSize: 13 }}>
           <li>Keycloak group: gdf-{idDisplay}</li>
           <li>AppProject: {idDisplay}-apps</li>
-          <li>ManagedClusterSetBinding: {managedClusterSet} → {idDisplay}</li>
+          <li>ManagedClusterSetBinding: {idDisplay} → {idDisplay}</li>
           <li>Git repo: {repoDisplay}</li>
         </ul>
       </div>
