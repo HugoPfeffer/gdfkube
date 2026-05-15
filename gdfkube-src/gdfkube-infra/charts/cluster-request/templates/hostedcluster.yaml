@@ -2,7 +2,7 @@ apiVersion: hypershift.openshift.io/v1beta1
 kind: HostedCluster
 metadata:
   name: {{ .Values.system.naming.hostedClusterName }}
-  namespace: clusters
+  namespace: {{ .Values.system.naming.namespace }}
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:
@@ -10,11 +10,33 @@ spec:
     image: {{ .Values.system.releaseImage }}
   pullSecret:
     name: pull-secret
+  sshKey:
+    name: sshkey
   platform:
     type: KubeVirt
     kubevirt:
       baseDomain: {{ .Values.system.baseDomain }}
+  dns:
+    baseDomain: {{ .Values.system.baseDomain }}
+  networking:
+    clusterNetwork:
+      - cidr: {{ .Values.vars.clusterNetworkCidr | default "10.132.0.0/14" }}
+    serviceNetwork:
+      - cidr: {{ .Values.vars.serviceNetworkCidr | default "172.31.0.0/16" }}
+    networkType: OVNKubernetes
   services:
     - service: APIServer
       servicePublishingStrategy:
         type: LoadBalancer
+    - service: OAuthServer
+      servicePublishingStrategy:
+        type: Route
+    - service: OIDC
+      servicePublishingStrategy:
+        type: Route
+    - service: Konnectivity
+      servicePublishingStrategy:
+        type: Route
+    - service: Ignition
+      servicePublishingStrategy:
+        type: Route

@@ -15,6 +15,7 @@ system:
     namespace: "hc-saude-vacinacao"
     appProject: "saude"
     clusterSet: "saude"
+    policyNamespace: "gdfkube-policies"
   labels:
     setic.gov.br/managed: "true"
     setic.gov.br/customer: "saude"
