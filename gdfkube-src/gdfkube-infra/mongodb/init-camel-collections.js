@@ -20,6 +20,7 @@ function ensurePreImage(name) {
 
 ensureCollection('audit_log');
 ensureCollection('dlq_log');
+ensureCollection('debezium_signals');
 ensurePreImage('requests');
 ensurePreImage('forms');
 ensurePreImage('groups');
