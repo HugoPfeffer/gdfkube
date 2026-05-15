@@ -434,7 +434,8 @@ describe('GenericRequest', () => {
     expect(mockCreate).toHaveBeenCalledTimes(1);
     const body = mockCreate.mock.calls[0]![0] as Record<string, unknown>;
     expect(body.formId).toBe('cluster-request');
-    expect(body.vars).toBeDefined();
+    expect(body.clusterName).toBe('vacinacao');
+    expect(body.environment).toBeDefined();
     expect(mockGet).toHaveBeenCalledWith('REQ-API-1');
 
     expect(setToast).toHaveBeenCalledTimes(1);
