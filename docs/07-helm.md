@@ -1,8 +1,12 @@
 # Helm
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Partially implemented
 > **Source:** Handoff `app.jsx` (template-only model, values composition)
-> **Last validated:** 2026-05-05
+> **Last validated:** 2026-05-14
+
+## Specs
+
+_No specs yet — this component is not contracted._
 
 ## Role in the Pipeline
 

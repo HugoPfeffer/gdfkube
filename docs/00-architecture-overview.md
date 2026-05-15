@@ -1,8 +1,8 @@
 # Architecture Overview
 
-> **Implementation Status:** Reference (Planned for the system as a whole)
+> **Implementation Status:** Reference
 > **Source:** `.tmp/handoff/gdfkube-remix/project/backend-architecture/app.jsx`
-> **Last validated:** 2026-05-05
+> **Last validated:** 2026-05-14
 
 ## What gdfkube Is
 

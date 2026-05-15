@@ -1,8 +1,12 @@
 # Debezium
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Partially implemented
 > **Source:** Handoff `app.jsx` (connector config, SMTs, snapshot mode)
-> **Last validated:** 2026-05-05
+> **Last validated:** 2026-05-14
+
+## Specs
+
+- [`debezium-connect-stack`](../openspec/specs/debezium-connect-stack/spec.md)
 
 ## Role in the Pipeline
 

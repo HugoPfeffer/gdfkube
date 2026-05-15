@@ -1,8 +1,12 @@
 # Camel
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Partially implemented
 > **Source:** Handoff `app.jsx` (route descriptions, retry config, error handling)
-> **Last validated:** 2026-05-05
+> **Last validated:** 2026-05-14
+
+## Specs
+
+- [`camel-orchestrator-stack`](../openspec/specs/camel-orchestrator-stack/spec.md)
 
 ## Role in the Pipeline
 

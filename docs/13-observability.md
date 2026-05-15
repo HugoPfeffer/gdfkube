@@ -2,7 +2,10 @@
 
 > **Implementation Status:** Deferred
 > **Source:** Not covered in handoff
-> **Last validated:** 2026-05-05
+
+## Specs
+
+_No specs yet — this component is not contracted._
 
 ## Status
 

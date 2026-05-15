@@ -1,8 +1,19 @@
 # MongoDB
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Implemented
 > **Source:** Handoff `app.jsx` (schemas, indexes, naming)
-> **Last validated:** 2026-05-05
+> **Last validated:** 2026-05-14
+
+## Specs
+
+- [`gdfkube-audit-log-collection`](../openspec/specs/gdfkube-audit-log-collection/spec.md)
+- [`gdfkube-dlq-log-collection`](../openspec/specs/gdfkube-dlq-log-collection/spec.md)
+- [`itsm-forms-collection`](../openspec/specs/itsm-forms-collection/spec.md)
+- [`itsm-groups-collection`](../openspec/specs/itsm-groups-collection/spec.md)
+- [`itsm-requests-collection`](../openspec/specs/itsm-requests-collection/spec.md)
+- [`itsm-settings-collection`](../openspec/specs/itsm-settings-collection/spec.md)
+- [`itsm-users-collection`](../openspec/specs/itsm-users-collection/spec.md)
+- [`mongodb-replica-set-stack`](../openspec/specs/mongodb-replica-set-stack/spec.md)
 
 ## Role in the Pipeline
 

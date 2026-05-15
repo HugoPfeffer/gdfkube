@@ -1,8 +1,12 @@
 # Git
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Implemented
 > **Source:** Handoff `app.jsx` (two-repo model, repo topology) + handoff `uploads/gitops-platform.md`
-> **Last validated:** 2026-05-05
+> **Last validated:** 2026-05-14
+
+## Specs
+
+- [`gitea-stack`](../openspec/specs/gitea-stack/spec.md)
 
 ## Role in the Pipeline
 

@@ -1,8 +1,22 @@
 # ITSM Portal
 
-> **Implementation Status:** Implemented (frontend) / Planned (backend integration)
+> **Implementation Status:** Implemented
 > **Source:** `gdfkube-src/gdfkube-itsm/` + handoff `app.jsx`
-> **Last validated:** 2026-05-05
+> **Last validated:** 2026-05-14
+
+## Specs
+
+- [`itsm-admin-forms`](../openspec/specs/itsm-admin-forms/spec.md)
+- [`itsm-admin-settings`](../openspec/specs/itsm-admin-settings/spec.md)
+- [`itsm-admin-users`](../openspec/specs/itsm-admin-users/spec.md)
+- [`itsm-approvals-queue`](../openspec/specs/itsm-approvals-queue/spec.md)
+- [`itsm-container-image`](../openspec/specs/itsm-container-image/spec.md)
+- [`itsm-dashboard`](../openspec/specs/itsm-dashboard/spec.md)
+- [`itsm-portal-shell`](../openspec/specs/itsm-portal-shell/spec.md)
+- [`itsm-request-detail`](../openspec/specs/itsm-request-detail/spec.md)
+- [`itsm-request-submission`](../openspec/specs/itsm-request-submission/spec.md)
+- [`itsm-requests-list`](../openspec/specs/itsm-requests-list/spec.md)
+- [`itsm-service-catalog`](../openspec/specs/itsm-service-catalog/spec.md)
 
 ## Role in the Pipeline
 

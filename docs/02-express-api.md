@@ -1,8 +1,12 @@
 # Express API
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Implemented
 > **Source:** Handoff `app.jsx` (REST shape) + `gdfkube-src/gdfkube-itsm/src/types.ts` (payload shape)
-> **Last validated:** 2026-05-05
+> **Last validated:** 2026-05-14
+
+## Specs
+
+- [`itsm-express-api`](../openspec/specs/itsm-express-api/spec.md)
 
 ## Role in the Pipeline
 

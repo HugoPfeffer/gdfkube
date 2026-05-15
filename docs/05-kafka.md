@@ -1,8 +1,12 @@
 # Kafka
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Implemented
 > **Source:** Handoff `app.jsx` (topics, retention, semantics)
-> **Last validated:** 2026-05-05
+> **Last validated:** 2026-05-14
+
+## Specs
+
+- [`kafka-broker-stack`](../openspec/specs/kafka-broker-stack/spec.md)
 
 ## Role in the Pipeline
 
