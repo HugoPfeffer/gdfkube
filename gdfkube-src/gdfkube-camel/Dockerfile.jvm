@@ -27,10 +27,10 @@ RUN microdnf install -y gzip tar \
 
 USER 185
 
-COPY --from=build --chown=185 /build/target/quarkus-app/lib/ /deployments/lib/
-COPY --from=build --chown=185 /build/target/quarkus-app/*.jar /deployments/
-COPY --from=build --chown=185 /build/target/quarkus-app/app/ /deployments/app/
-COPY --from=build --chown=185 /build/target/quarkus-app/quarkus/ /deployments/quarkus/
+COPY --from=build --chown=185 /build/build/quarkus-app/lib/ /deployments/lib/
+COPY --from=build --chown=185 /build/build/quarkus-app/*.jar /deployments/
+COPY --from=build --chown=185 /build/build/quarkus-app/app/ /deployments/app/
+COPY --from=build --chown=185 /build/build/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
 
