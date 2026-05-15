@@ -1,6 +1,6 @@
 ## Why
 
-After the previous change (`remove-deadcode-group-admin-controls`) removed the manual UI toggles for ManagedClusterSet binding and Auto-provision, the SPA's `NewGroupPage` preview still promises four artifacts that nothing in the system produces today — Camel only reacts to *request* events on `dbz.gdfkube.requests`, never to group lifecycle. The `argocd-org` and `rhacm-org` Helm charts have been orphans since they were authored. This change closes the backend gap: a new Camel route `OrgBootstrapRoute` reacts to MongoDB CDC events on `gdfkube.groups` and idempotently writes the per-org GitOps content the demo expects, finally wiring the orphaned charts to a real trigger.
+After the previous change (`remove-deadcode-group-admin-controls`) removed the manual UI toggles for ManagedClusterSet binding and Auto-provision, the SPA's `NewGroupPage` preview still promises three artifacts that nothing in the system produces today — Camel only reacts to *request* events on `dbz.gdfkube.requests`, never to group lifecycle. The `argocd-org` and `rhacm-org` Helm charts have been orphans since they were authored. This change closes the backend gap: a new Camel route `OrgBootstrapRoute` reacts to MongoDB CDC events on `gdfkube.groups` and idempotently writes the per-org GitOps content the demo expects, finally wiring the orphaned charts to a real trigger.
 
 ## What Changes
 
@@ -91,7 +91,7 @@ None.
 - Unit: existing `HelmValuesBuilderTest` extended for the `buildForOrg` overload (assertion on the values YAML shape).
 - Integration: new `OrgBootstrapIntegrationTest` (7 cases) using the existing `MockProfile` (`app.git.provider=mock`) and `AdviceWith` to swap the Kafka source for a `seda:` source (mirrors `PipelineIntegrationTest`'s pattern).
 - Packaged-artifact smoke: existing `AppStartupIT` automatically picks up the new route — must continue to register `Started` for all 9 routes.
-- E2E: SPA "create group Cultura" against the devcontainer Gitea + Mongo; assert the four files appear in `gdfkube-orgs`, audit_log records the `bootstrap` event, and replay (edit + save) is a `noop`.
+- E2E: SPA "create group Cultura" against the devcontainer Gitea + Mongo; assert the three files appear in `gdfkube-orgs`, audit_log records the `bootstrap` event, and replay (edit + save) is a `noop`.
 
 **Blast radius**
 - Camel pipeline: new route + bean factor-out. Refactor risk in two existing routes mitigated by unchanged `PipelineIntegrationTest`.

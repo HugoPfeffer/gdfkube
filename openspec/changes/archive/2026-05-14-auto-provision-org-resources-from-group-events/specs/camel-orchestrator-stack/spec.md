@@ -46,7 +46,7 @@ For each accepted event the route MUST:
 2. Ensure the per-org Gitea repo `gdfkube-{groupId}` exists via `GitRepoBootstrapper.ensure(owner, repoName, description)` (idempotent skip-if-exists; emits `create-repo` audit on creation).
 3. Ensure the central Gitea repo `gdfkube-orgs` exists via the same bean (idempotent; emits `create-repo` audit on creation).
 4. Acquire a per-repo `ReentrantLock` for `gdfkube-orgs`, then clone or pull it.
-5. Compute the four target paths under `<workTree>/orgs/<groupId>/`:
+5. Compute the three target paths under `<workTree>/orgs/<groupId>/`:
    - `appproject.yaml`
    - `applicationset.yaml`
    - `<groupId>-clusterset.yaml`
@@ -61,7 +61,7 @@ The route MUST NOT invoke `status-emitter` and MUST NOT call `stageUpdater` — 
 
 The in-cluster `metadata.name` of the rendered `AppProject`, `ManagedClusterSet`, and `ManagedClusterSetBinding` MUST be the bare `<groupId>` (no `-clusterset` suffix on resource names — the suffix appears only on the filename to disambiguate from the AppProject manifest).
 
-#### Scenario: First group event bootstraps both repos and writes all four files
+#### Scenario: First group event bootstraps both repos and writes all three files
 
 - **GIVEN** the route is running and Gitea has neither `gdfkube-cultura` nor `gdfkube-orgs`
 - **WHEN** an `op=c` event arrives for a group with `_id=cultura` and `repo=gdfkube-cultura`

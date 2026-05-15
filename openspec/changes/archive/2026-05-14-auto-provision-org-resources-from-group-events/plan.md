@@ -3,7 +3,7 @@
 > **For agentic workers:** Use superpowers:subagent-driven-development
 > to implement this plan task-by-task.
 
-**Goal:** Wire the existing `argocd-org` and `rhacm-org` Helm charts to MongoDB group lifecycle events through a new Camel route `OrgBootstrapRoute`, so creating a group in the SPA idempotently produces the per-org Gitea repo and the four target manifests under `orgs/<groupId>/` in the central `gdfkube-orgs` repo.
+**Goal:** Wire the existing `argocd-org` and `rhacm-org` Helm charts to MongoDB group lifecycle events through a new Camel route `OrgBootstrapRoute`, so creating a group in the SPA idempotently produces the per-org Gitea repo and the three target manifests under `orgs/<groupId>/` in the central `gdfkube-orgs` repo.
 
 **Architecture:** New route consumes `dbz.gdfkube.groups` (added to the existing Debezium connector). Two beans extracted from existing routes (`GitRepoBootstrapper` from `RepoBootstrapRoute`, `HelmTemplateRunner` from `HelmRenderRoute`) are reused so the new route does not duplicate logic. `HelmValuesBuilder` gains `buildForOrg(...)` alongside the existing `build(RequestEvent)`. Idempotency is git-file-exists at the destination repo — manual edits in `gdfkube-orgs` are preserved. DLQ piggy-backs on the existing `DlqHandlerRoute` via the new topic `dlq.gdfkube.groups`. Strictly rendered-manifests scope; no demo-bootstrap (top-level ArgoCD root) work.
 

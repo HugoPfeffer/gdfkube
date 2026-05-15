@@ -2,7 +2,7 @@
 
 The Camel pipeline today reacts only to *request* (form-submission) events on `dbz.gdfkube.requests`. There is no path that reacts to **group lifecycle** events. As a result, the existing `argocd-org` and `rhacm-org` Helm charts (under `gdfkube-src/gdfkube-infra/charts/infra/`) are orphans — they were authored for a hypothetical `org-onboard` form that never shipped.
 
-After the previous change (`remove-deadcode-group-admin-controls`) removed the manual UI toggles for ManagedClusterSet binding and Auto-provision, the SPA's `NewGroupPage` "Resources that will be created" preview still describes four artifacts (`Keycloak group / AppProject / ManagedClusterSetBinding / Git repo`) that nothing in the system actually produces. This change closes that backend gap by triggering the orphaned charts off group-collection CDC events.
+After the previous change (`remove-deadcode-group-admin-controls`) removed the manual UI toggles for ManagedClusterSet binding and Auto-provision, the SPA's `NewGroupPage` "Resources that will be created" preview still describes three artifacts (`AppProject / ManagedClusterSetBinding / Git repo`) that nothing in the system actually produces. This change closes that backend gap by triggering the orphaned charts off group-collection CDC events.
 
 Source files that frame the design:
 - `gdfkube-src/gdfkube-camel/src/main/java/gov/gdf/camel/routes/RequestRouterRoute.java` — current pattern for `kafka:dbz.gdfkube.*` consumption with manual offset commit, dedup cache, and DLQ wiring.
@@ -17,7 +17,7 @@ Source files that frame the design:
 ## Goals / Non-Goals
 
 **Goals:**
-- New Camel route `OrgBootstrapRoute` consuming `dbz.gdfkube.groups`, idempotently producing the per-org repo + the four target files under `orgs/<groupId>/` in the central `gdfkube-orgs` Gitea repo.
+- New Camel route `OrgBootstrapRoute` consuming `dbz.gdfkube.groups`, idempotently producing the per-org repo + the three target files under `orgs/<groupId>/` in the central `gdfkube-orgs` Gitea repo.
 - Add `gdfkube.groups` to the Debezium connector's `collection.include.list`.
 - Enable change-stream pre-image on `gdfkube.groups` in `init-camel-collections.js` (if not already).
 - Extract `GitRepoBootstrapper` (from `RepoBootstrapRoute`) and `HelmTemplateRunner` (from `HelmRenderRoute`) so both pipelines share the logic without duplication.
@@ -86,7 +86,7 @@ All required values (`app.system.gitea-owner`, `app.system.gitea-external-url`, 
 3. **Camel code**: Land the bean extractions and new route in one PR. Existing `PipelineIntegrationTest` continues to pass; new `OrgBootstrapIntegrationTest` covers the new route.
 4. **Helm chart access**: Confirm `/opt/charts/argocd-org` and `/opt/charts/rhacm-org` are present in the Camel container (they live under `gdfkube-src/gdfkube-infra/charts/infra/` which is bind-mounted at `/opt/charts:ro` per `camel-orchestrator-stack`).
 5. **Stack restart**: `docker compose up -d gdfkube-debezium-init gdfkube-camel`. The connector picks up the new collection; the new route registers.
-6. **Verification**: Create a group "Cultura" from the SPA; within seconds expect `gdfkube-cultura` and `gdfkube-orgs` repos in Gitea, the four files at `orgs/cultura/`, and audit log entries.
+6. **Verification**: Create a group "Cultura" from the SPA; within seconds expect `gdfkube-cultura` and `gdfkube-orgs` repos in Gitea, the three files at `orgs/cultura/`, and audit log entries.
 
 **Rollback**: `git revert` the merge commit. Re-run `register-connector.sh` to restore the old `collection.include.list`. The `gdfkube-cultura` and `gdfkube-orgs` repos and any committed manifests can stay (idempotency tolerates them); deleting them is optional cleanup.
 

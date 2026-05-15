@@ -11,7 +11,7 @@ This plan is strictly **rendered-manifests scope**: Camel writes GitOps content 
 ## Alternatives Considered
 
 ### Option A: Group-event-driven Camel route writing into central `gdfkube-orgs` repo (chosen)
-- **Approach**: New `OrgBootstrapRoute` consuming `dbz.gdfkube.groups`. Idempotency via git-file-exists check at `<workTree>/orgs/<groupId>/` against four target paths. Two helm renders per first-time event; zero renders on idempotent replays. Reuses existing pipeline beans by extracting `GitRepoBootstrapper` and `HelmTemplateRunner`.
+- **Approach**: New `OrgBootstrapRoute` consuming `dbz.gdfkube.groups`. Idempotency via git-file-exists check at `<workTree>/orgs/<groupId>/` against three target paths. Two helm renders per first-time event; zero renders on idempotent replays. Reuses existing pipeline beans by extracting `GitRepoBootstrapper` and `HelmTemplateRunner`.
 - **Pros**: Single source of truth for org provisioning (the Mongo `groups` collection — the same store the SPA already PATCHes). Self-healing on partial state. Pure GitOps idempotency — no k8s client added to Camel, no live-cluster reads. Reuses three existing infra: Debezium connector, Helm chart catalog, GitProvider/JGit + ReentrantLock pattern. Aligns with the previous change's preview text (`{id} → {id}` binding).
 - **Cons**: Need to modify the Debezium connector config (additive, no breaking change) and bump the Camel "8 routes" spec count to 9.
 - **Why chosen**: Smallest delta against the existing pipeline. Keeps the manual-form path (`org-onboard`) free to coexist later if needed. Zero new infra components, zero new credentials.
@@ -39,7 +39,7 @@ Option A. Group-event-driven `OrgBootstrapRoute` consuming `dbz.gdfkube.groups`,
 - **Filter**: Accept `op ∈ {c, r, u}`; drop `op=d` with a debug log (no decommission flow). Apply the same 60s in-memory dedup cache `RequestRouterRoute` already uses.
 - **Resource naming**: ManagedClusterSet `metadata.name` = ManagedClusterSetBinding `metadata.name` = AppProject `metadata.name` = `<groupId>`. Binding `metadata.namespace` = `<groupId>`. (Inherited from the previous change — no new schema field on `Group`.)
 - **Rendered file layout** under `orgs/<groupId>/`: `appproject.yaml`, `applicationset.yaml`, `<groupId>-clusterset.yaml`. The third file is multi-doc YAML concatenating the two `rhacm-org` template outputs (ClusterSet + Binding) — file-only `-clusterset` suffix; in-cluster names stay bare.
-- **Idempotency**: git-file-exists check at the four target paths; render only when at least one is missing; copy only the missing files; no overwrite of manual edits in `gdfkube-orgs`. Per-org repo idempotency stays delegated to `gitProvider.repoExists` exactly as today.
+- **Idempotency**: git-file-exists check at the three target paths; render only when at least one is missing; copy only the missing files; no overwrite of manual edits in `gdfkube-orgs`. Per-org repo idempotency stays delegated to `gitProvider.repoExists` exactly as today.
 - **Output repo**: central `gdfkube-orgs` Gitea repo (rendered-manifests scope, ephemeral Gitea); created on first event via `GitRepoBootstrapper.ensure(...)`.
 - **Bean reuse**: extract `GitRepoBootstrapper` from `RepoBootstrapRoute` and `HelmTemplateRunner` from `HelmRenderRoute`; both refactored routes preserve observable behavior. `HelmValuesBuilder.buildForOrg(...)` is added alongside `build(RequestEvent)`.
 - **Route count**: Camel pipeline grows from 8 routes to 9. The `camel-orchestrator-stack` spec table needs the new row; no other route is renamed or removed.
