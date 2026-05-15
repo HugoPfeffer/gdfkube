@@ -235,6 +235,45 @@ class HelmValuesBuilderTest {
         assertEquals("gdfkube-sec-educ", builder.getRepoName("sec-educ"));
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void formIdMatchesChartDefaults() throws Exception {
+        String emittedPath = builder.buildForOrg("alpha");
+        try {
+            Map<String, Object> emittedValues = parseYaml(emittedPath);
+            Map<String, Object> emittedMeta = (Map<String, Object>) emittedValues.get("meta");
+            String emittedFormId = (String) emittedMeta.get("formId");
+            assertEquals("org-bootstrap", emittedFormId, "buildForOrg must emit formId=org-bootstrap");
+
+            String argocdFormId = readChartFormId("../gdfkube-infra/charts/infra/argocd-org/values.yaml");
+            String rhacmFormId = readChartFormId("../gdfkube-infra/charts/infra/rhacm-org/values.yaml");
+
+            assertEquals(emittedFormId, argocdFormId,
+                    "argocd-org/values.yaml formId default drifted from HelmValuesBuilder");
+            assertEquals(emittedFormId, rhacmFormId,
+                    "rhacm-org/values.yaml formId default drifted from HelmValuesBuilder");
+        } finally {
+            Files.deleteIfExists(Path.of(emittedPath));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String readChartFormId(String relativePath) throws Exception {
+        Path chartPath = Path.of(relativePath).toAbsolutePath();
+        if (!Files.exists(chartPath)) {
+            fail("Chart file not found at " + chartPath + " — cannot verify formId drift guard");
+        }
+        Map<String, Object> values;
+        try (FileReader reader = new FileReader(chartPath.toFile())) {
+            values = new Yaml().load(reader);
+        }
+        Map<String, Object> meta = (Map<String, Object>) values.get("meta");
+        assertNotNull(meta, "meta section missing from " + relativePath);
+        String formId = (String) meta.get("formId");
+        assertNotNull(formId, "meta.formId missing from " + relativePath);
+        return formId;
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> parseYaml(String path) throws Exception {
         try (FileReader reader = new FileReader(path)) {
