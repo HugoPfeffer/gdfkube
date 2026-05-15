@@ -36,10 +36,10 @@
 
 ## 6. Full test sweep
 
-- [ ] 6.1 `./mvnw -pl gdfkube-src/gdfkube-camel test` — entire Camel module green.
-- [ ] 6.2 Render `argocd-org` chart manually: `helm template demo gdfkube-src/gdfkube-infra/charts/infra/argocd-org --set meta.org=saude | grep 'gdfkube-saude.git'` — SHALL match exactly one line (unchanged behavior, sanity check that we did NOT touch the chart).
+- [x] 6.1 `./mvnw -pl gdfkube-src/gdfkube-camel test` — entire Camel module green.
+- [x] 6.2 Render `argocd-org` chart manually: `helm template demo gdfkube-src/gdfkube-infra/charts/infra/argocd-org --set meta.org=saude | grep 'gdfkube-saude.git'` — SHALL match exactly one line (unchanged behavior, sanity check that we did NOT touch the chart).
 
 ## 7. Pre-commit & commit
 
-- [ ] 7.1 `pre-commit run --all-files` — green (trufflehog and any other configured hooks).
-- [ ] 7.2 Commit the change with an imperative message, e.g. `unify per-org gitea repo naming via HelmValuesBuilder.getRepoName`.
+- [x] 7.1 `pre-commit run --all-files` — green (trufflehog and any other configured hooks).
+- [x] 7.2 Commit the change with an imperative message, e.g. `unify per-org gitea repo naming via HelmValuesBuilder.getRepoName`.
