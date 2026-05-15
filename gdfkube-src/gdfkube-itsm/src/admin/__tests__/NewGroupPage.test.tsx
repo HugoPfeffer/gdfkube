@@ -22,7 +22,7 @@ const mockCreate = itsmApi.groups.create as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   mockCreate.mockImplementation((body: Record<string, unknown>) =>
-    Promise.resolve({ id: body._id, ...body }),
+    Promise.resolve({ id: body.id, ...body }),
   );
 });
 
@@ -126,6 +126,11 @@ describe('NewGroupPage', () => {
     });
 
     expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'cultura' })
+    );
+    const body = mockCreate.mock.calls[0][0];
+    expect(body).not.toHaveProperty('_id');
     const last = observed[observed.length - 1];
     expect(last?.groups.map((g) => g.id)).toContain('cultura');
     expect(onClose).toHaveBeenCalledTimes(1);
