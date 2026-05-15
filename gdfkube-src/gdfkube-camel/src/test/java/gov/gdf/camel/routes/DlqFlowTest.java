@@ -121,7 +121,7 @@ class DlqFlowTest {
             DlqHeaders.stamp(exchange);
 
             var msg = exchange.getIn();
-            assertEquals(5, msg.getHeader("x-stage"));
+            assertEquals("5", msg.getHeader("x-stage"));
             assertEquals(3, msg.getHeader("x-attempts"));
         }
     }
