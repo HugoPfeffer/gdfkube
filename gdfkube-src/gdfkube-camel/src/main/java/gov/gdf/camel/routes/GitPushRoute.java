@@ -13,6 +13,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.jboss.logging.Logger;
 
 import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.HelmValuesBuilder;
 import gov.gdf.camel.git.GitAuthor;
 import gov.gdf.camel.git.GitProvider;
 import gov.gdf.camel.model.RequestEvent;
@@ -35,6 +36,9 @@ public class GitPushRoute extends RouteBuilder {
 
     @Inject
     AuditInterceptor auditInterceptor;
+
+    @Inject
+    HelmValuesBuilder helmValuesBuilder;
 
     @Override
     public void configure() {
@@ -60,7 +64,7 @@ public class GitPushRoute extends RouteBuilder {
                 @SuppressWarnings("unchecked")
                 List<Path> renderedFiles = exchange.getProperty("renderedFiles", List.class);
 
-                String repoName = giteaOwner + "-" + org;
+                String repoName = helmValuesBuilder.getRepoName(org);
                 ReentrantLock lock = REPO_LOCKS.computeIfAbsent(repoName, k -> new ReentrantLock());
                 lock.lock();
                 try {
@@ -89,7 +93,7 @@ public class GitPushRoute extends RouteBuilder {
             .process(exchange -> {
                 RequestEvent event = exchange.getProperty("requestEvent", RequestEvent.class);
                 auditInterceptor.emit(ROUTE_ID, event._id, 5, "push",
-                        Map.of("repo", giteaOwner + "-" + event.requesterGroupName,
+                        Map.of("repo", giteaOwner + "/" + helmValuesBuilder.getRepoName(event.requesterGroupName),
                                "release", exchange.getProperty("releaseName", String.class)));
             })
             .to("direct:status-emitter");
