@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HelmValuesBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.bean</a> &gt; <span class="el_source">HelmValuesBuilder.java</span></div><h1>HelmValuesBuilder.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.bean;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.bson.Document;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.yaml.snakeyaml.Yaml;
+
+import gov.gdf.camel.model.RequestEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+<span class="fc" id="L18">public class HelmValuesBuilder {</span>
+
+    @Inject
+    FormDefCache formDefCache;
+
+    @ConfigProperty(name = &quot;app.system.base-domain&quot;)
+    String baseDomain;
+
+    @ConfigProperty(name = &quot;app.system.release-image&quot;)
+    String releaseImage;
+
+    @ConfigProperty(name = &quot;app.system.gitea-external-url&quot;)
+    String giteaExternalUrl;
+
+    @ConfigProperty(name = &quot;app.system.gitea-owner&quot;)
+    String giteaOwner;
+
+    public String build(RequestEvent event) throws IOException {
+<span class="nc" id="L36">        Document formDef = formDefCache.lookup(event.formId);</span>
+<span class="nc" id="L37">        String org = event.requesterGroupName;</span>
+<span class="nc" id="L38">        String requestId = event._id;</span>
+
+<span class="nc" id="L40">        Map&lt;String, Object&gt; values = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L41">        values.put(&quot;meta&quot;, buildMeta(event, org, requestId));</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        values.put(&quot;vars&quot;, event.vars != null ? event.vars : Map.of());</span>
+<span class="nc" id="L43">        values.put(&quot;system&quot;, buildSystem(event, org, requestId));</span>
+
+<span class="nc" id="L45">        String path = &quot;/tmp/&quot; + requestId + &quot;-values.yaml&quot;;</span>
+<span class="nc" id="L46">        try (FileWriter writer = new FileWriter(path)) {</span>
+<span class="nc" id="L47">            new Yaml().dump(values, writer);</span>
+        }
+<span class="nc" id="L49">        return path;</span>
+    }
+
+    public String getChartRef(RequestEvent event) {
+<span class="nc" id="L53">        return event.formId;</span>
+    }
+
+    public String getChartRef(String chartName) {
+<span class="fc" id="L57">        return &quot;infra/&quot; + chartName;</span>
+    }
+
+    public String getReleaseName(RequestEvent event) {
+<span class="nc" id="L61">        return resolveResourceName(event, event.requesterGroupName);</span>
+    }
+
+    public String getReleaseName(String groupId) {
+<span class="fc" id="L65">        return groupId + &quot;-bootstrap&quot;;</span>
+    }
+
+    public String getRepoName(String groupId) {
+<span class="fc" id="L69">        return &quot;gdfkube-&quot; + groupId;</span>
+    }
+
+    public String buildForOrg(String groupId) throws IOException {
+<span class="fc" id="L73">        Map&lt;String, Object&gt; meta = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L74">        meta.put(&quot;requestId&quot;, &quot;bootstrap-&quot; + groupId);</span>
+<span class="fc" id="L75">        meta.put(&quot;formId&quot;, &quot;org-bootstrap&quot;);</span>
+<span class="fc" id="L76">        meta.put(&quot;org&quot;, groupId);</span>
+<span class="fc" id="L77">        meta.put(&quot;email&quot;, null);</span>
+<span class="fc" id="L78">        meta.put(&quot;submittedAt&quot;, Instant.now().toString());</span>
+<span class="fc" id="L79">        meta.put(&quot;correlationId&quot;, &quot;bootstrap-&quot; + groupId);</span>
+
+<span class="fc" id="L81">        Map&lt;String, Object&gt; naming = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L82">        naming.put(&quot;appProject&quot;, groupId);</span>
+<span class="fc" id="L83">        naming.put(&quot;clusterSet&quot;, groupId);</span>
+<span class="fc" id="L84">        naming.put(&quot;hostedClusterName&quot;, groupId);</span>
+<span class="fc" id="L85">        naming.put(&quot;namespace&quot;, groupId);</span>
+
+<span class="fc" id="L87">        Map&lt;String, Object&gt; system = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L88">        system.put(&quot;giteaExternalUrl&quot;, giteaExternalUrl);</span>
+<span class="fc" id="L89">        system.put(&quot;giteaOwner&quot;, giteaOwner);</span>
+<span class="fc" id="L90">        system.put(&quot;naming&quot;, naming);</span>
+<span class="fc" id="L91">        system.put(&quot;labels&quot;, buildLabels(groupId, &quot;bootstrap-&quot; + groupId));</span>
+
+<span class="fc" id="L93">        Map&lt;String, Object&gt; values = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L94">        values.put(&quot;meta&quot;, meta);</span>
+<span class="fc" id="L95">        values.put(&quot;vars&quot;, Map.of());</span>
+<span class="fc" id="L96">        values.put(&quot;system&quot;, system);</span>
+
+<span class="fc" id="L98">        String path = &quot;/tmp/&quot; + groupId + &quot;-bootstrap-values.yaml&quot;;</span>
+<span class="fc" id="L99">        try (FileWriter writer = new FileWriter(path)) {</span>
+<span class="fc" id="L100">            new Yaml().dump(values, writer);</span>
+        }
+<span class="fc" id="L102">        return path;</span>
+    }
+
+    private Map&lt;String, Object&gt; buildMeta(RequestEvent event, String org,
+                                           String requestId) {
+<span class="nc" id="L107">        Map&lt;String, Object&gt; meta = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L108">        meta.put(&quot;requestId&quot;, requestId);</span>
+<span class="nc" id="L109">        meta.put(&quot;formId&quot;, event.formId);</span>
+<span class="nc" id="L110">        meta.put(&quot;org&quot;, org);</span>
+<span class="nc" id="L111">        meta.put(&quot;email&quot;, extractEmail(event));</span>
+<span class="nc" id="L112">        meta.put(&quot;submittedAt&quot;, event.submittedAt);</span>
+<span class="nc" id="L113">        meta.put(&quot;correlationId&quot;, extractCorrelationId(event, requestId));</span>
+<span class="nc" id="L114">        return meta;</span>
+    }
+
+    private Map&lt;String, Object&gt; buildSystem(RequestEvent event, String org,
+                                             String requestId) {
+<span class="nc" id="L119">        Map&lt;String, Object&gt; system = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L120">        system.put(&quot;baseDomain&quot;, baseDomain);</span>
+<span class="nc" id="L121">        system.put(&quot;releaseImage&quot;, releaseImage);</span>
+<span class="nc" id="L122">        system.put(&quot;giteaExternalUrl&quot;, giteaExternalUrl);</span>
+<span class="nc" id="L123">        system.put(&quot;giteaOwner&quot;, giteaOwner);</span>
+<span class="nc" id="L124">        system.put(&quot;naming&quot;, buildNaming(event, org));</span>
+<span class="nc" id="L125">        system.put(&quot;labels&quot;, buildLabels(org, requestId));</span>
+<span class="nc" id="L126">        return system;</span>
+    }
+
+    private Map&lt;String, Object&gt; buildNaming(RequestEvent event, String org) {
+<span class="nc" id="L130">        Map&lt;String, Object&gt; naming = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L131">        String resourceName = resolveResourceName(event, org);</span>
+<span class="nc" id="L132">        naming.put(&quot;hostedClusterName&quot;, resourceName);</span>
+<span class="nc" id="L133">        naming.put(&quot;namespace&quot;, resourceName);</span>
+<span class="nc" id="L134">        naming.put(&quot;appProject&quot;, org);</span>
+<span class="nc" id="L135">        naming.put(&quot;clusterSet&quot;, org);</span>
+<span class="nc" id="L136">        return naming;</span>
+    }
+
+    private String resolveResourceName(RequestEvent event, String org) {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (&quot;namespace-request&quot;.equals(event.formId)) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">            String nsName = event.vars != null</span>
+<span class="nc" id="L142">                    ? String.valueOf(event.vars.getOrDefault(&quot;namespaceName&quot;, &quot;default&quot;))</span>
+<span class="nc" id="L143">                    : &quot;default&quot;;</span>
+<span class="nc" id="L144">            return &quot;ns-&quot; + org + &quot;-&quot; + nsName;</span>
+        }
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        String clusterName = event.vars != null</span>
+<span class="nc" id="L147">                ? String.valueOf(event.vars.getOrDefault(&quot;clusterName&quot;, &quot;default&quot;))</span>
+<span class="nc" id="L148">                : &quot;default&quot;;</span>
+<span class="nc" id="L149">        return &quot;hc-&quot; + org + &quot;-&quot; + clusterName;</span>
+    }
+
+    Map&lt;String, String&gt; buildLabels(String org, String requestId) {
+<span class="fc" id="L153">        Map&lt;String, String&gt; labels = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L154">        labels.put(&quot;cluster.open-cluster-management.io/clusterset&quot;, org);</span>
+<span class="fc" id="L155">        labels.put(&quot;setic.gov.br/managed&quot;, &quot;true&quot;);</span>
+<span class="fc" id="L156">        labels.put(&quot;setic.gov.br/customer&quot;, org);</span>
+<span class="fc" id="L157">        labels.put(&quot;gdfkube.io/managed&quot;, &quot;true&quot;);</span>
+<span class="fc" id="L158">        labels.put(&quot;gdfkube.io/organization&quot;, org);</span>
+<span class="fc" id="L159">        labels.put(&quot;gdfkube.io/request-id&quot;, requestId);</span>
+<span class="fc" id="L160">        return labels;</span>
+    }
+
+    private String extractEmail(RequestEvent event) {
+<span class="nc bnc" id="L164" title="All 4 branches missed.">        if (event.requester != null &amp;&amp; event.requester.containsKey(&quot;email&quot;)) {</span>
+<span class="nc" id="L165">            return String.valueOf(event.requester.get(&quot;email&quot;));</span>
+        }
+<span class="nc" id="L167">        return null;</span>
+    }
+
+    private String extractCorrelationId(RequestEvent event, String fallback) {
+<span class="nc bnc" id="L171" title="All 4 branches missed.">        if (event.meta != null &amp;&amp; event.meta.containsKey(&quot;correlationId&quot;)) {</span>
+<span class="nc" id="L172">            return String.valueOf(event.meta.get(&quot;correlationId&quot;));</span>
+        }
+<span class="nc" id="L174">        return fallback;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

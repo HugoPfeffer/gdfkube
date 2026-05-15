@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FormDefCache.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.bean</a> &gt; <span class="el_source">FormDefCache.java</span></div><h1>FormDefCache.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.bean;
+
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.bson.Document;
+import org.jboss.logging.Logger;
+
+import com.mongodb.client.MongoClient;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+<span class="fc" id="L14">public class FormDefCache {</span>
+
+<span class="fc" id="L16">    private static final Logger LOG = Logger.getLogger(FormDefCache.class);</span>
+
+<span class="fc" id="L18">    private final ConcurrentHashMap&lt;String, Document&gt; cache = new ConcurrentHashMap&lt;&gt;();</span>
+
+    @Inject
+    MongoClient mongoClient;
+
+    public Document lookup(String formId) {
+<span class="nc" id="L24">        return cache.computeIfAbsent(formId, this::fetchFromMongo);</span>
+    }
+
+    public void refresh(String formId) {
+<span class="nc" id="L28">        Document doc = fetchFromMongo(formId);</span>
+<span class="nc" id="L29">        cache.put(formId, doc);</span>
+<span class="nc" id="L30">        LOG.infof(&quot;FormDefCache invalidated formId=%s&quot;, formId);</span>
+<span class="nc" id="L31">    }</span>
+
+    private Document fetchFromMongo(String formId) {
+<span class="nc" id="L34">        return mongoClient.getDatabase(&quot;gdfkube&quot;)</span>
+<span class="nc" id="L35">                .getCollection(&quot;forms&quot;)</span>
+<span class="nc" id="L36">                .find(new Document(&quot;_id&quot;, formId))</span>
+<span class="nc" id="L37">                .first();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

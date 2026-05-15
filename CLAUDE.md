@@ -56,6 +56,7 @@ All changes follow a spec-driven workflow powered by OpenSpec (primary framework
 - Never commit secrets — trufflehog pre-commit hook enforces this
 - Add `# trufflehog:ignore` only for intentionally safe values (like `.env.example` placeholders)
 - Always run manual verification and test tasks. If the required packages or tools are not installed, return the command to the user to run manually instead of skipping.
+- Never create helper/utility scripts (shell, node, etc.) that must be maintained as the codebase evolves, unless explicitly said by the user. They become stale immediately, increase technical debt, and introduce drift. Use inline commands, existing tooling, or direct code changes instead.
 
 ## Git
 

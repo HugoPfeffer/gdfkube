@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HelmTemplateRunner.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.bean</a> &gt; <span class="el_source">HelmTemplateRunner.java</span></div><h1>HelmTemplateRunner.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.bean;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
+import org.jboss.logging.Logger;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+<span class="fc" id="L17">public class HelmTemplateRunner {</span>
+
+<span class="fc" id="L19">    private static final Logger LOG = Logger.getLogger(HelmTemplateRunner.class);</span>
+
+    /**
+     * Shells out to {@code helm template} and returns the list of rendered file paths.
+     *
+     * @param chartRef     chart name relative to /opt/charts/ (e.g. &quot;infra/argocd-org&quot;)
+     * @param releaseName  Helm release name
+     * @param valuesPath   path to the values YAML file
+     * @param outputDir    directory where rendered manifests are written
+     * @return list of rendered YAML file paths
+     */
+    public List&lt;Path&gt; render(String chartRef, String releaseName,
+                             String valuesPath, String outputDir) throws IOException, InterruptedException {
+<span class="fc" id="L32">        ProcessBuilder pb = new ProcessBuilder(</span>
+                &quot;helm&quot;, &quot;template&quot;, releaseName,
+                &quot;/opt/charts/&quot; + chartRef,
+                &quot;--values&quot;, valuesPath,
+                &quot;--output-dir&quot;, outputDir,
+                &quot;--include-crds&quot;);
+<span class="fc" id="L38">        pb.redirectErrorStream(true);</span>
+
+<span class="fc" id="L40">        Process process = pb.start();</span>
+        try {
+<span class="fc" id="L42">            CompletableFuture&lt;byte[]&gt; stdout = CompletableFuture.supplyAsync(() -&gt; {</span>
+<span class="fc" id="L43">                try { return process.getInputStream().readAllBytes(); }</span>
+<span class="nc" id="L44">                catch (IOException e) { return new byte[0]; }</span>
+            });
+
+<span class="fc" id="L47">            boolean finished = process.waitFor(30, TimeUnit.SECONDS);</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">            if (!finished) {</span>
+<span class="nc" id="L49">                process.destroyForcibly();</span>
+<span class="nc" id="L50">                process.waitFor(5, TimeUnit.SECONDS);</span>
+<span class="nc" id="L51">                throw new RuntimeException(&quot;helm template timed out after 30 seconds&quot;);</span>
+            }
+
+<span class="fc" id="L54">            String output = new String(stdout.join(), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L55">            int exitCode = process.exitValue();</span>
+
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">            if (exitCode != 0) {</span>
+<span class="fc" id="L58">                throw new RuntimeException(</span>
+                        &quot;helm template failed (exit &quot; + exitCode + &quot;): &quot; + output);
+            }
+<span class="nc" id="L61">            LOG.debugf(&quot;helm template output: %s&quot;, output);</span>
+        } finally {
+<span class="fc" id="L63">            process.destroyForcibly();</span>
+        }
+
+<span class="nc" id="L66">        return collectRenderedFiles(outputDir);</span>
+    }
+
+    private List&lt;Path&gt; collectRenderedFiles(String outputDir) throws IOException {
+<span class="nc" id="L70">        try (Stream&lt;Path&gt; walk = Files.walk(Path.of(outputDir))) {</span>
+<span class="nc" id="L71">            return walk.filter(Files::isRegularFile)</span>
+<span class="nc" id="L72">                       .filter(p -&gt; {</span>
+<span class="nc" id="L73">                           String name = p.toString();</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">                           return name.endsWith(&quot;.yaml&quot;) || name.endsWith(&quot;.yml&quot;);</span>
+                       })
+<span class="nc" id="L76">                       .toList();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

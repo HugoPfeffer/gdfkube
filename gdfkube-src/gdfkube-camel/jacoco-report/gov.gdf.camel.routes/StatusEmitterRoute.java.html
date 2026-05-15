@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StatusEmitterRoute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.routes</a> &gt; <span class="el_source">StatusEmitterRoute.java</span></div><h1>StatusEmitterRoute.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.routes;
+
+import java.time.Instant;
+import java.util.Map;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.RouteBuilder;
+import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.StageUpdater;
+import gov.gdf.camel.model.RequestEvent;
+import gov.gdf.camel.model.StageEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+<span class="fc" id="L21">public class StatusEmitterRoute extends RouteBuilder {</span>
+
+<span class="fc" id="L23">    private static final Logger LOG = Logger.getLogger(StatusEmitterRoute.class);</span>
+    private static final String ROUTE_ID = &quot;status-emitter&quot;;
+<span class="fc" id="L25">    private static final ObjectMapper MAPPER = new ObjectMapper();</span>
+
+    @Inject
+    StageUpdater stageUpdater;
+
+    @Inject
+    AuditInterceptor auditInterceptor;
+
+    @Override
+    public void configure() {
+<span class="fc" id="L35">        errorHandler(deadLetterChannel(&quot;kafka:dlq.gdfkube.&quot; + ROUTE_ID)</span>
+<span class="fc" id="L36">                .maximumRedeliveries(3)</span>
+<span class="fc" id="L37">                .redeliveryDelay(1000)</span>
+<span class="fc" id="L38">                .backOffMultiplier(5.0)</span>
+<span class="fc" id="L39">                .useExponentialBackOff()</span>
+<span class="fc" id="L40">                .logRetryAttempted(true)</span>
+<span class="fc" id="L41">                .onPrepareFailure(DlqHeaders::stamp));</span>
+
+<span class="fc" id="L43">        from(&quot;direct:&quot; + ROUTE_ID)</span>
+<span class="fc" id="L44">            .routeId(ROUTE_ID)</span>
+<span class="fc" id="L45">            .process(this::emitStageEvents)</span>
+<span class="fc" id="L46">            .process(exchange -&gt; {</span>
+<span class="nc" id="L47">                RequestEvent event = exchange.getProperty(&quot;requestEvent&quot;, RequestEvent.class);</span>
+<span class="nc" id="L48">                auditInterceptor.emit(ROUTE_ID, event._id, 4, &quot;status-emit&quot;,</span>
+<span class="nc" id="L49">                        Map.of(&quot;stages&quot;, StageEvent.STAGE_NAMES.length));</span>
+<span class="nc" id="L50">            });</span>
+<span class="fc" id="L51">    }</span>
+
+    private void emitStageEvents(Exchange exchange) throws Exception {
+<span class="nc" id="L54">        RequestEvent event = exchange.getProperty(&quot;requestEvent&quot;, RequestEvent.class);</span>
+<span class="nc" id="L55">        String requestId = event._id;</span>
+<span class="nc" id="L56">        ProducerTemplate producer = exchange.getContext().createProducerTemplate();</span>
+
+<span class="nc" id="L58">        String submittedAt = event.submittedAt;</span>
+<span class="nc" id="L59">        String sourceTsMs = exchange.getIn().getHeader(&quot;__source.ts_ms&quot;, String.class);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        String dbzTimestamp = sourceTsMs != null</span>
+<span class="nc" id="L61">                ? Instant.ofEpochMilli(Long.parseLong(sourceTsMs)).toString()</span>
+<span class="nc" id="L62">                : null;</span>
+<span class="nc" id="L63">        String now = Instant.now().toString();</span>
+
+<span class="nc" id="L65">        int currentStage = 5; // git stage is the last completed stage</span>
+
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        for (int i = 0; i &lt; StageEvent.STAGE_NAMES.length; i++) {</span>
+            String status;
+            String detail;
+
+<span class="nc bnc" id="L71" title="All 2 branches missed.">            if (i &lt;= currentStage) {</span>
+<span class="nc" id="L72">                status = &quot;ok&quot;;</span>
+<span class="nc" id="L73">                detail = &quot;processed&quot;;</span>
+            } else {
+<span class="nc" id="L75">                status = &quot;fail&quot;;</span>
+<span class="nc" id="L76">                detail = &quot;awaiting&quot;;</span>
+            }
+
+<span class="nc" id="L79">            StageEvent stageEvent = new StageEvent(requestId, i, status, detail);</span>
+
+            // Override timestamps for stages with known values
+<span class="nc bnc" id="L82" title="All 3 branches missed.">            switch (i) {</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">                case 0 -&gt; { if (submittedAt != null) stageEvent.at = submittedAt; }</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                case 1, 2 -&gt; { if (dbzTimestamp != null) stageEvent.at = dbzTimestamp; }</span>
+<span class="nc" id="L85">                default -&gt; stageEvent.at = now;</span>
+            }
+
+<span class="nc" id="L88">            String json = MAPPER.writeValueAsString(stageEvent);</span>
+<span class="nc" id="L89">            producer.sendBodyAndHeaders(&quot;kafka:gdfkube.pipeline.status&quot;, json,</span>
+<span class="nc" id="L90">                    Map.of(&quot;kafka.KEY&quot;, requestId,</span>
+                           &quot;x-producer&quot;, &quot;gdfkube-camel/&quot; + ROUTE_ID));
+        }
+
+        try {
+<span class="nc" id="L95">            producer.close();</span>
+<span class="nc" id="L96">        } catch (Exception ignored) { }</span>
+
+<span class="nc" id="L98">        stageUpdater.updateStage(requestId, currentStage);</span>
+<span class="nc" id="L99">        LOG.infof(&quot;Emitted %d stage events and updated MongoDB stage=%d for requestId=%s&quot;,</span>
+<span class="nc" id="L100">                StageEvent.STAGE_NAMES.length, currentStage, requestId);</span>
+<span class="nc" id="L101">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

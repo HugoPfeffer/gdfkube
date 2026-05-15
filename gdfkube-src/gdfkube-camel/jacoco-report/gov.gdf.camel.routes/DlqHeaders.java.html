@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DlqHeaders.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.routes</a> &gt; <span class="el_source">DlqHeaders.java</span></div><h1>DlqHeaders.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.routes;
+
+import java.time.Instant;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.Message;
+import org.apache.camel.component.kafka.KafkaConstants;
+import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
+
+/**
+ * Shared DLQ header stamper used by all route error handlers via
+ * {@code .onPrepareFailure(DlqHeaders::stamp)}.
+ */
+final class DlqHeaders {
+
+    private DlqHeaders() {}
+
+    static void stamp(Exchange exchange) {
+<span class="fc" id="L19">        Exception cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);</span>
+<span class="fc" id="L20">        Message msg = exchange.getIn();</span>
+
+<span class="fc" id="L22">        msg.setHeader(&quot;x-original-topic&quot;, msg.getHeader(KafkaConstants.TOPIC));</span>
+<span class="fc" id="L23">        msg.setHeader(&quot;x-original-partition&quot;, msg.getHeader(KafkaConstants.PARTITION));</span>
+<span class="fc" id="L24">        msg.setHeader(&quot;x-original-offset&quot;, msg.getHeader(KafkaConstants.OFFSET));</span>
+<span class="fc" id="L25">        msg.setHeader(&quot;x-original-key&quot;, msg.getHeader(KafkaConstants.KEY));</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        msg.setHeader(&quot;x-error-class&quot;, cause != null ? cause.getClass().getName() : &quot;unknown&quot;);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        msg.setHeader(&quot;x-error-msg&quot;, cause != null ? cause.getMessage() : &quot;unknown&quot;);</span>
+<span class="fc" id="L28">        msg.setHeader(&quot;x-stage&quot;, exchange.getProperty(&quot;currentStage&quot;, &quot;unknown&quot;, String.class));</span>
+<span class="fc" id="L29">        msg.setHeader(&quot;x-attempts&quot;, exchange.getProperty(Exchange.REDELIVERY_COUNTER, 0, Integer.class));</span>
+<span class="fc" id="L30">        msg.setHeader(&quot;x-first-failure-at&quot;, Instant.now().toString());</span>
+<span class="fc" id="L31">        msg.setHeader(&quot;x-replayed&quot;, &quot;false&quot;);</span>
+
+<span class="fc" id="L33">        KafkaManualCommit commit = msg.getHeader(</span>
+                KafkaConstants.MANUAL_COMMIT, KafkaManualCommit.class);
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (commit != null) {</span>
+<span class="nc" id="L36">            commit.commit();</span>
+        }
+<span class="fc" id="L38">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

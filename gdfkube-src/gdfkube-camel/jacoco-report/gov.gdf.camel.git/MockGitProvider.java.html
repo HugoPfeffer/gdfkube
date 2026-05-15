@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MockGitProvider.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.git</a> &gt; <span class="el_source">MockGitProvider.java</span></div><h1>MockGitProvider.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.git;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.jboss.logging.Logger;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@io.quarkus.arc.properties.IfBuildProperty(name = &quot;app.git.provider&quot;, stringValue = &quot;mock&quot;, enableIfMissing = false)
+<span class="fc" id="L20">public class MockGitProvider implements GitProvider {</span>
+
+<span class="fc" id="L22">    private static final Logger LOG = Logger.getLogger(MockGitProvider.class);</span>
+<span class="fc" id="L23">    private static final Path MOCK_ROOT = Path.of(&quot;/tmp/mock-git&quot;);</span>
+
+<span class="fc" id="L25">    private final ConcurrentHashMap&lt;String, List&lt;MockCommit&gt;&gt; repos = new ConcurrentHashMap&lt;&gt;();</span>
+
+    public static class MockCommit {
+        private final String message;
+        private final List&lt;String&gt; files;
+        private final GitAuthor author;
+        private final Instant timestamp;
+
+<span class="fc" id="L33">        public MockCommit(String message, List&lt;String&gt; files, GitAuthor author) {</span>
+<span class="fc" id="L34">            this.message = message;</span>
+<span class="fc" id="L35">            this.files = List.copyOf(files);</span>
+<span class="fc" id="L36">            this.author = author;</span>
+<span class="fc" id="L37">            this.timestamp = Instant.now();</span>
+<span class="fc" id="L38">        }</span>
+
+<span class="fc" id="L40">        public String getMessage() { return message; }</span>
+<span class="nc" id="L41">        public List&lt;String&gt; getFiles() { return files; }</span>
+<span class="nc" id="L42">        public GitAuthor getAuthor() { return author; }</span>
+<span class="nc" id="L43">        public Instant getTimestamp() { return timestamp; }</span>
+    }
+
+    @Override
+    public boolean repoExists(String owner, String name) {
+<span class="fc" id="L48">        return repos.containsKey(key(owner, name));</span>
+    }
+
+    @Override
+    public void createRepo(String owner, String name, RepoOptions opts) {
+<span class="fc" id="L53">        repos.putIfAbsent(key(owner, name), Collections.synchronizedList(new ArrayList&lt;&gt;()));</span>
+<span class="fc" id="L54">        LOG.infof(&quot;Mock repo created: %s/%s (branch=%s, autoInit=%s)&quot;,</span>
+<span class="fc" id="L55">                owner, name, opts.getDefaultBranch(), opts.isAutoInit());</span>
+<span class="fc" id="L56">    }</span>
+
+    @Override
+    public Path cloneOrPull(String owner, String name, String branch) {
+<span class="fc" id="L60">        Path dir = MOCK_ROOT.resolve(owner).resolve(name);</span>
+        try {
+<span class="fc" id="L62">            Files.createDirectories(dir);</span>
+<span class="nc" id="L63">        } catch (IOException e) {</span>
+<span class="nc" id="L64">            throw new UncheckedIOException(&quot;Failed to create mock working tree: &quot; + dir, e);</span>
+<span class="fc" id="L65">        }</span>
+<span class="fc" id="L66">        LOG.infof(&quot;Mock clone/pull: %s/%s branch=%s -&gt; %s&quot;, owner, name, branch, dir);</span>
+<span class="fc" id="L67">        return dir;</span>
+    }
+
+    @Override
+    public void commitAndPush(Path workingTree, List&lt;Path&gt; files, String message, GitAuthor author) {
+<span class="fc" id="L72">        String owner = MOCK_ROOT.relativize(workingTree).getName(0).toString();</span>
+<span class="fc" id="L73">        String name = MOCK_ROOT.relativize(workingTree).getName(1).toString();</span>
+<span class="fc" id="L74">        String k = key(owner, name);</span>
+
+<span class="fc" id="L76">        repos.putIfAbsent(k, Collections.synchronizedList(new ArrayList&lt;&gt;()));</span>
+
+<span class="fc" id="L78">        List&lt;String&gt; relativePaths = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        for (Path file : files) {</span>
+<span class="nc" id="L80">            Path dest = workingTree.resolve(file.getFileName());</span>
+            try {
+<span class="nc" id="L82">                Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING);</span>
+<span class="nc" id="L83">            } catch (IOException e) {</span>
+<span class="nc" id="L84">                throw new UncheckedIOException(&quot;Failed to copy file to mock working tree: &quot; + file, e);</span>
+<span class="nc" id="L85">            }</span>
+<span class="nc" id="L86">            relativePaths.add(file.getFileName().toString());</span>
+<span class="nc" id="L87">        }</span>
+
+<span class="fc" id="L89">        repos.get(k).add(new MockCommit(message, relativePaths, author));</span>
+<span class="fc" id="L90">        LOG.infof(&quot;Mock commit in %s: \&quot;%s\&quot; (%d files)&quot;, k, message, files.size());</span>
+<span class="fc" id="L91">    }</span>
+
+    public List&lt;MockCommit&gt; getCommits(String owner, String name) {
+<span class="fc" id="L94">        List&lt;MockCommit&gt; commits = repos.get(key(owner, name));</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        return commits != null ? Collections.unmodifiableList(commits) : List.of();</span>
+    }
+
+    public void reset() {
+<span class="fc" id="L99">        repos.clear();</span>
+<span class="fc" id="L100">        LOG.info(&quot;MockGitProvider state cleared&quot;);</span>
+<span class="fc" id="L101">    }</span>
+
+    private static String key(String owner, String name) {
+<span class="fc" id="L104">        return owner + &quot;/&quot; + name;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

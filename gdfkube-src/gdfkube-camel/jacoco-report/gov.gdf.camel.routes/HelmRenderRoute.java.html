@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HelmRenderRoute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.routes</a> &gt; <span class="el_source">HelmRenderRoute.java</span></div><h1>HelmRenderRoute.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.routes;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import org.apache.camel.builder.RouteBuilder;
+import org.jboss.logging.Logger;
+
+import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.HelmTemplateRunner;
+import gov.gdf.camel.bean.HelmValuesBuilder;
+import gov.gdf.camel.model.RequestEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+<span class="fc" id="L22">public class HelmRenderRoute extends RouteBuilder {</span>
+
+<span class="fc" id="L24">    private static final Logger LOG = Logger.getLogger(HelmRenderRoute.class);</span>
+    private static final String ROUTE_ID = &quot;helm-render&quot;;
+
+    @Inject
+    HelmValuesBuilder helmValuesBuilder;
+
+    @Inject
+    HelmTemplateRunner helmTemplateRunner;
+
+    @Inject
+    AuditInterceptor auditInterceptor;
+
+    @Override
+    public void configure() {
+<span class="fc" id="L38">        errorHandler(deadLetterChannel(&quot;kafka:dlq.gdfkube.&quot; + ROUTE_ID)</span>
+<span class="fc" id="L39">                .maximumRedeliveries(3)</span>
+<span class="fc" id="L40">                .redeliveryDelay(1000)</span>
+<span class="fc" id="L41">                .backOffMultiplier(5.0)</span>
+<span class="fc" id="L42">                .useExponentialBackOff()</span>
+<span class="fc" id="L43">                .logRetryAttempted(true)</span>
+<span class="fc" id="L44">                .onPrepareFailure(DlqHeaders::stamp));</span>
+
+<span class="fc" id="L46">        from(&quot;direct:&quot; + ROUTE_ID)</span>
+<span class="fc" id="L47">            .routeId(ROUTE_ID)</span>
+<span class="fc" id="L48">            .onCompletion()</span>
+<span class="fc" id="L49">                .process(exchange -&gt; {</span>
+<span class="fc" id="L50">                    String outputDir = exchange.getProperty(&quot;outputDir&quot;, String.class);</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">                    if (outputDir != null) {</span>
+<span class="nc" id="L52">                        Path dir = Path.of(outputDir);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">                        if (Files.exists(dir)) {</span>
+<span class="nc" id="L54">                            try (Stream&lt;Path&gt; walk = Files.walk(dir)) {</span>
+<span class="nc" id="L55">                                walk.sorted(Comparator.reverseOrder()).forEach(p -&gt; {</span>
+<span class="nc" id="L56">                                    try { Files.delete(p); } catch (IOException e) {</span>
+<span class="nc" id="L57">                                        LOG.warnf(&quot;Failed to clean up %s: %s&quot;, p, e.getMessage());</span>
+<span class="nc" id="L58">                                    }</span>
+<span class="nc" id="L59">                                });</span>
+                            }
+                        }
+                    }
+<span class="fc" id="L63">                })</span>
+<span class="fc" id="L64">            .end()</span>
+<span class="fc" id="L65">            .process(exchange -&gt; {</span>
+<span class="nc" id="L66">                exchange.setProperty(&quot;currentStage&quot;, 4);</span>
+<span class="nc" id="L67">                RequestEvent event = exchange.getProperty(&quot;requestEvent&quot;, RequestEvent.class);</span>
+<span class="nc" id="L68">                String requestId = event._id;</span>
+
+<span class="nc" id="L70">                String valuesPath = helmValuesBuilder.build(event);</span>
+<span class="nc" id="L71">                String chartRef = helmValuesBuilder.getChartRef(event);</span>
+<span class="nc" id="L72">                String releaseName = helmValuesBuilder.getReleaseName(event);</span>
+<span class="nc" id="L73">                String outputDir = &quot;/tmp/&quot; + requestId + &quot;-out&quot;;</span>
+
+                try {
+<span class="nc" id="L76">                    List&lt;Path&gt; renderedFiles = helmTemplateRunner.render(</span>
+                            chartRef, releaseName, valuesPath, outputDir);
+<span class="nc" id="L78">                    LOG.infof(&quot;Helm rendered %d files for requestId=%s chart=%s&quot;,</span>
+<span class="nc" id="L79">                            renderedFiles.size(), requestId, chartRef);</span>
+<span class="nc" id="L80">                    exchange.setProperty(&quot;renderedFiles&quot;, renderedFiles);</span>
+                } finally {
+<span class="nc" id="L82">                    Files.deleteIfExists(Path.of(valuesPath));</span>
+                }
+
+<span class="nc" id="L85">                exchange.setProperty(&quot;releaseName&quot;, releaseName);</span>
+<span class="nc" id="L86">                exchange.setProperty(&quot;chartRef&quot;, chartRef);</span>
+<span class="nc" id="L87">                exchange.setProperty(&quot;outputDir&quot;, outputDir);</span>
+<span class="nc" id="L88">            })</span>
+<span class="fc" id="L89">            .process(exchange -&gt; {</span>
+<span class="nc" id="L90">                RequestEvent event = exchange.getProperty(&quot;requestEvent&quot;, RequestEvent.class);</span>
+<span class="nc" id="L91">                auditInterceptor.emit(ROUTE_ID, event._id, 4, &quot;render&quot;,</span>
+<span class="nc" id="L92">                        Map.of(&quot;chart&quot;, exchange.getProperty(&quot;chartRef&quot;, String.class),</span>
+<span class="nc" id="L93">                               &quot;release&quot;, exchange.getProperty(&quot;releaseName&quot;, String.class)));</span>
+<span class="nc" id="L94">            })</span>
+<span class="fc" id="L95">            .to(&quot;direct:git-push&quot;);</span>
+<span class="fc" id="L96">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

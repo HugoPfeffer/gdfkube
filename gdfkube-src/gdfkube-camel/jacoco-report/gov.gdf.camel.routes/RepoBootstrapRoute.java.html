@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RepoBootstrapRoute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.routes</a> &gt; <span class="el_source">RepoBootstrapRoute.java</span></div><h1>RepoBootstrapRoute.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.routes;
+
+import java.util.Map;
+
+import org.apache.camel.builder.RouteBuilder;
+import org.jboss.logging.Logger;
+
+import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.GitRepoBootstrapper;
+import gov.gdf.camel.bean.HelmValuesBuilder;
+import gov.gdf.camel.bean.StageUpdater;
+import gov.gdf.camel.model.RequestEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+@ApplicationScoped
+<span class="fc" id="L18">public class RepoBootstrapRoute extends RouteBuilder {</span>
+
+<span class="fc" id="L20">    private static final Logger LOG = Logger.getLogger(RepoBootstrapRoute.class);</span>
+    private static final String ROUTE_ID = &quot;repo-bootstrap&quot;;
+    private static final int STAGE_REPO_BOOTSTRAPPED = 5;
+
+    @ConfigProperty(name = &quot;app.system.gitea-owner&quot;)
+    String giteaOwner;
+
+    @Inject
+    GitRepoBootstrapper gitRepoBootstrapper;
+
+    @Inject
+    AuditInterceptor auditInterceptor;
+
+    @Inject
+    StageUpdater stageUpdater;
+
+    @Inject
+    HelmValuesBuilder helmValuesBuilder;
+
+    @Override
+    public void configure() {
+<span class="fc" id="L41">        errorHandler(deadLetterChannel(&quot;kafka:dlq.gdfkube.&quot; + ROUTE_ID)</span>
+<span class="fc" id="L42">                .maximumRedeliveries(3)</span>
+<span class="fc" id="L43">                .redeliveryDelay(1000)</span>
+<span class="fc" id="L44">                .backOffMultiplier(5.0)</span>
+<span class="fc" id="L45">                .useExponentialBackOff()</span>
+<span class="fc" id="L46">                .logRetryAttempted(true)</span>
+<span class="fc" id="L47">                .onPrepareFailure(DlqHeaders::stamp));</span>
+
+<span class="fc" id="L49">        from(&quot;direct:&quot; + ROUTE_ID)</span>
+<span class="fc" id="L50">            .routeId(ROUTE_ID)</span>
+<span class="fc" id="L51">            .process(exchange -&gt; {</span>
+<span class="fc" id="L52">                RequestEvent event = exchange.getProperty(&quot;requestEvent&quot;, RequestEvent.class);</span>
+<span class="fc" id="L53">                String org = event.requesterGroupName;</span>
+<span class="fc" id="L54">                String repoName = helmValuesBuilder.getRepoName(org);</span>
+
+<span class="fc" id="L56">                boolean created = gitRepoBootstrapper.ensure(</span>
+                        giteaOwner, repoName, &quot;GitOps manifests for &quot; + org);
+<span class="fc bfc" id="L58" title="All 2 branches covered.">                if (created) {</span>
+<span class="fc" id="L59">                    auditInterceptor.emit(ROUTE_ID, event._id, 5, &quot;create-repo&quot;,</span>
+<span class="fc" id="L60">                            Map.of(&quot;repo&quot;, giteaOwner + &quot;/&quot; + repoName));</span>
+                }
+
+<span class="fc" id="L63">                stageUpdater.updateStage(event._id, STAGE_REPO_BOOTSTRAPPED);</span>
+<span class="fc" id="L64">            });</span>
+<span class="fc" id="L65">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

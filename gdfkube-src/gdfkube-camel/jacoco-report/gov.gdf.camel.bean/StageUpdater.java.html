@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StageUpdater.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.bean</a> &gt; <span class="el_source">StageUpdater.java</span></div><h1>StageUpdater.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.bean;
+
+import org.bson.Document;
+import org.jboss.logging.Logger;
+
+import com.mongodb.client.MongoClient;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+/**
+ * Writes the pipeline stage back to the Mongo {@code requests} collection using
+ * {@code $max} so that out-of-order or retried writes can never roll the
+ * persisted stage backwards. The {@code _stageWriteback} marker is set on every
+ * call so the Debezium CDC consumer ({@link gov.gdf.camel.routes.RequestRouterRoute})
+ * can distinguish a stage-only update from a real status change and avoid an
+ * approval loop.
+ */
+@ApplicationScoped
+<span class="fc" id="L20">public class StageUpdater {</span>
+
+<span class="fc" id="L22">    private static final Logger LOG = Logger.getLogger(StageUpdater.class);</span>
+    private static final String DATABASE = &quot;gdfkube&quot;;
+    private static final String COLLECTION = &quot;requests&quot;;
+
+    @Inject
+    MongoClient mongoClient;
+
+    /**
+     * Set the persisted stage to {@code max(currentStage, stage)}. Always
+     * stamps {@code _stageWriteback=true} so the writeback is filtered out of
+     * the CDC pipeline.
+     *
+     * @param requestId Mongo {@code _id} of the request document
+     * @param stage     the stage to advance to; never moves the document
+     *                  backwards
+     */
+    public void updateStage(String requestId, int stage) {
+<span class="pc bpc" id="L39" title="2 of 4 branches missed.">        if (requestId == null || requestId.isBlank()) {</span>
+<span class="nc" id="L40">            LOG.warnf(&quot;Skipping stage update with empty requestId (stage=%d)&quot;, stage);</span>
+<span class="nc" id="L41">            return;</span>
+        }
+        try {
+<span class="fc" id="L44">            mongoClient.getDatabase(DATABASE)</span>
+<span class="fc" id="L45">                    .getCollection(COLLECTION)</span>
+<span class="fc" id="L46">                    .updateOne(</span>
+                            new Document(&quot;_id&quot;, requestId),
+<span class="fc" id="L48">                            new Document(&quot;$max&quot;, new Document(&quot;stage&quot;, stage))</span>
+<span class="fc" id="L49">                                    .append(&quot;$set&quot;, new Document(&quot;_stageWriteback&quot;, true)));</span>
+<span class="fc" id="L50">            LOG.debugf(&quot;Stage updateOne($max) requestId=%s stage=%d&quot;, requestId, stage);</span>
+<span class="nc" id="L51">        } catch (RuntimeException e) {</span>
+            // Mongo writebacks are best-effort: if they fail we do NOT want to
+            // poison the route and trip the DLQ. The SPA can still derive the
+            // stage from the pipeline.status Kafka topic.
+<span class="nc" id="L55">            LOG.warnf(e, &quot;Stage writeback failed (requestId=%s stage=%d): %s&quot;,</span>
+<span class="nc" id="L56">                    requestId, stage, e.getMessage());</span>
+<span class="fc" id="L57">        }</span>
+<span class="fc" id="L58">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

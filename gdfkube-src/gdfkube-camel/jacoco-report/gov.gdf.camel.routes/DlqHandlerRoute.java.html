@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DlqHandlerRoute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.routes</a> &gt; <span class="el_source">DlqHandlerRoute.java</span></div><h1>DlqHandlerRoute.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.routes;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.kafka.KafkaConstants;
+import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
+import org.bson.Document;
+import org.jboss.logging.Logger;
+
+import com.mongodb.client.MongoClient;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+<span class="fc" id="L20">public class DlqHandlerRoute extends RouteBuilder {</span>
+
+<span class="fc" id="L22">    private static final Logger LOG = Logger.getLogger(DlqHandlerRoute.class);</span>
+    private static final String ROUTE_ID = &quot;dlq-handler&quot;;
+
+    private static final String DLQ_TOPICS = &quot;dlq.gdfkube.request-router&quot;
+            + &quot;,dlq.gdfkube.helm-render&quot;
+            + &quot;,dlq.gdfkube.git-push&quot;
+            + &quot;,dlq.gdfkube.repo-bootstrap&quot;
+            + &quot;,dlq.gdfkube.status-emitter&quot;
+            + &quot;,dlq.gdfkube.audit-sink&quot;
+            + &quot;,dlq.gdfkube.config-reload&quot;
+            + &quot;,dlq.gdfkube.debezium&quot;;
+
+    @Inject
+    MongoClient mongoClient;
+
+    @Override
+    public void configure() {
+        // No DLQ error handler here to avoid infinite loops;
+        // log and drop on failure.
+<span class="fc" id="L41">        errorHandler(defaultErrorHandler()</span>
+<span class="fc" id="L42">                .maximumRedeliveries(1)</span>
+<span class="fc" id="L43">                .logExhausted(true));</span>
+
+<span class="fc" id="L45">        from(&quot;kafka:&quot; + DLQ_TOPICS</span>
+                + &quot;?groupId=gdfkube-camel-dlq&quot;
+                + &quot;&amp;autoOffsetReset=earliest&quot;
+                + &quot;&amp;autoCommitEnable=false&quot;
+                + &quot;&amp;allowManualCommit=true&quot;)
+<span class="fc" id="L50">            .routeId(ROUTE_ID)</span>
+<span class="fc" id="L51">            .process(exchange -&gt; {</span>
+<span class="nc" id="L52">                var msg = exchange.getIn();</span>
+<span class="nc" id="L53">                String body = msg.getBody(String.class);</span>
+
+<span class="nc" id="L55">                String originalTopic = msg.getHeader(&quot;x-original-topic&quot;, String.class);</span>
+<span class="nc" id="L56">                String originalKey = msg.getHeader(&quot;x-original-key&quot;, String.class);</span>
+<span class="nc" id="L57">                String errorClass = msg.getHeader(&quot;x-error-class&quot;, String.class);</span>
+<span class="nc" id="L58">                String errorMsg = msg.getHeader(&quot;x-error-msg&quot;, String.class);</span>
+
+<span class="nc" id="L60">                Map&lt;String, Object&gt; headers = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L61">                headers.put(&quot;x-original-topic&quot;, originalTopic);</span>
+<span class="nc" id="L62">                headers.put(&quot;x-original-partition&quot;, msg.getHeader(&quot;x-original-partition&quot;));</span>
+<span class="nc" id="L63">                headers.put(&quot;x-original-offset&quot;, msg.getHeader(&quot;x-original-offset&quot;));</span>
+<span class="nc" id="L64">                headers.put(&quot;x-original-key&quot;, originalKey);</span>
+<span class="nc" id="L65">                headers.put(&quot;x-error-class&quot;, errorClass);</span>
+<span class="nc" id="L66">                headers.put(&quot;x-error-msg&quot;, errorMsg);</span>
+<span class="nc" id="L67">                headers.put(&quot;x-stage&quot;, msg.getHeader(&quot;x-stage&quot;));</span>
+<span class="nc" id="L68">                headers.put(&quot;x-attempts&quot;, msg.getHeader(&quot;x-attempts&quot;));</span>
+<span class="nc" id="L69">                headers.put(&quot;x-first-failure-at&quot;, msg.getHeader(&quot;x-first-failure-at&quot;));</span>
+<span class="nc" id="L70">                headers.put(&quot;x-replayed&quot;, msg.getHeader(&quot;x-replayed&quot;, &quot;false&quot;, String.class));</span>
+
+<span class="nc" id="L72">                String dlqTopic = msg.getHeader(KafkaConstants.TOPIC, String.class);</span>
+
+<span class="nc" id="L74">                Document dlqDoc = new Document()</span>
+<span class="nc" id="L75">                        .append(&quot;topic&quot;, dlqTopic)</span>
+<span class="nc" id="L76">                        .append(&quot;requestId&quot;, originalKey)</span>
+<span class="nc" id="L77">                        .append(&quot;headers&quot;, new Document(headers))</span>
+<span class="nc" id="L78">                        .append(&quot;payload&quot;, body)</span>
+<span class="nc" id="L79">                        .append(&quot;firstSeenAt&quot;, Instant.now().toString())</span>
+<span class="nc" id="L80">                        .append(&quot;replayCount&quot;, 0);</span>
+
+<span class="nc" id="L82">                mongoClient.getDatabase(&quot;gdfkube&quot;)</span>
+<span class="nc" id="L83">                        .getCollection(&quot;dlq_log&quot;)</span>
+<span class="nc" id="L84">                        .insertOne(dlqDoc);</span>
+
+<span class="nc" id="L86">                LOG.infof(&quot;Persisted DLQ message: topic=%s requestId=%s error=%s&quot;,</span>
+                        dlqTopic, originalKey, errorClass);
+<span class="nc" id="L88">            })</span>
+<span class="fc" id="L89">            .process(this::commitKafkaOffset);</span>
+<span class="fc" id="L90">    }</span>
+
+    private void commitKafkaOffset(Exchange exchange) {
+<span class="nc" id="L93">        KafkaManualCommit commit = exchange.getIn().getHeader(</span>
+                KafkaConstants.MANUAL_COMMIT, KafkaManualCommit.class);
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (commit != null) {</span>
+<span class="nc" id="L96">            commit.commit();</span>
+        }
+<span class="nc" id="L98">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

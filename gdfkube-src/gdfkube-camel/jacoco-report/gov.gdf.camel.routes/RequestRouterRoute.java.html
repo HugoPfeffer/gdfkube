@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RequestRouterRoute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.routes</a> &gt; <span class="el_source">RequestRouterRoute.java</span></div><h1>RequestRouterRoute.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.routes;
+
+import java.time.Instant;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.kafka.KafkaConstants;
+import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
+import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.gdf.camel.bean.StageUpdater;
+import gov.gdf.camel.model.RequestEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+<span class="fc" id="L22">public class RequestRouterRoute extends RouteBuilder {</span>
+
+<span class="fc" id="L24">    private static final Logger LOG = Logger.getLogger(RequestRouterRoute.class);</span>
+    private static final String ROUTE_ID = &quot;request-router&quot;;
+<span class="fc" id="L26">    private static final ObjectMapper MAPPER = new ObjectMapper();</span>
+    private static final long TTL_MS = 60_000;
+    private static final int STAGE_ROUTED = 4;
+
+<span class="fc" id="L30">    private final ConcurrentHashMap&lt;String, Long&gt; recentlyProcessed = new ConcurrentHashMap&lt;&gt;();</span>
+
+    @Inject
+    StageUpdater stageUpdater;
+
+    @Override
+    public void configure() {
+<span class="fc" id="L37">        errorHandler(deadLetterChannel(&quot;kafka:dlq.gdfkube.&quot; + ROUTE_ID)</span>
+<span class="fc" id="L38">                .maximumRedeliveries(3)</span>
+<span class="fc" id="L39">                .redeliveryDelay(1000)</span>
+<span class="fc" id="L40">                .backOffMultiplier(5.0)</span>
+<span class="fc" id="L41">                .useExponentialBackOff()</span>
+<span class="fc" id="L42">                .logRetryAttempted(true)</span>
+<span class="fc" id="L43">                .onPrepareFailure(this::stampDlqHeaders));</span>
+
+<span class="fc" id="L45">        from(&quot;kafka:dbz.gdfkube.requests&quot;</span>
+                + &quot;?groupId=gdfkube-camel&quot;
+                + &quot;&amp;autoOffsetReset=earliest&quot;
+                + &quot;&amp;autoCommitEnable=false&quot;
+                + &quot;&amp;allowManualCommit=true&quot;)
+<span class="fc" id="L50">            .routeId(ROUTE_ID)</span>
+<span class="fc" id="L51">            .process(exchange -&gt; {</span>
+<span class="fc" id="L52">                String op = exchange.getIn().getHeader(&quot;__op&quot;, String.class);</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                if (op == null) {</span>
+<span class="nc" id="L54">                    op = exchange.getIn().getHeader(&quot;op&quot;, String.class);</span>
+                }
+
+<span class="fc" id="L57">                boolean accepted = false;</span>
+<span class="fc" id="L58">                String body = exchange.getIn().getBody(String.class);</span>
+
+<span class="fc bfc" id="L60" title="All 6 branches covered.">                if (&quot;c&quot;.equals(op) || &quot;r&quot;.equals(op) || &quot;u&quot;.equals(op)) {</span>
+<span class="fc" id="L61">                    JsonNode node = MAPPER.readTree(body);</span>
+<span class="fc" id="L62">                    String status = node.path(&quot;status&quot;).asText(&quot;&quot;);</span>
+<span class="fc" id="L63">                    boolean isStageWriteback = node.path(&quot;_stageWriteback&quot;).asBoolean(false);</span>
+<span class="fc bfc" id="L64" title="All 4 branches covered.">                    accepted = &quot;provisioning&quot;.equals(status) &amp;&amp; !isStageWriteback;</span>
+                }
+
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                if (accepted) {</span>
+<span class="fc" id="L68">                    RequestEvent event = MAPPER.readValue(body, RequestEvent.class);</span>
+<span class="fc" id="L69">                    String requestId = event._id;</span>
+
+<span class="fc" id="L71">                    evictExpired();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">                    if (recentlyProcessed.containsKey(requestId)) {</span>
+<span class="fc" id="L73">                        accepted = false;</span>
+<span class="fc" id="L74">                        LOG.debugf(&quot;Skipping recently processed requestId=%s&quot;, requestId);</span>
+                    } else {
+<span class="fc" id="L76">                        recentlyProcessed.put(requestId, System.currentTimeMillis());</span>
+<span class="fc" id="L77">                        exchange.setProperty(&quot;requestEvent&quot;, event);</span>
+<span class="fc" id="L78">                        exchange.setProperty(&quot;requestId&quot;, requestId);</span>
+                        // Stage 4: routed-from-kafka. Persisted with $max so retries
+                        // and re-processed CDC events never roll the stage back.
+<span class="fc" id="L81">                        stageUpdater.updateStage(requestId, STAGE_ROUTED);</span>
+                    }
+                }
+
+<span class="fc" id="L85">                exchange.setProperty(&quot;accepted&quot;, accepted);</span>
+<span class="fc" id="L86">            })</span>
+<span class="fc" id="L87">            .choice()</span>
+<span class="fc" id="L88">                .when(exchangeProperty(&quot;accepted&quot;).isEqualTo(true))</span>
+<span class="fc" id="L89">                    .to(&quot;direct:helm-render&quot;)</span>
+<span class="fc" id="L90">                .otherwise()</span>
+<span class="fc" id="L91">                    .log(LoggingLevel.DEBUG, &quot;Dropped CDC event: op=${header.__op}&quot;)</span>
+<span class="fc" id="L92">            .end()</span>
+<span class="fc" id="L93">            .process(this::commitKafkaOffset);</span>
+<span class="fc" id="L94">    }</span>
+
+    private void commitKafkaOffset(Exchange exchange) {
+<span class="fc" id="L97">        KafkaManualCommit commit = exchange.getIn().getHeader(</span>
+                KafkaConstants.MANUAL_COMMIT, KafkaManualCommit.class);
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">        if (commit != null) {</span>
+<span class="nc" id="L100">            commit.commit();</span>
+        }
+<span class="fc" id="L102">    }</span>
+
+    private void evictExpired() {
+<span class="fc" id="L105">        long now = System.currentTimeMillis();</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        recentlyProcessed.entrySet().removeIf(e -&gt; (now - e.getValue()) &gt; TTL_MS);</span>
+<span class="fc" id="L107">    }</span>
+
+    private void stampDlqHeaders(Exchange exchange) {
+<span class="nc" id="L110">        Exception cause = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);</span>
+<span class="nc" id="L111">        var msg = exchange.getIn();</span>
+
+<span class="nc" id="L113">        msg.setHeader(&quot;x-original-topic&quot;, msg.getHeader(KafkaConstants.TOPIC));</span>
+<span class="nc" id="L114">        msg.setHeader(&quot;x-original-partition&quot;, msg.getHeader(KafkaConstants.PARTITION));</span>
+<span class="nc" id="L115">        msg.setHeader(&quot;x-original-offset&quot;, msg.getHeader(KafkaConstants.OFFSET));</span>
+<span class="nc" id="L116">        msg.setHeader(&quot;x-original-key&quot;, msg.getHeader(KafkaConstants.KEY));</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        msg.setHeader(&quot;x-error-class&quot;, cause != null ? cause.getClass().getName() : &quot;unknown&quot;);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        msg.setHeader(&quot;x-error-msg&quot;, cause != null ? cause.getMessage() : &quot;unknown&quot;);</span>
+<span class="nc" id="L119">        msg.setHeader(&quot;x-stage&quot;, exchange.getProperty(&quot;currentStage&quot;, &quot;unknown&quot;, String.class));</span>
+<span class="nc" id="L120">        msg.setHeader(&quot;x-attempts&quot;, exchange.getProperty(Exchange.REDELIVERY_COUNTER, 0, Integer.class));</span>
+<span class="nc" id="L121">        msg.setHeader(&quot;x-first-failure-at&quot;, Instant.now().toString());</span>
+<span class="nc" id="L122">        msg.setHeader(&quot;x-replayed&quot;, &quot;false&quot;);</span>
+
+<span class="nc" id="L124">        commitKafkaOffset(exchange);</span>
+<span class="nc" id="L125">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

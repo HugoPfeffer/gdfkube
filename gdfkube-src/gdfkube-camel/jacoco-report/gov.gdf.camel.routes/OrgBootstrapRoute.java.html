@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrgBootstrapRoute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">gdfkube-camel</a> &gt; <a href="index.source.html" class="el_package">gov.gdf.camel.routes</a> &gt; <span class="el_source">OrgBootstrapRoute.java</span></div><h1>OrgBootstrapRoute.java</h1><pre class="source lang-java linenums">package gov.gdf.camel.routes;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.kafka.KafkaConstants;
+import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
+import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.gdf.camel.bean.AuditInterceptor;
+import gov.gdf.camel.bean.GitRepoBootstrapper;
+import gov.gdf.camel.bean.HelmTemplateRunner;
+import gov.gdf.camel.bean.HelmValuesBuilder;
+import gov.gdf.camel.git.GitAuthor;
+import gov.gdf.camel.git.GitProvider;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+@ApplicationScoped
+<span class="fc" id="L31">public class OrgBootstrapRoute extends RouteBuilder {</span>
+
+<span class="fc" id="L33">    private static final Logger LOG = Logger.getLogger(OrgBootstrapRoute.class);</span>
+    private static final String ROUTE_ID = &quot;org-bootstrap&quot;;
+<span class="fc" id="L35">    private static final ObjectMapper MAPPER = new ObjectMapper();</span>
+    private static final long TTL_MS = 60_000;
+<span class="fc" id="L37">    private static final ConcurrentHashMap&lt;String, ReentrantLock&gt; REPO_LOCKS = new ConcurrentHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L39">    private final ConcurrentHashMap&lt;String, Long&gt; dedupCache = new ConcurrentHashMap&lt;&gt;();</span>
+
+    @ConfigProperty(name = &quot;app.system.gitea-owner&quot;)
+    String giteaOwner;
+
+    @Inject
+    GitRepoBootstrapper gitRepoBootstrapper;
+
+    @Inject
+    HelmTemplateRunner helmTemplateRunner;
+
+    @Inject
+    HelmValuesBuilder helmValuesBuilder;
+
+    @Inject
+    GitProvider gitProvider;
+
+    @Inject
+    AuditInterceptor auditInterceptor;
+
+    @Override
+    public void configure() {
+<span class="fc" id="L61">        errorHandler(deadLetterChannel(&quot;kafka:dlq.gdfkube.groups&quot;)</span>
+<span class="fc" id="L62">                .maximumRedeliveries(3)</span>
+<span class="fc" id="L63">                .redeliveryDelay(1000)</span>
+<span class="fc" id="L64">                .backOffMultiplier(5.0)</span>
+<span class="fc" id="L65">                .useExponentialBackOff()</span>
+<span class="fc" id="L66">                .logRetryAttempted(true)</span>
+<span class="fc" id="L67">                .onPrepareFailure(DlqHeaders::stamp));</span>
+
+<span class="fc" id="L69">        from(&quot;kafka:dbz.gdfkube.groups&quot;</span>
+                + &quot;?groupId=gdfkube-camel&quot;
+                + &quot;&amp;autoOffsetReset=earliest&quot;
+                + &quot;&amp;autoCommitEnable=false&quot;
+                + &quot;&amp;allowManualCommit=true&quot;)
+<span class="fc" id="L74">            .routeId(ROUTE_ID)</span>
+<span class="fc" id="L75">            .process(exchange -&gt; {</span>
+<span class="fc" id="L76">                String op = exchange.getIn().getHeader(&quot;__op&quot;, String.class);</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">                if (op == null) {</span>
+<span class="nc" id="L78">                    op = exchange.getIn().getHeader(&quot;op&quot;, String.class);</span>
+                }
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                if (&quot;d&quot;.equals(op)) {</span>
+<span class="fc" id="L82">                    LOG.debugf(&quot;groups.delete dropped: %s&quot;, exchange.getIn().getBody(String.class));</span>
+<span class="fc" id="L83">                    exchange.setProperty(&quot;accepted&quot;, false);</span>
+                } else {
+<span class="fc" id="L85">                    exchange.setProperty(&quot;accepted&quot;, true);</span>
+                }
+<span class="fc" id="L87">            })</span>
+<span class="fc" id="L88">            .choice()</span>
+<span class="fc" id="L89">                .when(exchangeProperty(&quot;accepted&quot;).isEqualTo(true))</span>
+<span class="fc" id="L90">                    .process(this::processGroupEvent)</span>
+<span class="fc" id="L91">                .otherwise()</span>
+<span class="fc" id="L92">                    .log(&quot;org-bootstrap: delete event dropped&quot;)</span>
+<span class="fc" id="L93">            .end()</span>
+<span class="fc" id="L94">            .process(this::commitKafkaOffset);</span>
+<span class="fc" id="L95">    }</span>
+
+    private void processGroupEvent(Exchange exchange) throws Exception {
+<span class="fc" id="L98">        String body = exchange.getIn().getBody(String.class);</span>
+<span class="fc" id="L99">        JsonNode node = MAPPER.readTree(body);</span>
+
+<span class="fc" id="L101">        String groupId = node.path(&quot;_id&quot;).asText();</span>
+
+<span class="fc" id="L103">        evictExpired();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (dedupCache.containsKey(groupId)) {</span>
+<span class="fc" id="L105">            LOG.debugf(&quot;Dedup cache hit for groupId=%s, skipping&quot;, groupId);</span>
+<span class="fc" id="L106">            return;</span>
+        }
+<span class="fc" id="L108">        dedupCache.put(groupId, System.currentTimeMillis());</span>
+
+<span class="fc" id="L110">        boolean perOrgCreated = gitRepoBootstrapper.ensure(</span>
+<span class="fc" id="L111">                giteaOwner, helmValuesBuilder.getRepoName(groupId), &quot;GitOps manifests for &quot; + groupId);</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        if (perOrgCreated) {</span>
+<span class="fc" id="L113">            auditInterceptor.emit(ROUTE_ID, groupId, 0, &quot;create-repo&quot;,</span>
+<span class="fc" id="L114">                    Map.of(&quot;repo&quot;, giteaOwner + &quot;/&quot; + helmValuesBuilder.getRepoName(groupId)));</span>
+        }
+
+<span class="fc" id="L117">        boolean centralCreated = gitRepoBootstrapper.ensure(</span>
+                giteaOwner, &quot;gdfkube-orgs&quot;, &quot;Org bootstrap manifests rendered by gdfkube-camel&quot;);
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if (centralCreated) {</span>
+<span class="fc" id="L120">            auditInterceptor.emit(ROUTE_ID, groupId, 0, &quot;create-repo&quot;,</span>
+<span class="fc" id="L121">                    Map.of(&quot;repo&quot;, giteaOwner + &quot;/gdfkube-orgs&quot;));</span>
+        }
+
+<span class="fc" id="L124">        ReentrantLock lock = REPO_LOCKS.computeIfAbsent(&quot;gdfkube-orgs&quot;, k -&gt; new ReentrantLock());</span>
+<span class="fc" id="L125">        lock.lock();</span>
+        try {
+<span class="fc" id="L127">            Path workTree = gitProvider.cloneOrPull(giteaOwner, &quot;gdfkube-orgs&quot;, &quot;main&quot;);</span>
+
+<span class="fc" id="L129">            Path orgDir = workTree.resolve(&quot;orgs&quot;).resolve(groupId);</span>
+<span class="fc" id="L130">            Path appProj = orgDir.resolve(&quot;appproject.yaml&quot;);</span>
+<span class="fc" id="L131">            Path appSet = orgDir.resolve(&quot;applicationset.yaml&quot;);</span>
+<span class="fc" id="L132">            Path clusterSet = orgDir.resolve(groupId + &quot;-clusterset.yaml&quot;);</span>
+
+<span class="fc" id="L134">            List&lt;Path&gt; missing = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">            if (!Files.exists(appProj)) missing.add(appProj);</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">            if (!Files.exists(appSet)) missing.add(appSet);</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">            if (!Files.exists(clusterSet)) missing.add(clusterSet);</span>
+
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            if (missing.isEmpty()) {</span>
+<span class="nc" id="L140">                auditInterceptor.emit(ROUTE_ID, groupId, 0, &quot;noop&quot;,</span>
+<span class="nc" id="L141">                        Map.of(&quot;groupId&quot;, groupId));</span>
+<span class="nc" id="L142">                return;</span>
+            }
+
+<span class="fc" id="L145">            String valuesPath = helmValuesBuilder.buildForOrg(groupId);</span>
+<span class="fc" id="L146">            String outputDir = &quot;/tmp/&quot; + groupId + &quot;-bootstrap-out&quot;;</span>
+
+            try {
+<span class="pc" id="L149">                helmTemplateRunner.render(</span>
+<span class="fc" id="L150">                        helmValuesBuilder.getChartRef(&quot;argocd-org&quot;),</span>
+<span class="fc" id="L151">                        helmValuesBuilder.getReleaseName(groupId),</span>
+                        valuesPath, outputDir);
+<span class="nc" id="L153">                helmTemplateRunner.render(</span>
+<span class="nc" id="L154">                        helmValuesBuilder.getChartRef(&quot;rhacm-org&quot;),</span>
+<span class="nc" id="L155">                        helmValuesBuilder.getReleaseName(groupId),</span>
+                        valuesPath, outputDir);
+            } finally {
+<span class="fc" id="L158">                Files.deleteIfExists(Path.of(valuesPath));</span>
+            }
+
+<span class="nc" id="L161">            Files.createDirectories(orgDir);</span>
+
+<span class="nc" id="L163">            List&lt;Path&gt; addedPaths = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">            for (Path target : missing) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                if (target.equals(clusterSet)) {</span>
+<span class="nc" id="L166">                    byte[] content = buildClusterSetContent(outputDir);</span>
+<span class="nc" id="L167">                    Files.write(target, content);</span>
+<span class="nc" id="L168">                } else {</span>
+<span class="nc" id="L169">                    Path source = findRenderedFile(outputDir, target.getFileName().toString());</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                    if (source != null) {</span>
+<span class="nc" id="L171">                        Files.write(target, Files.readAllBytes(source));</span>
+                    }
+                }
+<span class="nc" id="L174">                addedPaths.add(target);</span>
+<span class="nc" id="L175">            }</span>
+
+<span class="nc" id="L177">            String message = &quot;[gdfkube] GROUP-&quot; + groupId + &quot;: bootstrap org manifests&quot;;</span>
+<span class="nc" id="L178">            gitProvider.commitAndPush(workTree, addedPaths, message, GitAuthor.CAMEL);</span>
+
+<span class="nc" id="L180">            auditInterceptor.emit(ROUTE_ID, groupId, 0, &quot;bootstrap&quot;,</span>
+<span class="nc" id="L181">                    Map.of(&quot;groupId&quot;, groupId, &quot;files&quot;, addedPaths.stream()</span>
+<span class="nc" id="L182">                            .map(p -&gt; workTree.relativize(p).toString())</span>
+<span class="nc" id="L183">                            .toList()));</span>
+        } finally {
+<span class="fc" id="L185">            lock.unlock();</span>
+        }
+<span class="nc" id="L187">    }</span>
+
+    private byte[] buildClusterSetContent(String outputDir) throws Exception {
+<span class="nc" id="L190">        Path outPath = Path.of(outputDir);</span>
+<span class="nc" id="L191">        List&lt;Path&gt; rhacmFiles = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (Files.exists(outPath)) {</span>
+<span class="nc" id="L193">            try (var walk = Files.walk(outPath)) {</span>
+<span class="nc" id="L194">                walk.filter(Files::isRegularFile)</span>
+<span class="nc" id="L195">                    .filter(p -&gt; p.toString().contains(&quot;rhacm-org&quot;))</span>
+<span class="nc" id="L196">                    .sorted()</span>
+<span class="nc" id="L197">                    .forEach(rhacmFiles::add);</span>
+            }
+        }
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (rhacmFiles.isEmpty()) {</span>
+<span class="nc" id="L201">            return new byte[0];</span>
+        }
+<span class="nc" id="L203">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        for (int i = 0; i &lt; rhacmFiles.size(); i++) {</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            if (i &gt; 0) sb.append(&quot;\n---\n&quot;);</span>
+<span class="nc" id="L206">            sb.append(Files.readString(rhacmFiles.get(i)));</span>
+        }
+<span class="nc" id="L208">        return sb.toString().getBytes();</span>
+    }
+
+    private Path findRenderedFile(String outputDir, String fileName) throws Exception {
+<span class="nc" id="L212">        Path outPath = Path.of(outputDir);</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (!Files.exists(outPath)) return null;</span>
+<span class="nc" id="L214">        try (var walk = Files.walk(outPath)) {</span>
+<span class="nc" id="L215">            return walk.filter(Files::isRegularFile)</span>
+<span class="nc" id="L216">                       .filter(p -&gt; p.getFileName().toString().equals(fileName))</span>
+<span class="nc" id="L217">                       .findFirst()</span>
+<span class="nc" id="L218">                       .orElse(null);</span>
+        }
+    }
+
+    private void evictExpired() {
+<span class="fc" id="L223">        long now = System.currentTimeMillis();</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        dedupCache.entrySet().removeIf(e -&gt; (now - e.getValue()) &gt; TTL_MS);</span>
+<span class="fc" id="L225">    }</span>
+
+    private void commitKafkaOffset(Exchange exchange) {
+<span class="fc" id="L228">        KafkaManualCommit commit = exchange.getIn().getHeader(</span>
+                KafkaConstants.MANUAL_COMMIT, KafkaManualCommit.class);
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">        if (commit != null) {</span>
+<span class="nc" id="L231">            commit.commit();</span>
+        }
+<span class="fc" id="L233">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
