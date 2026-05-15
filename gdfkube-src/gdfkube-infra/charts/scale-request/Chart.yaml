@@ -1,0 +1,4 @@
+apiVersion: v2
+name: scale-request
+description: Renders a NodePool manifest for cluster worker scaling
+version: 0.1.0

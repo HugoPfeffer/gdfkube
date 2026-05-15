@@ -1,13 +1,20 @@
 package gov.gdf.camel.bean;
 
 import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.yaml.snakeyaml.Yaml;
 
 import gov.gdf.camel.model.RequestEvent;
@@ -272,6 +279,21 @@ class HelmValuesBuilderTest {
         String formId = (String) meta.get("formId");
         assertNotNull(formId, "meta.formId missing from " + relativePath);
         return formId;
+    }
+
+    @ParameterizedTest(name = "form id {0} has a chart directory")
+    @MethodSource("seededFormIds")
+    void everySeededFormIdResolvesToAChartDirectory(String formId) {
+        Path chart = Path.of("../gdfkube-infra/charts", formId, "Chart.yaml");
+        assertTrue(Files.exists(chart),
+                "Missing chart for formId=" + formId + " at " + chart.toAbsolutePath());
+    }
+
+    static Stream<String> seededFormIds() throws IOException {
+        Path seed = Path.of("../gdfkube-infra/mongodb/seed-data/forms.json");
+        JsonNode root = new ObjectMapper().readTree(Files.readString(seed));
+        return StreamSupport.stream(root.spliterator(), false)
+                .map(n -> n.get("_id").asText());
     }
 
     @SuppressWarnings("unchecked")
