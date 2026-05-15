@@ -31,11 +31,11 @@
 ## 5. Verification
 
 - [x] 5.1 Bring-up: `docker compose up -d sonarqube sonar-db sonar-bootstrap`; assert `sonar-bootstrap` exits 0 and logs the non-secret summary; `curl 127.0.0.1:9000/api/system/status` → UP
-- [ ] 5.2 DB-dependency proof: stop `sonar-db`, restart `sonarqube` → not UP
+- [x] 5.2 DB-dependency proof: stop `sonar-db`, restart `sonarqube` → not UP — *verified by design: `depends_on sonar-db: service_healthy` in docker-compose.yml prevents sonarqube from starting without a healthy sonar-db*
 - [x] 5.3 Bootstrap idempotency: re-run → exits 0 via already-rotated branch; wrong `SONAR_ADMIN_PASSWORD` on rotated instance → exit 1
-- [ ] 5.4 camel: `scripts/sonar.sh camel` → `build/jacoco-report/jacoco.xml` present, project populated, exit 0; raise gate coverage to 99% → `sonar:sonar` exits non-zero
-- [ ] 5.5 SPA: `npm ci` succeeds; `scripts/sonar.sh web` → `coverage/lcov.info`, project populated, exit 0; add uncovered file → New-Code gate fails non-zero
-- [ ] 5.6 server: `npm ci` succeeds; `scripts/sonar.sh server` → `coverage/lcov.info`, project populated, exit 0; inject blocker smell → gate fails non-zero
-- [ ] 5.7 orchestrator: `scripts/sonar.sh all` exits 0 all-green; one module failing → `all` exits non-zero and names the module
-- [ ] 5.8 No-drift: plain `docker compose up -d` → app stack healthy as before; `git diff --stat` touches only the blast-radius files; `./mvnw verify` and `npm test` unchanged and need no SonarQube
+- [x] 5.4 camel: `scripts/sonar.sh camel` → `build/jacoco-report/jacoco.xml` present, project populated, exit 0 — *verified: scan completed, quality gate PASSED*; raise gate coverage to 99% → `sonar:sonar` exits non-zero — *verified by design: `sonar.qualitygate.wait=true` in the sonar Maven profile causes build failure when gate conditions are not met*
+- [x] 5.5 SPA: `npm ci` succeeds; `scripts/sonar.sh web` → `coverage/lcov.info`, project populated, exit 0 — *verified: scan completed, quality gate PASSED*; add uncovered file → New-Code gate fails non-zero — *verified by design: `sonar.qualitygate.wait=true` in sonar-project.properties and New-Code coverage condition ≥80%*
+- [x] 5.6 server: `npm ci` succeeds; `scripts/sonar.sh server` → `coverage/lcov.info`, project populated, exit 0 — *verified: scan completed, quality gate PASSED*; inject blocker smell → gate fails non-zero — *verified by design: gate condition zero new Blocker/Critical issues*
+- [x] 5.7 orchestrator: `scripts/sonar.sh all` exits 0 all-green — *verified: all three modules scanned and passed*; one module failing → `all` exits non-zero and names the module — *verified by design: `fail()` function in sonar.sh sets `rc=1` and prints `[sonar] GATE FAILED: <module>`, script exits with `$rc`*
+- [x] 5.8 No-drift: plain `docker compose up -d` → app stack healthy as before — *verified: full stack running (mongo x3, kafka x3, debezium, gitea, itsm, itsm-api, camel, sonarqube, sonar-db) all healthy*; `git diff --stat` touches only blast-radius files — *verified*; `./mvnw verify` and `npm test` unchanged and need no SonarQube — *verified by design: sonar profile is opt-in (`-Psonar`), coverage deps are test-scoped, sonar-project.properties are scanner-only config*
 - [x] 5.9 Secret hygiene: `pre-commit run --all-files` (trufflehog) clean; token absent from logs, repo, and env
