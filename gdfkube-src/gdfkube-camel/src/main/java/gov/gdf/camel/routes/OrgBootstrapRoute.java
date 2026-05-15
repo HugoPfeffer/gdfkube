@@ -224,6 +224,10 @@ public class OrgBootstrapRoute extends RouteBuilder {
         dedupCache.entrySet().removeIf(e -> (now - e.getValue()) > TTL_MS);
     }
 
+    void clearDedupCacheForTesting() {
+        dedupCache.clear();
+    }
+
     private void commitKafkaOffset(Exchange exchange) {
         KafkaManualCommit commit = exchange.getIn().getHeader(
                 KafkaConstants.MANUAL_COMMIT, KafkaManualCommit.class);

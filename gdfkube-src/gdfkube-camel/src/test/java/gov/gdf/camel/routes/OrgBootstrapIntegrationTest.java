@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.camel.CamelContext;
+import org.apache.camel.EndpointInject;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
+import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,19 +59,31 @@ class OrgBootstrapIntegrationTest {
     @Inject
     MockGitProvider mockGitProvider;
 
+    @Inject
+    OrgBootstrapRoute orgBootstrapRoute;
+
     @InjectMock
     HelmTemplateRunner helmTemplateRunner;
 
+    @EndpointInject("mock:dlq-capture")
+    MockEndpoint mockDlq;
+
     @BeforeAll
     void adviceRoutes() throws Exception {
-        AdviceWith.adviceWith(context, "org-bootstrap", route ->
-                route.replaceFromWith("seda:org-bootstrap-test"));
+        AdviceWith.adviceWith(context, "org-bootstrap", route -> {
+            route.replaceFromWith("direct:org-bootstrap-test");
+            route.interceptSendToEndpoint("kafka:dlq.gdfkube.groups")
+                    .skipSendToOriginalEndpoint()
+                    .to("mock:dlq-capture");
+        });
     }
 
     @BeforeEach
     void resetState() throws Exception {
         mockGitProvider.reset();
         reset(helmTemplateRunner);
+        orgBootstrapRoute.clearDedupCacheForTesting();
+        mockDlq.reset();
         stubHelmRender();
     }
 
@@ -201,15 +215,14 @@ class OrgBootstrapIntegrationTest {
         reset(helmTemplateRunner);
         when(helmTemplateRunner.render(anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("helm template failed (exit 1): chart not found"));
+        mockDlq.expectedMinimumMessageCount(1);
 
         try {
             sendGroupEvent("cultura", "gdfkube-cultura", "c");
         } catch (Exception ignored) {
-            // DLQ error handler may surface as exchange exception in test mode
         }
 
-        // In a full integration environment the message would land on dlq.gdfkube.groups.
-        // Here we verify the helm failure is thrown (DLQ routing verified via DlqFlowTest pattern).
+        mockDlq.assertIsSatisfied(45000);
         verify(helmTemplateRunner, atLeastOnce()).render(anyString(), anyString(), anyString(), anyString());
     }
 
@@ -229,7 +242,7 @@ class OrgBootstrapIntegrationTest {
             throw new RuntimeException(e);
         }
 
-        producer.send("seda:org-bootstrap-test", exchange -> {
+        producer.send("direct:org-bootstrap-test", exchange -> {
             exchange.getIn().setBody(body);
             exchange.getIn().setHeader("__op", op);
         });
