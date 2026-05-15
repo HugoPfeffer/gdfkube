@@ -161,3 +161,22 @@ A file at `gdfkube-src/gdfkube-infra/kafka/README.md` MUST exist and MUST contai
 - **AND** the file SHALL list required producer config including `enable.idempotence=true` and `acks=all`
 - **AND** the file SHALL list required consumer config including `enable.auto.commit=false`
 - **AND** the file SHALL document the DLQ context-header convention with header names `x-original-topic`, `x-error-class`, `x-stage`, and `x-attempts`
+
+---
+
+### Requirement: Debezium signal collection SHALL be declared at bootstrap
+
+The `gdfkube-src/gdfkube-infra/mongodb/init-camel-collections.js` script MUST idempotently create the `gdfkube.debezium_signals` collection so that the Debezium MongoDB connector's `signal.data.collection` target (declared in `gdfkube-infra/debezium/connector-config.json`) exists from the first run. The collection MUST NOT be required to have application-defined indexes; the implicit `_id` index is sufficient because Debezium polls the collection through its own driver and no application code reads from it.
+
+#### Scenario: debezium_signals exists after init-camel-collections runs
+
+- **GIVEN** a clean Mongo replica set with the `gdfkube` database empty
+- **WHEN** `mongosh < init-camel-collections.js` is executed
+- **THEN** `db.getCollectionNames()` on the `gdfkube` database SHALL include `debezium_signals`
+
+#### Scenario: Re-running init-camel-collections is idempotent for debezium_signals
+
+- **GIVEN** `init-camel-collections.js` has already run and `debezium_signals` exists
+- **WHEN** the script is executed a second time
+- **THEN** the run SHALL exit with code 0
+- **AND** the existing `debezium_signals` collection SHALL be preserved without error
