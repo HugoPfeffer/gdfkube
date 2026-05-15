@@ -220,7 +220,7 @@ describe('UserEditor', () => {
     expect(saveBtn).toBeDisabled();
   });
 
-  it('Save button calls itsmApi.users.update with the current fields', async () => {
+  it('Save button calls itsmApi.users.update with fullName and active in the body', async () => {
     const user = makeUser();
     const setToast = vi.fn();
     render(
@@ -231,8 +231,38 @@ describe('UserEditor', () => {
     expect(saveBtn).not.toBeDisabled();
     await act(async () => { fireEvent.click(saveBtn); });
     expect(mockUpdate).toHaveBeenCalledTimes(1);
-    expect(mockUpdate).toHaveBeenCalledWith('2', expect.objectContaining({ name: 'Maria C.' }));
+    const body = mockUpdate.mock.calls[0]![1];
+    expect(body).toHaveProperty('name', 'Maria C.');
+    expect(body).toHaveProperty('fullName', 'Maria Costa');
+    expect(body).toHaveProperty('active', true);
     expect(setToast).toHaveBeenCalledWith(expect.objectContaining({ kind: 'info', title: 'Saved' }));
+  });
+
+  it('Save sends active: false when status is toggled to disabled', async () => {
+    const user = makeUser({ status: 'active' });
+    render(
+      withProvider(makeState(user), <UserEditor user={user} onClose={vi.fn()} setToast={vi.fn()} />),
+    );
+    fireEvent.click(screen.getByRole('radio', { name: /^disabled$/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    });
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    const body = mockUpdate.mock.calls[0]![1];
+    expect(body).toHaveProperty('active', false);
+    expect(body).toHaveProperty('status', 'disabled');
+  });
+
+  it('Save button enables when only fullName is edited', () => {
+    const user = makeUser();
+    render(
+      withProvider(makeState(user), <UserEditor user={user} onClose={vi.fn()} />),
+    );
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).toBeDisabled();
+    const fullNameInput = screen.getByLabelText(/^name$/i) as HTMLInputElement;
+    fireEvent.change(fullNameInput, { target: { value: 'Maria S. Costa' } });
+    expect(saveBtn).not.toBeDisabled();
   });
 
   it('Save button shows error toast on API failure', async () => {

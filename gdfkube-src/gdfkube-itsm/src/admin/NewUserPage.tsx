@@ -9,10 +9,12 @@
 import { useState, type KeyboardEvent } from 'react';
 import { itsmApi } from '../api/itsmApi';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
+import type { Toast } from '../shell/ToastStack';
 import type { Role, User } from '../types';
 
 interface NewUserPageProps {
   onClose: () => void;
+  setToast?: (t: Toast) => void;
 }
 
 const ROLES: Role[] = ['operator', 'admin'];
@@ -22,7 +24,7 @@ const ROLE_DESCRIPTIONS: Record<Role, string> = {
   admin: 'Admin manages forms and users',
 };
 
-export function NewUserPage({ onClose }: NewUserPageProps) {
+export function NewUserPage({ onClose, setToast }: NewUserPageProps) {
   const { groups } = useGdfData();
   const dispatch = useGdfDispatch();
 
@@ -73,7 +75,13 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
       };
       dispatch({ type: 'ADD_USER', user });
       onClose();
-    } catch {
+    } catch (err) {
+      setToast?.({
+        id: `create-err-${Date.now()}`,
+        kind: 'warn',
+        title: 'Create failed',
+        body: err instanceof Error ? err.message : String(err),
+      });
       setIsSaving(false);
     }
   };

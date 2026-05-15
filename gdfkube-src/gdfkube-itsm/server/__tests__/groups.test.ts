@@ -95,26 +95,50 @@ describe('Groups endpoints', () => {
   });
 
   describe('PATCH /api/itsm/groups/:id', () => {
-    it('replaces users and forms wholesale', async () => {
+    it('accepts the trimmed whitelist { name, fullName, repo }', async () => {
       const res = await request(app)
         .patch('/api/itsm/groups/saude')
         .set('X-Demo-User', ADMIN)
-        .send({
-          users: ['joao.silva', 'maria.costa'],
-          forms: ['cluster-request', 'namespace-request'],
-        });
+        .send({ name: 'Saúde', fullName: 'Secretaria da Saúde', repo: 'gdfkube-saude' });
       expect(res.status).toBe(200);
-      expect(res.body.users).toEqual(['joao.silva', 'maria.costa']);
-      expect(res.body.forms).toEqual(['cluster-request', 'namespace-request']);
+      expect(res.body.name).toBe('Saúde');
+      expect(res.body.fullName).toBe('Secretaria da Saúde');
+      expect(res.body.repo).toBe('gdfkube-saude');
     });
 
-    it('updates name and fullName', async () => {
+    it('rejects users', async () => {
       const res = await request(app)
         .patch('/api/itsm/groups/saude')
         .set('X-Demo-User', ADMIN)
-        .send({ name: 'Updated', fullName: 'Updated Full' });
-      expect(res.status).toBe(200);
-      expect(res.body.name).toBe('Updated');
+        .send({ users: [] });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/Invalid field/);
+    });
+
+    it('rejects forms', async () => {
+      const res = await request(app)
+        .patch('/api/itsm/groups/saude')
+        .set('X-Demo-User', ADMIN)
+        .send({ forms: [] });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/Invalid field/);
+    });
+
+    it('rejects clusters', async () => {
+      const res = await request(app)
+        .patch('/api/itsm/groups/saude')
+        .set('X-Demo-User', ADMIN)
+        .send({ clusters: [] });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/Invalid field/);
+    });
+
+    it('rejects unknown keys', async () => {
+      const res = await request(app)
+        .patch('/api/itsm/groups/saude')
+        .set('X-Demo-User', ADMIN)
+        .send({ _id: 'hack' });
+      expect(res.status).toBe(400);
     });
 
     it('returns 404 for unknown group', async () => {
@@ -123,23 +147,6 @@ describe('Groups endpoints', () => {
         .set('X-Demo-User', ADMIN)
         .send({ name: 'x' });
       expect(res.status).toBe(404);
-    });
-
-    it('rejects non-whitelisted keys', async () => {
-      const res = await request(app)
-        .patch('/api/itsm/groups/saude')
-        .set('X-Demo-User', ADMIN)
-        .send({ _id: 'hack' });
-      expect(res.status).toBe(400);
-    });
-
-    it('allows patching repo and clusters', async () => {
-      const res = await request(app)
-        .patch('/api/itsm/groups/saude')
-        .set('X-Demo-User', ADMIN)
-        .send({ repo: 'gdfkube-saude', clusters: 3 });
-      expect(res.status).toBe(200);
-      expect(res.body.repo).toBe('gdfkube-saude');
     });
   });
 });

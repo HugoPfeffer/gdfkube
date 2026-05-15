@@ -45,7 +45,7 @@ export function Forms({
   const aggregated = useMemo(() => aggregateFields(data.fields), [data.fields]);
 
   if (creating) {
-    return <div className="page admin-forms"><NewFormPage onClose={() => setCreating(false)} /></div>;
+    return <div className="page admin-forms"><NewFormPage onClose={() => setCreating(false)} setToast={setToast} /></div>;
   }
   if (editingId) {
     return (

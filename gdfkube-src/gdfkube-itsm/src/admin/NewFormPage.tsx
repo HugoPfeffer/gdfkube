@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { itsmApi } from '../api/itsmApi';
 import { useGdfData, useGdfDispatch } from '../state/dataContext';
+import type { Toast } from '../shell/ToastStack';
 import type { Field, FormDef, TemplateFile } from '../types';
 import { slugify } from '../utils/slug';
 import { FieldsTable } from './FieldsTable';
@@ -17,6 +18,7 @@ import { TemplateEditor } from './TemplateEditor';
 
 interface NewFormPageProps {
   onClose: () => void;
+  setToast?: (t: Toast) => void;
 }
 
 type SubTab = 'definition' | 'fields' | 'template';
@@ -27,7 +29,7 @@ function todayIso(): string {
 
 const DRAFT_FORM_ID = '__draft__';
 
-export function NewFormPage({ onClose }: NewFormPageProps) {
+export function NewFormPage({ onClose, setToast }: NewFormPageProps) {
   const { forms } = useGdfData();
   const dispatch = useGdfDispatch();
 
@@ -83,7 +85,13 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
         dispatch({ type: 'UPDATE_TEMPLATES', formId: form.id, templates: draftTemplates });
       }
       onClose();
-    } catch {
+    } catch (err) {
+      setToast?.({
+        id: `create-err-${Date.now()}`,
+        kind: 'warn',
+        title: 'Create failed',
+        body: err instanceof Error ? err.message : String(err),
+      });
       setIsSaving(false);
     }
   };

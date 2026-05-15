@@ -189,6 +189,26 @@ describe('NewFormPage', () => {
     expect(screen.getByRole('button', { name: /add field/i })).toBeInTheDocument();
   });
 
+  it('emits an error toast when create rejects', async () => {
+    mockCreate.mockRejectedValueOnce(new Error('Server unreachable'));
+    const setToast = vi.fn();
+    render(
+      withProvider(
+        makeState(),
+        <NewFormPage onClose={vi.fn()} setToast={setToast} />,
+      ),
+    );
+
+    typeName('Backup & Restore');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create form/i }));
+    });
+
+    expect(setToast).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'warn', title: 'Create failed' }),
+    );
+  });
+
   it('Create persists drafts via ADD_FORM + UPDATE_FIELD + UPDATE_TEMPLATES', async () => {
     const observed: DataState[] = [];
     const onClose = vi.fn();

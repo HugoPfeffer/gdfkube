@@ -97,7 +97,11 @@ describe('GroupEditor', () => {
     expect(saveBtn).not.toBeDisabled();
     await act(async () => { fireEvent.click(saveBtn); });
     expect(mockUpdate).toHaveBeenCalledTimes(1);
-    expect(mockUpdate).toHaveBeenCalledWith('saude', expect.objectContaining({ name: 'Saúde Pública' }));
+    expect(mockUpdate).toHaveBeenCalledWith('saude', {
+      name: 'Saúde Pública',
+      fullName: 'Department of Health',
+      repo: 'gdfkube-saude',
+    });
     expect(setToast).toHaveBeenCalledWith(expect.objectContaining({ kind: 'info', title: 'Saved' }));
   });
 

@@ -40,8 +40,9 @@ export function GroupEditor({ group: initial, onClose, setToast }: GroupEditorPr
         fullName: group.fullName,
         repo: group.repo,
       };
-      await itsmApi.groups.update(group.id, changes);
-      setSaved({ ...group });
+      const updated = await itsmApi.groups.update(group.id, changes);
+      dispatch({ type: 'UPDATE_GROUP', id: group.id, patch: updated as Partial<Group> });
+      setSaved({ ...group, ...updated });
       setToast?.({
         id: `save-${Date.now()}`,
         kind: 'info',

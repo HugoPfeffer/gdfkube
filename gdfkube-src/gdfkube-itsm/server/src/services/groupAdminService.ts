@@ -4,10 +4,7 @@ import type { AppError } from '../middleware/error.js';
 const PATCH_WHITELIST = new Set([
   'name',
   'fullName',
-  'users',
-  'forms',
   'repo',
-  'clusters',
 ]);
 
 export async function create(body: Record<string, unknown>) {

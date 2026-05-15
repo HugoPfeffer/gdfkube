@@ -50,7 +50,7 @@ export function Users({
     });
   }, [data.users, search, roleFilter]);
 
-  if (creatingUser) return <div className="page admin-users"><NewUserPage onClose={() => setCreatingUser(false)} /></div>;
+  if (creatingUser) return <div className="page admin-users"><NewUserPage onClose={() => setCreatingUser(false)} setToast={setToast} /></div>;
   if (creatingGroup) return <div className="page admin-users"><NewGroupPage onClose={() => setCreatingGroup(false)} setToast={setToast} /></div>;
   if (editingUser) return <div className="page admin-users"><UserEditor user={editingUser} onClose={() => setEditingUser(null)} setToast={setToast} /></div>;
   if (editingGroup) return <div className="page admin-users"><GroupEditor group={editingGroup} onClose={() => setEditingGroup(null)} setToast={setToast} /></div>;

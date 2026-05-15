@@ -133,5 +133,31 @@ describe('Users endpoints', () => {
       expect(res.status).toBe(200);
       expect(res.body.role).toBe('admin');
     });
+
+    it('allows patching username', async () => {
+      const res = await request(app)
+        .patch('/api/itsm/users/test.user')
+        .set('X-Demo-User', ADMIN)
+        .send({ username: 'new.name' });
+      expect(res.status).toBe(200);
+      expect(res.body.username).toBe('new.name');
+    });
+
+    it('allows patching active', async () => {
+      const res = await request(app)
+        .patch('/api/itsm/users/test.user')
+        .set('X-Demo-User', ADMIN)
+        .send({ active: false });
+      expect(res.status).toBe(200);
+      expect(res.body.active).toBe(false);
+    });
+
+    it('rejects unknown keys', async () => {
+      const res = await request(app)
+        .patch('/api/itsm/users/test.user')
+        .set('X-Demo-User', ADMIN)
+        .send({ foo: 1 });
+      expect(res.status).toBe(400);
+    });
   });
 });

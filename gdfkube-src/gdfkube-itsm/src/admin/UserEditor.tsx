@@ -82,6 +82,7 @@ export function UserEditor({ user: initial, onClose, setToast }: UserEditorProps
 
   const isDirty =
     user.name !== saved.name ||
+    (user.fullName ?? user.name) !== (saved.fullName ?? saved.name) ||
     (user.username ?? '') !== (saved.username ?? '') ||
     user.email !== saved.email ||
     (user.group ?? '') !== (saved.group ?? '') ||
@@ -97,15 +98,18 @@ export function UserEditor({ user: initial, onClose, setToast }: UserEditorProps
     try {
       const changes: Record<string, unknown> = {
         name: user.name,
+        fullName: user.fullName ?? user.name,
         username: user.username,
         email: user.email,
         group: user.group,
         role: user.role,
         status: user.status ?? 'active',
+        active: (user.status ?? 'active') === 'active',
         mfa: user.mfa ?? 'none',
       };
-      await itsmApi.users.update(user.id, changes);
-      setSaved({ ...user });
+      const updated = await itsmApi.users.update(user.id, changes);
+      dispatch({ type: 'UPDATE_USER', id: user.id, patch: updated as Partial<User> });
+      setSaved({ ...user, ...updated });
       setToast?.({
         id: `save-${Date.now()}`,
         kind: 'info',

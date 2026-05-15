@@ -67,7 +67,13 @@ async function api<T>(
     try {
       details = await res.json();
     } catch {
-      /* non-JSON error body */
+      let raw = '';
+      try { raw = await res.text(); } catch { /* ignore */ }
+      const tail = raw.slice(0, 200);
+      throw new ApiError(
+        res.status,
+        `${res.status} ${res.statusText}${tail ? ` — ${tail}` : ''}`,
+      );
     }
     const msg =
       typeof details === 'object' && details && 'message' in details

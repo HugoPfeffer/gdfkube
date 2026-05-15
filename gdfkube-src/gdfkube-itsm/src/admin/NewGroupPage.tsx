@@ -50,13 +50,13 @@ export function NewGroupPage({ onClose, setToast }: NewGroupPageProps) {
       };
       const created = await itsmApi.groups.create(body);
       const group: Group = {
-        id: (created.id as string) ?? id,
-        name: (created.name as string) ?? displayName.trim(),
-        fullName: (created.fullName as string) ?? (fullName.trim() || displayName.trim()),
-        users: 0,
-        forms: 0,
-        repo: (created.repo as string) ?? (repo.trim() || `gdfkube-${id}`),
-        clusters: 0,
+        id: created.id as string,
+        name: created.name as string,
+        fullName: created.fullName as string,
+        users: (created.users as number) ?? 0,
+        forms: (created.forms as number) ?? 0,
+        repo: created.repo as string,
+        clusters: (created.clusters as number) ?? 0,
       };
       dispatch({ type: 'ADD_GROUP', group });
       setToast?.({

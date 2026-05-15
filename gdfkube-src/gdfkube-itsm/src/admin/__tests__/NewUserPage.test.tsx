@@ -160,4 +160,29 @@ describe('NewUserPage', () => {
     fireEvent.click(invite);
     expect(invite.checked).toBe(false);
   });
+
+  it('emits an error toast when create rejects', async () => {
+    mockCreate.mockRejectedValueOnce(new Error('Server unreachable'));
+    const setToast = vi.fn();
+    render(
+      withProvider(
+        makeState(),
+        <NewUserPage onClose={vi.fn()} setToast={setToast} />,
+      ),
+    );
+
+    fireEvent.change(screen.getByLabelText(/^name$/i), { target: { value: 'Ana Souza' } });
+    fireEvent.change(screen.getByLabelText(/^username$/i), { target: { value: 'ana.souza' } });
+    fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: 'ana@gov' } });
+    fireEvent.change(screen.getByLabelText(/^group$/i), { target: { value: 'saude' } });
+    fireEvent.click(screen.getByRole('radio', { name: /operator/i }));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /create user/i }));
+    });
+
+    expect(setToast).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'warn', title: 'Create failed' }),
+    );
+  });
 });
