@@ -41,6 +41,7 @@ public class HelmValuesBuilder {
 
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("meta", buildMeta(event, org, requestId));
+        // vars passthrough carries CIDR overrides (clusterNetworkCidr, serviceNetworkCidr)
         values.put("vars", event.vars != null ? event.vars : Map.of());
         values.put("system", buildSystem(event, org, requestId));
 
@@ -85,6 +86,7 @@ public class HelmValuesBuilder {
         naming.put("clusterSet", groupId);
         naming.put("hostedClusterName", groupId);
         naming.put("namespace", groupId);
+        naming.put("policyNamespace", "gdfkube-policies");
 
         Map<String, Object> system = new LinkedHashMap<>();
         system.put("giteaExternalUrl", giteaExternalUrl);
@@ -124,7 +126,12 @@ public class HelmValuesBuilder {
         system.put("giteaExternalUrl", giteaExternalUrl);
         system.put("giteaOwner", giteaOwner);
         system.put("naming", buildNaming(event, org));
-        system.put("labels", buildLabels(org, requestId));
+        String clusterName = event.vars != null
+                ? (String) event.vars.get("clusterName") : null;
+        String environment = event.vars != null
+                ? (String) event.vars.get("environment") : null;
+        system.put("labels", buildLabels(org, requestId, event.formId,
+                clusterName, environment));
         return system;
     }
 
@@ -135,6 +142,7 @@ public class HelmValuesBuilder {
         naming.put("namespace", resourceName);
         naming.put("appProject", org);
         naming.put("clusterSet", org);
+        naming.put("policyNamespace", "gdfkube-policies");
         return naming;
     }
 
@@ -159,6 +167,22 @@ public class HelmValuesBuilder {
         labels.put("gdfkube.io/managed", "true");
         labels.put("gdfkube.io/organization", org);
         labels.put("gdfkube.io/request-id", requestId);
+        return labels;
+    }
+
+    Map<String, String> buildLabels(String org, String requestId, String formType,
+                                    String clusterName, String environment) {
+        Map<String, String> labels = buildLabels(org, requestId);
+        if (clusterName != null) {
+            labels.put("setic.gov.br/cluster", clusterName);
+            labels.put("gdfkube.io/cluster", clusterName);
+        }
+        if (formType != null) {
+            labels.put("gdfkube.io/form-type", formType);
+        }
+        if (environment != null) {
+            labels.put("gdfkube.io/env", environment);
+        }
         return labels;
     }
 
