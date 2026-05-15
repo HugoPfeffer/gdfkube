@@ -2,6 +2,8 @@ package gov.gdf.camel.bean;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -95,11 +97,11 @@ public class HelmValuesBuilder {
         values.put("vars", Map.of());
         values.put("system", system);
 
-        String path = "/tmp/" + groupId + "-bootstrap-values.yaml";
-        try (FileWriter writer = new FileWriter(path)) {
+        Path valuesPath = Files.createTempFile("bootstrap-" + groupId + "-", ".yaml");
+        try (FileWriter writer = new FileWriter(valuesPath.toFile())) {
             new Yaml().dump(values, writer);
         }
-        return path;
+        return valuesPath.toString();
     }
 
     private Map<String, Object> buildMeta(RequestEvent event, String org,

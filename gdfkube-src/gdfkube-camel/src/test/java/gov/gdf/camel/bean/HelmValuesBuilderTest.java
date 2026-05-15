@@ -222,6 +222,39 @@ class HelmValuesBuilderTest {
     }
 
     @Test
+    void buildForOrg_concurrent_returnsDistinctPaths() throws Exception {
+        var latch = new java.util.concurrent.CountDownLatch(1);
+        var paths = new java.util.concurrent.CopyOnWriteArrayList<String>();
+        var errors = new java.util.concurrent.CopyOnWriteArrayList<Exception>();
+
+        Runnable task = () -> {
+            try {
+                latch.await();
+                paths.add(builder.buildForOrg("cultura"));
+            } catch (Exception e) {
+                errors.add(e);
+            }
+        };
+
+        Thread t1 = new Thread(task);
+        Thread t2 = new Thread(task);
+        t1.start();
+        t2.start();
+        latch.countDown();
+        t1.join();
+        t2.join();
+
+        assertTrue(errors.isEmpty(), "No errors expected: " + errors);
+        assertEquals(2, paths.size(), "Both threads must return a path");
+        assertNotEquals(paths.get(0), paths.get(1),
+                "Concurrent buildForOrg must return distinct paths");
+
+        paths.forEach(p -> {
+            try { Files.deleteIfExists(Path.of(p)); } catch (Exception ignored) {}
+        });
+    }
+
+    @Test
     void getChartRef_stringOverload_prefixesInfra() {
         assertEquals("infra/argocd-org", builder.getChartRef("argocd-org"));
         assertEquals("infra/rhacm-org", builder.getChartRef("rhacm-org"));

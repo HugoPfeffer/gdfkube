@@ -216,6 +216,74 @@ class OrgBootstrapIntegrationTest {
                 "No commits expected when helm render fails");
     }
 
+    @Test
+    void missingOpHeader_droppedWithoutCommit() throws Exception {
+        Exchange result = sendGroupEventWithoutOp("cultura");
+
+        assertTrue(mockGitProvider.getCommits(OWNER, "gdfkube-orgs").isEmpty(),
+                "No commits expected for event with missing op header");
+        assertFalse(mockGitProvider.repoExists(OWNER, "gdfkube-cultura"),
+                "No per-org repo created for malformed event");
+        verify(helmTemplateRunner, never()).render(anyString(), anyString(), anyString(), anyString());
+        assertNull(result.getException(),
+                "No exception expected — event is dropped, not error-handled");
+    }
+
+    @Test
+    void outputDir_cleanedUpAfterSuccess() throws Exception {
+        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+
+        try (var listing = Files.list(Path.of(System.getProperty("java.io.tmpdir")))) {
+            long leftover = listing
+                    .filter(p -> p.getFileName().toString().startsWith("bootstrap-cultura-"))
+                    .filter(Files::isDirectory)
+                    .count();
+            assertEquals(0, leftover,
+                    "All bootstrap-cultura-* temp directories must be cleaned up after the exchange");
+        }
+    }
+
+    @Test
+    void helmFailure_leavesDedupCacheEmpty() throws Exception {
+        reset(helmTemplateRunner);
+        when(helmTemplateRunner.render(anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new RuntimeException("helm template failed"));
+
+        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+
+        assertFalse(orgBootstrapRoute.dedupCacheContainsForTesting("cultura"),
+                "dedupCache must NOT contain cultura after a failed exchange");
+
+        reset(helmTemplateRunner);
+        stubHelmRender();
+        mockGitProvider.reset();
+
+        sendGroupEvent("cultura", "gdfkube-cultura", "u");
+
+        assertFalse(mockGitProvider.getCommits(OWNER, "gdfkube-orgs").isEmpty(),
+                "Second event must NOT be suppressed — cache was not poisoned by the failure");
+    }
+
+    private Exchange sendGroupEventWithoutOp(String groupId) {
+        String body;
+        try {
+            body = MAPPER.writeValueAsString(Map.of(
+                    "_id", groupId,
+                    "name", groupId.substring(0, 1).toUpperCase() + groupId.substring(1),
+                    "fullName", "Department of " + groupId,
+                    "users", 0,
+                    "forms", 0,
+                    "clusters", 0
+            ));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return producer.send("direct:org-bootstrap-test", exchange -> {
+            exchange.getIn().setBody(body);
+        });
+    }
+
     private Exchange sendGroupEvent(String groupId, String repo, String op) {
         String body;
         try {

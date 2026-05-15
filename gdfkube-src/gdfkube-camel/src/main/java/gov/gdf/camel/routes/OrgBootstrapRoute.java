@@ -1,12 +1,15 @@
 package gov.gdf.camel.routes;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -72,13 +75,33 @@ public class OrgBootstrapRoute extends RouteBuilder {
                 + "&autoCommitEnable=false"
                 + "&allowManualCommit=true")
             .routeId(ROUTE_ID)
+            .onCompletion()
+                .process(exchange -> {
+                    String outputDir = exchange.getProperty("outputDir", String.class);
+                    if (outputDir == null) return;
+                    Path dir = Path.of(outputDir);
+                    if (!Files.exists(dir)) return;
+                    try (Stream<Path> walk = Files.walk(dir)) {
+                        walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                            try { Files.delete(p); }
+                            catch (IOException e) {
+                                LOG.warnf("Failed to clean up %s: %s", p, e.getMessage());
+                            }
+                        });
+                    }
+                })
+            .end()
             .process(exchange -> {
                 String op = exchange.getIn().getHeader("__op", String.class);
                 if (op == null) {
                     op = exchange.getIn().getHeader("op", String.class);
                 }
 
-                if ("d".equals(op)) {
+                if (op == null) {
+                    LOG.warnf("groups event missing __op/op header, dropping: %s",
+                              exchange.getIn().getBody(String.class));
+                    exchange.setProperty("accepted", false);
+                } else if ("d".equals(op)) {
                     LOG.debugf("groups.delete dropped: %s", exchange.getIn().getBody(String.class));
                     exchange.setProperty("accepted", false);
                 } else {
@@ -105,7 +128,6 @@ public class OrgBootstrapRoute extends RouteBuilder {
             LOG.debugf("Dedup cache hit for groupId=%s, skipping", groupId);
             return;
         }
-        dedupCache.put(groupId, System.currentTimeMillis());
 
         boolean perOrgCreated = gitRepoBootstrapper.ensure(
                 giteaOwner, helmValuesBuilder.getRepoName(groupId), "GitOps manifests for " + groupId);
@@ -143,7 +165,9 @@ public class OrgBootstrapRoute extends RouteBuilder {
             }
 
             String valuesPath = helmValuesBuilder.buildForOrg(groupId);
-            String outputDir = "/tmp/" + groupId + "-bootstrap-out";
+            Path outputDirPath = Files.createTempDirectory("bootstrap-" + groupId + "-");
+            String outputDir = outputDirPath.toString();
+            exchange.setProperty("outputDir", outputDir);
 
             try {
                 helmTemplateRunner.render(
@@ -176,6 +200,8 @@ public class OrgBootstrapRoute extends RouteBuilder {
 
             String message = "[gdfkube] GROUP-" + groupId + ": bootstrap org manifests";
             gitProvider.commitAndPush(workTree, addedPaths, message, GitAuthor.CAMEL);
+
+            dedupCache.put(groupId, System.currentTimeMillis());
 
             auditInterceptor.emit(ROUTE_ID, groupId, 0, "bootstrap",
                     Map.of("groupId", groupId, "files", addedPaths.stream()
@@ -226,6 +252,10 @@ public class OrgBootstrapRoute extends RouteBuilder {
 
     void clearDedupCacheForTesting() {
         dedupCache.clear();
+    }
+
+    boolean dedupCacheContainsForTesting(String key) {
+        return dedupCache.containsKey(key);
     }
 
     private void commitKafkaOffset(Exchange exchange) {
