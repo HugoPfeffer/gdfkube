@@ -4,12 +4,7 @@
     "stop": [
       {
         "type": "prompt",
-        "prompt": "Review the agent's work in this turn. If any verification or test task was part of the workflow (linting, building, test suites, pre-commit hooks, helm lint, npm test, mvn verify, etc.) check whether the agent either: (1) ran the command successfully, or (2) told the user the required tool is missing and provided the exact command to run manually. If a verification step was silently skipped or omitted without handing the command to the user, return a followup_message asking the agent to run it or provide the command. Otherwise, allow completion. Here is the hook input: $ARGUMENTS",
-        "timeout": 15
-      },
-      {
-        "type": "prompt",
-        "prompt": "Review the agent's work in this turn. Determine if the agent ran an /opsx:apply, /opsx:archive, or /archive-finish command (look for openspec apply/archive operations, task implementations with checkbox updates, or directory moves to openspec/changes/archive/). If it did, check whether the agent committed the changes with 'git commit' before stopping. If the agent completed opsx work but did NOT commit, return a followup_message: 'You completed opsx work but did not commit the changes. Stage and commit all changes now with an appropriate opsx commit message.' If no opsx work was done, or a commit was already made, allow completion. Here is the hook input: $ARGUMENTS",
+        "prompt": "Review the agent's work in this turn and check two things: (1) VERIFICATION: If any verification or test task was part of the workflow (linting, building, test suites, pre-commit hooks, helm lint, npm test, mvn verify, etc.) check whether the agent ran the command successfully or told the user the tool is missing and provided the exact command. If a verification step was silently skipped, return a followup_message asking the agent to run it or provide the command. (2) OPSX COMMIT: If the agent ran /opsx:apply, /opsx:archive, or /archive-finish (look for openspec operations, task checkbox updates, or directory moves to openspec/changes/archive/), check whether it committed changes with git commit before stopping. If opsx work was done without a commit, return a followup_message: 'You completed opsx work but did not commit the changes. Stage and commit all changes now with an appropriate opsx commit message.' Allow completion only if both checks pass. Here is the hook input: $ARGUMENTS",
         "timeout": 15
       }
     ]
