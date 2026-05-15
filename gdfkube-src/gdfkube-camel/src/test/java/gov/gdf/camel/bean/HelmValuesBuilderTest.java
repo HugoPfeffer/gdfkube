@@ -225,6 +225,16 @@ class HelmValuesBuilderTest {
         assertEquals("cultura-bootstrap", builder.getReleaseName("cultura"));
     }
 
+    @Test
+    void getRepoName_returnsCanonicalGdfkubePrefixedName() {
+        assertEquals("gdfkube-cultura", builder.getRepoName("cultura"));
+    }
+
+    @Test
+    void getRepoName_acceptsHyphenatedGroupIds() {
+        assertEquals("gdfkube-sec-educ", builder.getRepoName("sec-educ"));
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> parseYaml(String path) throws Exception {
         try (FileReader reader = new FileReader(path)) {
