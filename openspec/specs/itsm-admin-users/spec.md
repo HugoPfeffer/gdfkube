@@ -110,7 +110,7 @@ The "Resources that will be created" preview block on the NewGroupPage MUST list
 - `ManagedClusterSetBinding: {id} → {id}`
 - `Git repo: {gitRepo}`
 
-The NewGroupPage MUST NOT render a ManagedClusterSet `<select>` input — the binding ClusterSet is derived from the group id and is not user-selectable.
+The NewGroupPage MUST NOT render a `Keycloak group` line in the preview, because the backend does not provision Keycloak. The NewGroupPage MUST NOT render a ManagedClusterSet `<select>` input — the binding ClusterSet is derived from the group id and is not user-selectable.
 
 #### Scenario: preview reflects current id
 
@@ -119,6 +119,12 @@ The NewGroupPage MUST NOT render a ManagedClusterSet `<select>` input — the bi
 - **THEN** an element with text `AppProject: cultura-apps` is present
 - **AND** an element with text matching `ManagedClusterSetBinding: cultura → cultura` is present
 - **AND** an element with text `Git repo: gdfkube-cultura` is present
+- **AND** no element contains text matching `Keycloak group`
+
+#### Scenario: preview contains exactly three list items
+
+- **WHEN** the NewGroupPage renders with any non-empty Display name input
+- **THEN** the preview block (`data-testid="group-preview"`) contains exactly three `<li>` children
 
 #### Scenario: no ManagedClusterSet select rendered
 
