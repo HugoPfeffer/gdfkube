@@ -81,6 +81,15 @@ describe('Users endpoints', () => {
       expect(res.status).toBe(403);
     });
 
+    it('does NOT alias body._id when id is absent', async () => {
+      const res = await request(app)
+        .post('/api/itsm/users')
+        .set('X-Demo-User', ADMIN)
+        .send({ _id: 'should.not.persist', name: 'X', email: 'x@x.gov', role: 'operator' });
+      expect(res.status).toBe(201);
+      expect(res.body._id).not.toBe('should.not.persist');
+    });
+
     it('returns 400 for bad role', async () => {
       const res = await request(app)
         .post('/api/itsm/users')

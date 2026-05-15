@@ -28,7 +28,7 @@ const mockCreate = itsmApi.users.create as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   mockCreate.mockImplementation((body: Record<string, unknown>) =>
-    Promise.resolve({ id: body._id ?? `user-${Date.now()}`, ...body }),
+    Promise.resolve({ id: body.id ?? `user-${Date.now()}`, ...body }),
   );
 });
 
@@ -122,6 +122,11 @@ describe('NewUserPage', () => {
     });
 
     expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'ana.souza' })
+    );
+    const body = mockCreate.mock.calls[0][0];
+    expect(body).not.toHaveProperty('_id');
     const last = observed[observed.length - 1];
     expect(last?.users.map((u) => u.username)).toContain('ana.souza');
     expect(onClose).toHaveBeenCalledTimes(1);

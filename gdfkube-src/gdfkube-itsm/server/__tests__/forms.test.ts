@@ -89,6 +89,15 @@ describe('Forms endpoints', () => {
       expect(res.status).toBe(409);
     });
 
+    it('does NOT alias body._id when id is absent', async () => {
+      const res = await request(app)
+        .post('/api/itsm/forms')
+        .set('X-Demo-User', ADMIN)
+        .send({ _id: 'should.not.persist', name: 'X', topic: 'test', status: 'active' });
+      expect(res.status).toBe(201);
+      expect(res.body._id).not.toBe('should.not.persist');
+    });
+
     it('returns 403 for operator', async () => {
       const res = await request(app)
         .post('/api/itsm/forms')

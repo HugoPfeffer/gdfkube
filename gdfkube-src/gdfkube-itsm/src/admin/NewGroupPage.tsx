@@ -43,7 +43,7 @@ export function NewGroupPage({ onClose, setToast }: NewGroupPageProps) {
     setIsSaving(true);
     try {
       const body: Record<string, unknown> = {
-        _id: id,
+        id: id,
         name: displayName.trim(),
         fullName: fullName.trim() || displayName.trim(),
         repo: repo.trim() || `gdfkube-${id}`,
