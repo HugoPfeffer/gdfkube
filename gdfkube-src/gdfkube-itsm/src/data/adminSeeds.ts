@@ -303,7 +303,6 @@ export const GROUPS: Group[] = [
 
 export const GITEA_SETTINGS = {
   _id: 'gitea',
-  endpoint: 'https://gitea-gitea.apps.gdfkube.gov',
   owner: 'gdfkube',
   token: 'CHANGE_ME', // trufflehog:ignore — seed placeholder
   updatedBy: 'seed',
