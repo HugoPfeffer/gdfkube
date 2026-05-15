@@ -5,9 +5,18 @@ TARGET="${1:-all}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+COMPOSE_PROJECT=$(docker compose config --format json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('name',''))" 2>/dev/null || true)
+NET="${COMPOSE_PROJECT:+${COMPOSE_PROJECT}_}gdfkube-net"
+
+host_path() {
+  local bind_src
+  bind_src=$(docker inspect gdfkube-sonar-bootstrap --format '{{range .Mounts}}{{if eq .Type "bind"}}{{.Source}}{{end}}{{end}}' 2>/dev/null)
+  echo "${bind_src%/gdfkube-src/gdfkube-infra/sonarqube/bootstrap.sh}"
+}
+
 read_token() {
-  docker compose run --rm -T -v sonar-init:/s:ro --entrypoint sh sonar-bootstrap \
-    -c 'cat /s/token'
+  docker compose run --rm -T -v "${COMPOSE_PROJECT:+${COMPOSE_PROJECT}_}sonar-init:/s:ro" \
+    --entrypoint sh sonar-bootstrap -c 'cat /s/token'
 }
 
 scan_camel() {
@@ -18,16 +27,17 @@ scan_camel() {
 }
 
 scan_node() {
-  d=$1
+  local d=$1
+  local hroot
+  hroot=$(host_path)
   echo "[sonar] $d"
   ( cd "gdfkube-src/$d" && npm run sonar )
-  docker compose run --rm -T \
-    -v "${COMPOSE_HOST_WORKSPACE:-$ROOT}/gdfkube-src/$d:/usr/src" \
+  docker run --rm \
+    -v "$hroot/gdfkube-src/$d:/usr/src" \
     -e SONAR_HOST_URL="http://sonarqube:9000" \
     -e SONAR_TOKEN="$(read_token)" \
-    --entrypoint sonar-scanner \
     -w /usr/src \
-    --network gdfkube-net \
+    --network "$NET" \
     sonarsource/sonar-scanner-cli:11.1
 }
 
