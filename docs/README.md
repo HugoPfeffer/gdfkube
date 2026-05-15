@@ -22,9 +22,9 @@ directly.
 | 06 | [Camel](./06-camel.md) | Partially implemented |
 | 07 | [Helm](./07-helm.md) | Partially implemented |
 | 08 | [Git](./08-git.md) | Implemented |
-| 09 | [ArgoCD](./09-argocd.md) | Planned |
-| 10 | [RHACM](./10-rhacm.md) | Planned |
-| 11 | [HyperShift](./11-hypershift.md) | Planned |
+| 09 | [ArgoCD](./09-argocd.md) | Partially implemented |
+| 10 | [RHACM](./10-rhacm.md) | Partially implemented |
+| 11 | [HyperShift](./11-hypershift.md) | Partially implemented |
 | 12 | [Security & RBAC](./12-security-rbac.md) | Planned |
 | 13 | [Observability](./13-observability.md) | Deferred |
 

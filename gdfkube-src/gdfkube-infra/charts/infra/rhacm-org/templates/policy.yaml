@@ -1,0 +1,16 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: {{ .Values.meta.org }}-pullsecret-distribution
+  namespace: {{ .Values.system.naming.policyNamespace }}
+  labels:
+    {{- toYaml .Values.system.labels | nindent 4 }}
+spec:
+  remediationAction: enforce
+  disabled: false
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: hc-pullsecret-distributor

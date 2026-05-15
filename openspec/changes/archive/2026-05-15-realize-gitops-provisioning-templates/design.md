@@ -133,11 +133,12 @@ ConfigurationPolicy, Policy/PlacementBinding); (4) doc bodies + badges + `## Spe
 verify; archive flips badges to `Implemented`. Rollback: revert the change branch — no
 runtime state is mutated (charts are rendered, not applied, in this change).
 
-## Open Questions
+## Open Questions (Resolved)
 
-- **OQ1**: Does the Camel `org-bootstrap` route push `argocd-org` output to
-  `gdfkube-infra/argocd/orgs/{org}/` (the discovery scan path)? Verify during implementation.
-- **OQ2**: Should `rhacm-org` emit the `gdfkube-policies` Namespace (with a sync-wave) or is
-  it a documented hub prerequisite? Resolve before writing the rhacm-org templates.
-- **OQ3**: Confirm the five bolded judgment-call rulings (A7, A9, H1, H4, H8) with the user
-  at apply time; the ledger default stands if not overridden.
+- **OQ1**: The Camel `org-bootstrap` route pushes to `gdfkube-orgs` repo at `orgs/<org>/`
+  (not `gdfkube-infra/argocd/orgs/`). Discovery ApplicationSet adjusted to scan
+  `gdfkube-orgs/orgs/*`. **Resolved 2026-05-15.**
+- **OQ2**: `rhacm-org` emits the `gdfkube-policies` Namespace (sync-wave -10).
+  Chart-owned. **Resolved 2026-05-15.**
+- **OQ3**: All five judgment-call rulings (A7, A9, H1, H4, H8) confirmed by user.
+  Ledger defaults stand. **Resolved 2026-05-15.**

@@ -2,16 +2,37 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: {{ .Values.system.naming.appProject }}
-  namespace: argocd
+  namespace: openshift-gitops
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:
-  description: "Project for {{ .Values.meta.org }}"
+  description: "Customer org: {{ .Values.meta.org }}"
   sourceRepos:
     - "{{ .Values.system.giteaExternalUrl }}/{{ .Values.system.giteaOwner }}/gdfkube-{{ .Values.meta.org }}.git"
   destinations:
-    - namespace: "*"
-      server: "*"
+    - namespace: "hc-{{ .Values.meta.org }}-*"
+      server: https://kubernetes.default.svc
+    - namespace: "ns-{{ .Values.meta.org }}-*"
+      server: https://kubernetes.default.svc
   clusterResourceWhitelist:
-    - group: "*"
-      kind: "*"
+    - group: "hypershift.openshift.io"
+      kind: HostedCluster
+    - group: "hypershift.openshift.io"
+      kind: NodePool
+    - group: "cluster.open-cluster-management.io"
+      kind: ManagedCluster
+    - group: ""
+      kind: Namespace
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: ResourceQuota
+    - group: ""
+      kind: LimitRange
+  roles:
+    - name: org-operator
+      description: "Sync rights scoped to this AppProject"
+      policies:
+        - p, proj:{{ .Values.meta.org }}:org-operator, applications, sync, {{ .Values.meta.org }}/*, allow
+        - p, proj:{{ .Values.meta.org }}:org-operator, applications, get, {{ .Values.meta.org }}/*, allow
+      groups:
+        - {{ .Values.meta.org }}-operator

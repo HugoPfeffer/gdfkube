@@ -2,7 +2,7 @@ apiVersion: cluster.open-cluster-management.io/v1beta2
 kind: ManagedClusterSetBinding
 metadata:
   name: {{ .Values.system.naming.clusterSet }}
-  namespace: {{ .Values.system.naming.appProject }}
+  namespace: {{ .Values.system.naming.policyNamespace }}
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:

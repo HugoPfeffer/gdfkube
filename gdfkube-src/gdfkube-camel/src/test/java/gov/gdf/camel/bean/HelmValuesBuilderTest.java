@@ -72,7 +72,7 @@ class HelmValuesBuilderTest {
         Map<String, String> labels = (Map<String, String>) system.get("labels");
 
         assertNotNull(labels, "system.labels must be present");
-        assertEquals(6, labels.size(), "system.labels must have exactly 6 entries");
+        assertTrue(labels.size() >= 6, "system.labels must have at least 6 base entries");
 
         assertTrue(labels.containsKey("cluster.open-cluster-management.io/clusterset"));
         assertTrue(labels.containsKey("setic.gov.br/managed"));
@@ -84,7 +84,65 @@ class HelmValuesBuilderTest {
         assertEquals("sec-educ", labels.get("gdfkube.io/organization"));
         assertEquals("REQ0010252C", labels.get("gdfkube.io/request-id"));
 
+        // cluster-request with clusterName in vars adds per-cluster labels
+        assertEquals("my-cluster", labels.get("setic.gov.br/cluster"));
+        assertEquals("my-cluster", labels.get("gdfkube.io/cluster"));
+        assertEquals("cluster-request", labels.get("gdfkube.io/form-type"));
+
         Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void build_clusterRequestEmitsCanonicalTenLabels() throws Exception {
+        RequestEvent event = buildEvent();
+        event.vars = new java.util.HashMap<>(Map.of(
+                "clusterName", "vacinacao", "environment", "production", "workerCount", 3));
+        String path = builder.build(event);
+
+        Map<String, Object> values = parseYaml(path);
+        Map<String, Object> system = (Map<String, Object>) values.get("system");
+        Map<String, String> labels = (Map<String, String>) system.get("labels");
+
+        assertEquals(10, labels.size(), "cluster-request with clusterName+environment must emit 10 labels");
+        assertEquals("sec-educ", labels.get("cluster.open-cluster-management.io/clusterset"));
+        assertEquals("vacinacao", labels.get("setic.gov.br/cluster"));
+        assertEquals("vacinacao", labels.get("gdfkube.io/cluster"));
+        assertEquals("cluster-request", labels.get("gdfkube.io/form-type"));
+        assertEquals("production", labels.get("gdfkube.io/env"));
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void build_systemNaming_includesPolicyNamespace() throws Exception {
+        RequestEvent event = buildEvent();
+        String path = builder.build(event);
+
+        Map<String, Object> values = parseYaml(path);
+        Map<String, Object> system = (Map<String, Object>) values.get("system");
+        Map<String, Object> naming = (Map<String, Object>) system.get("naming");
+
+        assertEquals("gdfkube-policies", naming.get("policyNamespace"));
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void buildForOrg_namingIncludesPolicyNamespace() throws Exception {
+        String path = builder.buildForOrg("saude");
+
+        try {
+            Map<String, Object> values = parseYaml(path);
+            Map<String, Object> system = (Map<String, Object>) values.get("system");
+            Map<String, Object> naming = (Map<String, Object>) system.get("naming");
+
+            assertEquals("gdfkube-policies", naming.get("policyNamespace"));
+        } finally {
+            Files.deleteIfExists(Path.of(path));
+        }
     }
 
     @Test

@@ -2,7 +2,7 @@ apiVersion: hypershift.openshift.io/v1beta1
 kind: NodePool
 metadata:
   name: {{ .Values.system.naming.hostedClusterName }}-workers
-  namespace: clusters
+  namespace: {{ .Values.system.naming.namespace }}
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:

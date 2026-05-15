@@ -1,0 +1,28 @@
+# Hand-applied once to bootstrap per-org Applications.
+# Not rendered by Helm — apply directly to the hub:
+#   oc apply -f gdfkube-src/gdfkube-infra/argocd/discovery/org-repos-discovery.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: gdfkube-infra-orgs
+  namespace: openshift-gitops
+spec:
+  generators:
+    - git:
+        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-orgs.git
+        revision: HEAD
+        directories:
+          - path: orgs/*
+  template:
+    metadata:
+      name: 'gdfkube-infra-{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-orgs.git
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: openshift-gitops
+      syncPolicy: {}

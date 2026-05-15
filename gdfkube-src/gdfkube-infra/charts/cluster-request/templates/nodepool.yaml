@@ -2,7 +2,7 @@ apiVersion: hypershift.openshift.io/v1beta1
 kind: NodePool
 metadata:
   name: {{ .Values.system.naming.hostedClusterName }}-workers
-  namespace: clusters
+  namespace: {{ .Values.system.naming.namespace }}
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:
@@ -10,5 +10,16 @@ spec:
   replicas: {{ .Values.vars.nodeCount | default 1 }}
   management:
     autoRepair: true
+  release:
+    image: {{ .Values.system.releaseImage }}
   platform:
     type: KubeVirt
+    kubevirt:
+      compute:
+        memory: 16Gi
+        cores: 4
+      rootVolume:
+        type: Persistent
+        persistent:
+          size: 64Gi
+          storageClass: ocs-storagecluster-ceph-rbd

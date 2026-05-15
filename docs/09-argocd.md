@@ -1,12 +1,12 @@
 # ArgoCD
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Partially implemented
 > **Source:** Handoff `app.jsx` + `uploads/gitops-platform.md`
-> **Last validated:** 2026-05-14
+> **Last validated:** 2026-05-15
 
 ## Specs
 
-_No specs yet — this component is not contracted._
+- [`argocd-org-stack`](../openspec/specs/argocd-org-stack/spec.md)
 
 ## Role in the Pipeline
 
@@ -37,7 +37,7 @@ provisioning path. Manual sync gates every change; auto-sync is disabled.
 
 #### Discovery (one-time bootstrap)
 
-Hand-applied once: `argocd/discovery/org-repos-discovery.yaml` in `gdfkube-infra`.
+Hand-applied once: `gdfkube-src/gdfkube-infra/argocd/discovery/org-repos-discovery.yaml`.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -48,18 +48,18 @@ metadata:
 spec:
   generators:
     - git:
-        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-infra.git
-        revision: main
+        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-orgs.git
+        revision: HEAD
         directories:
-          - path: argocd/orgs/*
+          - path: orgs/*
   template:
     metadata:
       name: 'gdfkube-infra-{{path.basename}}'
     spec:
       project: default
       source:
-        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-infra.git
-        targetRevision: main
+        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-orgs.git
+        targetRevision: HEAD
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
@@ -67,9 +67,9 @@ spec:
       syncPolicy: {}                      # no auto-sync
 ```
 
-This Application sets render the per-org AppProject + ApplicationSet pair.
+This ApplicationSet renders the per-org AppProject + ApplicationSet pair. Camel's `org-bootstrap` route pushes rendered output into `gdfkube-orgs/orgs/{org}/`.
 
-#### Per-org AppProject (rendered by Camel into `gdfkube-infra/argocd/orgs/{org}/`)
+#### Per-org AppProject (rendered by Camel into `gdfkube-orgs/orgs/{org}/`)
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -116,13 +116,13 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: saude
+  name: appset-saude
   namespace: openshift-gitops
 spec:
   generators:
     - git:
         repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-saude.git
-        revision: main
+        revision: HEAD
         directories:
           - path: clusters/*
           - path: namespaces/*
@@ -134,11 +134,10 @@ spec:
       project: saude
       source:
         repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-saude.git
-        targetRevision: main
+        targetRevision: HEAD
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{path.basename}}'   # e.g., hc-saude-vacinacao
       syncPolicy: {}                      # no auto-sync
 ```
 
@@ -205,7 +204,9 @@ Manifests use sync-wave annotations so dependencies apply in order:
 - All sync is manual (both `gdfkube-infra` and `gdfkube-{org}`).
 - Two-layer isolation: AppProject scope (source repos + destinations) **plus** Casbin RBAC (per-org sync rights).
 - Single ArgoCD instance in `openshift-gitops`. No multi-tenancy via separate ArgoCDs.
-- Discovery ApplicationSet bootstraps per-org Applications from `gdfkube-infra/argocd/orgs/*`.
+- Discovery ApplicationSet bootstraps per-org Applications from `gdfkube-orgs/orgs/*`.
+- ApplicationSet names use `appset-<org>` prefix (disambiguates from AppProject).
+- All git revisions use `HEAD` (survives branch renames).
 
 ## Open Questions
 
