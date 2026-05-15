@@ -61,8 +61,8 @@
 ## 11. Verification
 
 - [x] 11.1 `cd gdfkube-src/gdfkube-itsm && npm test` — green.
-- [ ] 11.2 `cd gdfkube-src/gdfkube-itsm/server && npm test` — green; new whitelist tests pass.
-- [ ] 11.3 Manual smoke: edit a user's Full name → Save → re-bootstrap → name persists.
-- [ ] 11.4 Manual smoke: stop the server → `NewUserPage` create → "Create failed" toast appears.
-- [ ] 11.5 Manual smoke: `curl -X PATCH http://localhost:8080/api/itsm/groups/saude -H "X-Demo-User: maria.costa" -d '{"users":5}'` → `400 Bad Request`.
-- [ ] 11.6 `pre-commit run --all-files` — green.
+- [x] 11.2 `cd gdfkube-src/gdfkube-itsm/server && npm test` — green; new whitelist tests pass.
+- [ ] 11.3 Manual smoke: edit a user's Full name → Save → re-bootstrap → name persists. *(skipped — user opted out of GUI smoke tests)*
+- [ ] 11.4 Manual smoke: stop the server → `NewUserPage` create → "Create failed" toast appears. *(skipped — user opted out of GUI smoke tests)*
+- [x] 11.5 Manual smoke: `curl -X PATCH http://localhost:3000/api/itsm/groups/saude -H "X-Demo-User: maria.costa" -d '{"users":5}'` → `400 Bad Request`.
+- [x] 11.6 `pre-commit run --all-files` — green.
