@@ -50,7 +50,7 @@ All host-published ports for the Kafka stack MUST be bound to `127.0.0.1`. No se
 
 ---
 
-### Requirement: All 9 catalog topics SHALL exist with exact settings after kafka-init exits
+### Requirement: All 11 catalog topics SHALL exist with exact settings after kafka-init exits
 
 The `kafka-init` service MUST run `gdfkube-src/gdfkube-infra/kafka/init-topics.sh` against the broker bootstrap. The script MUST use `kafka-topics.sh --create --if-not-exists` for each topic and MUST set `retention.ms`, `min.insync.replicas`, and `cleanup.policy=delete` on every topic. The service MUST use `restart: "no"` and `depends_on` all three brokers with `condition: service_healthy`.
 
@@ -60,20 +60,22 @@ The following topics MUST be created with exact settings:
 |---|---|---|---|---|
 | `dbz.gdfkube.requests` | 6 | 3 | 604800000 | 2 |
 | `dbz.gdfkube.forms` | 1 | 3 | 604800000 | 2 |
+| `dbz.gdfkube.groups` | 1 | 3 | 604800000 | 2 |
 | `gdfkube.pipeline.status` | 6 | 3 | 1209600000 | 2 |
 | `gdfkube.audit` | 3 | 3 | 2592000000 | 2 |
 | `dlq.gdfkube.requests` | 3 | 3 | 2592000000 | 2 |
 | `dlq.gdfkube.helm-render` | 1 | 3 | 2592000000 | 2 |
 | `dlq.gdfkube.git-push` | 1 | 3 | 2592000000 | 2 |
 | `dlq.gdfkube.repo-bootstrap` | 1 | 3 | 2592000000 | 2 |
+| `dlq.gdfkube.groups` | 1 | 3 | 2592000000 | 2 |
 | `dlq.gdfkube.debezium` | 1 | 3 | 2592000000 | 2 |
 
-#### Scenario: All 9 topics exist after kafka-init
+#### Scenario: All 11 topics exist after kafka-init
 
 - **GIVEN** the three Kafka brokers are healthy
 - **WHEN** `docker compose up kafka-init` exits
 - **THEN** `kafka-init` SHALL exit with code 0
-- **AND** `kafka-topics.sh --bootstrap-server kafka1:19092 --list` SHALL print all 9 topic names
+- **AND** `kafka-topics.sh --bootstrap-server kafka1:19092 --list` SHALL print all 11 topic names
 
 #### Scenario: Topic partition and replication settings match the catalog
 
@@ -97,7 +99,7 @@ Re-running `docker compose run --rm kafka-init` against a populated cluster MUST
 
 #### Scenario: Re-running kafka-init is a no-op
 
-- **GIVEN** `kafka-init` has already run and all 9 topics exist
+- **GIVEN** `kafka-init` has already run and all 11 topics exist
 - **WHEN** `docker compose run --rm kafka-init` is run a second time
 - **THEN** the run SHALL exit with code 0
 - **AND** `kafka-topics.sh --describe` output for all topics SHALL be identical before and after the re-run
@@ -120,7 +122,7 @@ Each broker's data directory (`/var/lib/kafka/data`) MUST be backed by a Docker-
 
 - **GIVEN** the stack is running with persisted data
 - **WHEN** `docker compose down -v` is run, then `docker compose up -d` is re-run, then `kafka-init` exits 0
-- **THEN** `kafka-topics.sh --list` SHALL show all 9 topics
+- **THEN** `kafka-topics.sh --list` SHALL show all 11 topics
 - **AND** consuming from `gdfkube.audit` SHALL return no prior probe messages
 
 ---
@@ -131,7 +133,7 @@ With three brokers healthy and RF=3 plus `min.insync.replicas=2`, stopping any o
 
 #### Scenario: Produce and consume succeed with one broker down
 
-- **GIVEN** all three Kafka brokers are healthy and all 9 topics exist
+- **GIVEN** all three Kafka brokers are healthy and all 11 topics exist
 - **WHEN** `docker compose stop kafka2` is run
 - **AND** a message is produced to `gdfkube.audit` via the remaining brokers
 - **THEN** the produce SHALL succeed
