@@ -33,5 +33,5 @@
 - [x] 5.4 From a clean stack, run `docker compose up kafka1 kafka2 kafka3 kafka-init` and confirm `kafka-init` exits 0 and `kafka-topics.sh --bootstrap-server kafka1:19092 --list` prints `dbz.gdfkube.groups` and `dlq.gdfkube.groups`.
 - [x] 5.5 In the same clean stack, run `mongosh "$MONGO_URI" --eval 'use gdfkube; db.getCollectionNames()'` and confirm `debezium_signals` is in the output.
 - [x] 5.6 Insert a synthetic ad-hoc snapshot signal document into `gdfkube.debezium_signals` via `mongosh` and confirm the Debezium connector logs the signal action (previously a silent no-op).
-- [ ] 5.7 Run `./mvnw -pl gdfkube-src/gdfkube-camel test` and confirm the integration profile asserts `dlq.gdfkube.groups` is the org-bootstrap DLQ destination; green required.
+- [x] 5.7 Run `./mvnw -pl gdfkube-src/gdfkube-camel test` and confirm the integration profile asserts `dlq.gdfkube.groups` is the org-bootstrap DLQ destination; green required.
 - [x] 5.8 Run `pre-commit run --all-files` and confirm the trufflehog hook is green (no new secret-shaped strings introduced by the README edits).
