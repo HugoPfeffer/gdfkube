@@ -462,7 +462,7 @@ The `repo-bootstrap` route MUST delegate its repo-existence/creation step to `Gi
 
 ### Requirement: HelmValuesBuilder SHALL produce values for org-bootstrap charts
 
-The `gov.gdf.camel.bean.HelmValuesBuilder` bean MUST expose a `buildForOrg(String groupId)` method that writes `/tmp/{groupId}-bootstrap-values.yaml` and returns its path. The values document MUST contain:
+The `gov.gdf.camel.bean.HelmValuesBuilder` bean MUST expose a `buildForOrg(String groupId, String groupRepo)` method that writes `/tmp/{groupId}-bootstrap-values.yaml` and returns its path. The values document MUST contain:
 
 - `meta.requestId` = `bootstrap-{groupId}`
 - `meta.formId` = `org-bootstrap`
@@ -479,20 +479,14 @@ The `gov.gdf.camel.bean.HelmValuesBuilder` bean MUST expose a `buildForOrg(Strin
 - `system.giteaOwner` = the configured `app.system.gitea-owner`
 - `vars` = `{}`
 
-The existing `build(RequestEvent)` method MUST remain unchanged. New `getChartRef(String chartName)` and `getReleaseName(String groupId)` overloads MUST be available for the `org-bootstrap` route. The bean MUST NOT accept a separate `groupRepo` parameter on `buildForOrg`; the per-org repo name is derived from `groupId` via `getRepoName` when needed by callers.
+The literal `meta.formId` value emitted by `buildForOrg` MUST match the `meta.formId` default declared in `gdfkube-src/gdfkube-infra/charts/infra/argocd-org/values.yaml` and `gdfkube-src/gdfkube-infra/charts/infra/rhacm-org/values.yaml` (both `org-bootstrap`). The existing `build(RequestEvent)` method MUST remain unchanged. New `getChartRef(String chartName)` and `getReleaseName(String groupId)` overloads MUST be available for the `org-bootstrap` route.
 
 #### Scenario: buildForOrg writes a values file with the canonical naming shape
 
 - **GIVEN** `app.system.gitea-owner=gdf` and `app.system.gitea-external-url=https://gitea.gdfkube.gov.br`
-- **WHEN** `HelmValuesBuilder.buildForOrg("cultura")` is invoked
+- **WHEN** `HelmValuesBuilder.buildForOrg("cultura", "gdfkube-cultura")` is invoked
 - **THEN** the returned path SHALL be `/tmp/cultura-bootstrap-values.yaml`
 - **AND** the file SHALL parse as YAML with `meta.requestId == "bootstrap-cultura"`, `meta.formId == "org-bootstrap"`, `system.naming.appProject == "cultura"`, `system.naming.clusterSet == "cultura"`
-
-#### Scenario: buildForOrg has no groupRepo parameter
-
-- **GIVEN** the `HelmValuesBuilder` bean
-- **WHEN** its public method signatures are inspected via reflection
-- **THEN** no public method named `buildForOrg` SHALL accept a second `String` argument
 
 #### Scenario: build(RequestEvent) is unchanged after the addition
 
@@ -500,28 +494,11 @@ The existing `build(RequestEvent)` method MUST remain unchanged. New `getChartRe
 - **WHEN** the existing `HelmValuesBuilderTest` (covering `build(RequestEvent)`) runs
 - **THEN** the test SHALL pass without modification
 
----
+#### Scenario: chart formId defaults agree with the Java emitter
 
-### Requirement: HelmValuesBuilder SHALL be the single source of truth for per-org Gitea repo names
-
-The `gov.gdf.camel.bean.HelmValuesBuilder` bean MUST expose a `String getRepoName(String groupId)` method that returns `"gdfkube-" + groupId`. This method MUST be the only place in the Camel orchestrator that composes a per-org Gitea repo name. `RepoBootstrapRoute` and `OrgBootstrapRoute` MUST call this helper instead of composing the name inline. The `gdfkube-` prefix is a brand constant and MUST NOT be derived from `app.system.gitea-owner`.
-
-#### Scenario: getRepoName returns the canonical gdfkube-prefixed name
-
-- **GIVEN** `HelmValuesBuilder` is constructed
-- **WHEN** `getRepoName("cultura")` is invoked
-- **THEN** the return value SHALL equal `"gdfkube-cultura"`
-
-#### Scenario: Both routes call the helper for the same group
-
-- **GIVEN** `app.system.gitea-owner=gdf` and a group `cultura`
-- **WHEN** `RepoBootstrapRoute` processes a request with `requesterGroupName=cultura` AND `OrgBootstrapRoute` processes a `dbz.gdfkube.groups` event with `_id=cultura`
-- **THEN** both routes SHALL invoke `gitRepoBootstrapper.ensure("gdf", "gdfkube-cultura", ...)` (identical owner and repoName arguments)
-
-#### Scenario: No remaining inline composition
-
-- **WHEN** the source tree under `gdfkube-src/gdfkube-camel/src/main/java/` is searched for `"gdfkube-" *+` (string-prefix concatenation)
-- **THEN** the only match SHALL be inside `HelmValuesBuilder.getRepoName`
+- **GIVEN** `HelmValuesBuilder.buildForOrg("alpha", "gdfkube-alpha")` has been invoked
+- **WHEN** the emitted `meta.formId` is compared to the `meta.formId` value parsed from `charts/infra/argocd-org/values.yaml` and `charts/infra/rhacm-org/values.yaml`
+- **THEN** all three literals SHALL be equal to `"org-bootstrap"`
 
 ---
 
