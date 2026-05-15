@@ -39,7 +39,7 @@
 
 ## 7. Build + verify
 
-- [ ] 7.1 `./mvnw -pl gdfkube-src/gdfkube-camel test` — green.
-- [ ] 7.2 Manual smoke: post a malformed `dbz.gdfkube.groups` message (no headers) to the local Kafka stack; tail the gdfkube-camel logs for the WARN; confirm `dlq.gdfkube.groups` did not receive it and the consumer offset advanced.
-- [ ] 7.3 Manual smoke: post a normal `op=c` for a fresh group; after the exchange completes, `ls $TMPDIR/bootstrap-*` returns empty.
+- [x] 7.1 `./mvnw -pl gdfkube-src/gdfkube-camel test` — green.
+- [x] 7.2 Manual smoke: post a malformed `dbz.gdfkube.groups` message (no headers) to the local Kafka stack; tail the gdfkube-camel logs for the WARN; confirm `dlq.gdfkube.groups` did not receive it and the consumer offset advanced.
+- [x] 7.3 Manual smoke: post a normal `op=c` for a fresh group; after the exchange completes, `ls $TMPDIR/bootstrap-*` returns empty.
 - [x] 7.4 `pre-commit run --all-files`.
