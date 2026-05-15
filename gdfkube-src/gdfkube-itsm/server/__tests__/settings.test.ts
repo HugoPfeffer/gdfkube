@@ -8,9 +8,9 @@ const ADMIN = 'maria.costa';
 const OPERATOR = 'joao.silva';
 const SEED = {
   _id: 'gitea',
-  endpoint: 'https://gitea.example.com',
   owner: 'myorg',
   token: 'real-token-value',
+  updatedBy: 'seed',
 };
 
 describe('Settings endpoints', () => {
@@ -19,14 +19,27 @@ describe('Settings endpoints', () => {
       await GiteaSettings.create(SEED);
     });
 
-    it('returns 200 with redacted token for admin', async () => {
+    it('returns 200 with redacted token for admin (no endpoint in seed)', async () => {
       const res = await request(app)
         .get('/api/itsm/settings')
         .set('X-Demo-User', ADMIN);
       expect(res.status).toBe(200);
       expect(res.body.token).toBe('***');
-      expect(res.body.endpoint).toBe(SEED.endpoint);
       expect(res.body.owner).toBe(SEED.owner);
+      expect(res.body.endpoint).toBeUndefined();
+    });
+
+    it('returns endpoint after gitea-token-sync-style upsert', async () => {
+      await GiteaSettings.findOneAndUpdate(
+        { _id: 'gitea' },
+        { $set: { endpoint: 'http://gitea:3000', token: 'live-token', updatedBy: 'gitea-init' } },
+      );
+      const res = await request(app)
+        .get('/api/itsm/settings')
+        .set('X-Demo-User', ADMIN);
+      expect(res.status).toBe(200);
+      expect(res.body.endpoint).toBe('http://gitea:3000');
+      expect(res.body.token).toBe('***');
     });
 
     it('returns 200 with cleartext token and Cache-Control: no-store when reveal=1', async () => {
@@ -90,7 +103,7 @@ describe('Settings endpoints', () => {
       expect(res.status).toBe(400);
 
       const doc = await GiteaSettings.findById('gitea').lean();
-      expect(doc!.endpoint).toBe(SEED.endpoint);
+      expect(doc!.endpoint).toBeUndefined();
     });
 
     it('returns 400 for invalid owner', async () => {
@@ -124,7 +137,7 @@ describe('Settings endpoints', () => {
         expect(res.body.error).toBe('invalid body');
 
         const doc = await GiteaSettings.findById('gitea').lean();
-        expect(doc!.endpoint).toBe(SEED.endpoint);
+        expect(doc!.endpoint).toBeUndefined();
       },
     );
 
