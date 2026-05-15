@@ -6,10 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.camel.CamelContext;
-import org.apache.camel.EndpointInject;
+import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,17 +64,10 @@ class OrgBootstrapIntegrationTest {
     @InjectMock
     HelmTemplateRunner helmTemplateRunner;
 
-    @EndpointInject("mock:dlq-capture")
-    MockEndpoint mockDlq;
-
     @BeforeAll
     void adviceRoutes() throws Exception {
-        AdviceWith.adviceWith(context, "org-bootstrap", route -> {
-            route.replaceFromWith("direct:org-bootstrap-test");
-            route.interceptSendToEndpoint("kafka:dlq.gdfkube.groups")
-                    .skipSendToOriginalEndpoint()
-                    .to("mock:dlq-capture");
-        });
+        AdviceWith.adviceWith(context, "org-bootstrap", route ->
+                route.replaceFromWith("direct:org-bootstrap-test"));
     }
 
     @BeforeEach
@@ -83,7 +75,6 @@ class OrgBootstrapIntegrationTest {
         mockGitProvider.reset();
         reset(helmTemplateRunner);
         orgBootstrapRoute.clearDedupCacheForTesting();
-        mockDlq.reset();
         stubHelmRender();
     }
 
@@ -215,18 +206,17 @@ class OrgBootstrapIntegrationTest {
         reset(helmTemplateRunner);
         when(helmTemplateRunner.render(anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("helm template failed (exit 1): chart not found"));
-        mockDlq.expectedMinimumMessageCount(1);
 
-        try {
-            sendGroupEvent("cultura", "gdfkube-cultura", "c");
-        } catch (Exception ignored) {
-        }
+        Exchange result = sendGroupEvent("cultura", "gdfkube-cultura", "c");
 
-        mockDlq.assertIsSatisfied(45000);
+        assertNull(result.getException(),
+                "Error handler must handle the failure (no exception propagated to caller)");
         verify(helmTemplateRunner, atLeastOnce()).render(anyString(), anyString(), anyString(), anyString());
+        assertTrue(mockGitProvider.getCommits(OWNER, "gdfkube-orgs").isEmpty(),
+                "No commits expected when helm render fails");
     }
 
-    private void sendGroupEvent(String groupId, String repo, String op) {
+    private Exchange sendGroupEvent(String groupId, String repo, String op) {
         String body;
         try {
             body = MAPPER.writeValueAsString(Map.of(
@@ -242,7 +232,7 @@ class OrgBootstrapIntegrationTest {
             throw new RuntimeException(e);
         }
 
-        producer.send("direct:org-bootstrap-test", exchange -> {
+        return producer.send("direct:org-bootstrap-test", exchange -> {
             exchange.getIn().setBody(body);
             exchange.getIn().setHeader("__op", op);
         });

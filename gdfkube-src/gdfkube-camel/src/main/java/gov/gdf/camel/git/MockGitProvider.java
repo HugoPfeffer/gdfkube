@@ -97,6 +97,15 @@ public class MockGitProvider implements GitProvider {
 
     public void reset() {
         repos.clear();
+        try {
+            if (Files.exists(MOCK_ROOT)) {
+                try (var walk = Files.walk(MOCK_ROOT)) {
+                    walk.sorted(java.util.Comparator.reverseOrder())
+                        .forEach(p -> { try { Files.deleteIfExists(p); } catch (IOException ignored) {} });
+                }
+            }
+        } catch (IOException ignored) {
+        }
         LOG.info("MockGitProvider state cleared");
     }
 
