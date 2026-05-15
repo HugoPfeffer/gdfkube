@@ -29,7 +29,7 @@ The `gdfkube.users` collection SHALL store one document per ITSM demo user with 
 
 ### Requirement: Users Admin CRUD
 
-The service SHALL expose `GET /api/itsm/users`, `GET /api/itsm/users/:id`, `POST /api/itsm/users`, and `PATCH /api/itsm/users/:id` — all admin-only — with PATCH body keys restricted to `{ name, fullName, email, role, group, status, mfa, last }`. The POST body SHALL use the wire key `id` (not `_id`) to convey the username that becomes the Mongoose `_id: String` field; the server SHALL map `body.id` onto `_id` on create.
+The service SHALL expose `GET /api/itsm/users`, `GET /api/itsm/users/:id`, `POST /api/itsm/users`, and `PATCH /api/itsm/users/:id` — all admin-only — with PATCH body keys restricted to `{ name, fullName, email, role, group, status, username, active, mfa, last }`. The keys `username` and `active` were added to the server whitelist to support the UserEditor's account-disable affordance and username rename; this closes the drift between spec and server code. The POST body SHALL use the wire key `id` (not `_id`) to convey the username that becomes the Mongoose `_id: String` field; the server SHALL map `body.id` onto `_id` on create.
 
 #### Scenario: List as admin returns array sorted by name
 
@@ -64,9 +64,21 @@ The service SHALL expose `GET /api/itsm/users`, `GET /api/itsm/users/:id`, `POST
 - **WHEN** an admin POSTs `{ _id: 'ana.souza', name: 'Ana', email: 'a@x.gov', role: 'operator' }` (no `id`)
 - **THEN** the persisted document's `_id` is NOT `'ana.souza'` (the wire key `_id` is silently ignored by the server, which reads `body.id`)
 
+#### Scenario: PATCH accepts username
+
+- **GIVEN** `X-Demo-User: maria.costa` (role admin)
+- **WHEN** an admin PATCHes `/api/itsm/users/m.costa` with `{ username: "maria.costa" }`
+- **THEN** the response is `200 OK` and the document's `username` reflects the new value
+
+#### Scenario: PATCH accepts active
+
+- **GIVEN** `X-Demo-User: maria.costa` (role admin)
+- **WHEN** an admin PATCHes `/api/itsm/users/joao.silva` with `{ active: false }`
+- **THEN** the response is `200 OK` and the document's `active` is `false`
+
 #### Scenario: PATCH whitelist rejects unknown keys
 
-- **WHEN** an admin PATCHes a body with any key outside `{ name, fullName, email, role, group, status, mfa, last }`
+- **WHEN** an admin PATCHes a body with any key outside `{ name, fullName, email, role, group, status, username, active, mfa, last }`
 - **THEN** the service responds `400 Bad Request`
 
 #### Scenario: PATCH unknown id returns 404

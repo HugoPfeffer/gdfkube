@@ -103,6 +103,23 @@ The clipboard write MUST first attempt `navigator.clipboard.writeText` and, on r
 - **THEN** the helper completes without throwing
 - **AND** the document selection contains the token (verifying the textarea path executed)
 
+### Requirement: NewFormPage surfaces create failures via toast
+
+The `NewFormPage` MUST emit an error toast on every rejected `itsmApi.forms.create(...)` call, matching the pattern used by `NewGroupPage` and `NewUserPage`. The catch block in `handleCreate` MUST NOT be empty; in addition to clearing the saving flag, it MUST call `setToast({ variant: 'error', title, body })` with a message that includes either the server error message or the HTTP status. `App.tsx` MUST pass the `setToast` prop to `NewFormPage`.
+
+#### Scenario: Toast appears on create failure
+
+- **GIVEN** the server is unreachable
+- **WHEN** an admin clicks Create on the New Form page
+- **THEN** an error toast appears via `setToast`
+- **AND** the saving spinner clears
+- **AND** the form remains populated so the admin can retry
+
+#### Scenario: setToast prop is wired
+
+- **WHEN** `App.tsx` renders `NewFormPage`
+- **THEN** the `setToast` prop is passed (same prop already passed to `NewGroupPage`)
+
 ### Requirement: Create form persists into the registry
 
 Clicking Create on the New Form page MUST push a new entry into `GDF_ADMIN_DATA.forms` (with today's date and `submissions: 0`), copy the page's defined fields into `GDF_ADMIN_DATA.fields[<id>]`, and return the user to the Forms list. The Create button MUST be disabled when the form id or display name is empty, or when the id collides with an existing form id; in that case the Form ID input MUST display an inline collision error.

@@ -29,7 +29,7 @@ The `gdfkube.groups` collection SHALL store one document per organization (group
 
 ### Requirement: Groups Admin CRUD
 
-The service SHALL expose `GET /api/itsm/groups`, `GET /api/itsm/groups/:id`, `POST /api/itsm/groups`, and `PATCH /api/itsm/groups/:id` — all admin-only — with PATCH body keys restricted to `{ name, fullName, users, forms, repo, clusters }`. The POST body SHALL use the wire key `id` (not `_id`) to convey the slug that becomes the Mongoose `_id: String` field; the server SHALL map `body.id` onto `_id` on create.
+The service SHALL expose `GET /api/itsm/groups`, `GET /api/itsm/groups/:id`, `POST /api/itsm/groups`, and `PATCH /api/itsm/groups/:id` — all admin-only — with PATCH body keys restricted to `{ name, fullName, repo }`. The previously-accepted keys `users`, `forms`, and `clusters` SHALL be rejected: those fields remain stored on the Mongoose document but are no longer writable via the admin PATCH path, which closes the drift with the SPA GroupEditor (which only sends `{ name, fullName, repo }`). The POST body SHALL use the wire key `id` (not `_id`) to convey the slug that becomes the Mongoose `_id: String` field; the server SHALL map `body.id` onto `_id` on create.
 
 #### Scenario: List as admin returns array sorted by name
 
@@ -58,14 +58,31 @@ The service SHALL expose `GET /api/itsm/groups`, `GET /api/itsm/groups/:id`, `PO
 - **WHEN** an admin POSTs `{ _id: 'novo-org', name: 'Novo Org', users: [], forms: [] }` (no `id`)
 - **THEN** the persisted document's `_id` is NOT `'novo-org'` (the wire key `_id` is silently ignored by the server, which reads `body.id`)
 
-#### Scenario: PATCH replaces users[] and forms[] wholesale
+#### Scenario: PATCH accepts the trimmed whitelist
 
-- **WHEN** an admin PATCHes `{ users: [<new list>] }`
-- **THEN** the document's `users` array is replaced atomically by the new list (matches the SPA's UPDATE_GROUP semantics)
+- **GIVEN** `X-Demo-User: maria.costa` (role admin)
+- **WHEN** an admin PATCHes `/api/itsm/groups/saude` with `{ name: "Saúde", fullName: "Secretaria da Saúde", repo: "gdfkube-saude" }`
+- **THEN** the response is `200 OK` and the document reflects the new values
+
+#### Scenario: PATCH rejects users
+
+- **WHEN** an admin PATCHes `/api/itsm/groups/saude` with `{ users: [] }` (or any non-empty list)
+- **THEN** the service responds `400 Bad Request` with body `{ "error": "Invalid field: users" }`
+- **AND** the persisted document is unchanged
+
+#### Scenario: PATCH rejects forms
+
+- **WHEN** an admin PATCHes `/api/itsm/groups/saude` with `{ forms: [...] }`
+- **THEN** the service responds `400 Bad Request`
+
+#### Scenario: PATCH rejects clusters
+
+- **WHEN** an admin PATCHes `/api/itsm/groups/saude` with `{ clusters: [...] }`
+- **THEN** the service responds `400 Bad Request`
 
 #### Scenario: PATCH whitelist rejects unknown keys
 
-- **WHEN** an admin PATCHes a body with any key outside `{ name, fullName, users, forms, repo, clusters }`
+- **WHEN** an admin PATCHes a body with any key outside `{ name, fullName, repo }`
 - **THEN** the service responds `400 Bad Request`
 
 #### Scenario: PATCH unknown id returns 404
