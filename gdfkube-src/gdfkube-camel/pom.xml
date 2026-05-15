@@ -126,6 +126,11 @@
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jacoco</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -184,6 +189,7 @@
           </execution>
         </executions>
         <configuration>
+          <argLine>@{jacocoArgLine}</argLine>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <api.version>1.41</api.version>
@@ -192,4 +198,26 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>sonar</id>
+      <properties>
+        <sonar.host.url>http://sonarqube:9000</sonar.host.url>
+        <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
+        <sonar.projectKey>gdfkube-camel</sonar.projectKey>
+        <sonar.java.binaries>build/classes</sonar.java.binaries>
+        <sonar.coverage.jacoco.xmlReportPaths>build/jacoco-report/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <version>5.1.0.4751</version>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

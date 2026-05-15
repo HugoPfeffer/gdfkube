@@ -22,5 +22,10 @@ export default defineConfig({
     // Playwright e2e specs are owned by `npm run e2e`; vitest must not
     // try to load them — they call `test()` outside a Playwright runner.
     exclude: ['node_modules', 'dist', 'e2e/**', 'server/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      reportsDirectory: './coverage',
+    },
   },
 });

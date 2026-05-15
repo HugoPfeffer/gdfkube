@@ -13,7 +13,8 @@
     "lint": "eslint src --ext .ts,.tsx",
     "e2e": "playwright test",
     "e2e:install": "playwright install --with-deps chromium",
-    "seed:export": "npx tsx scripts/export-seed-data.mjs"
+    "seed:export": "npx tsx scripts/export-seed-data.mjs",
+    "sonar": "vitest run --coverage"
   },
   "dependencies": {
     "react": "18.3.1",
@@ -37,6 +38,7 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.2",
     "vite": "^5.4.21",
+    "@vitest/coverage-v8": "^1.6.1",
     "vitest": "^1.6.1"
   }
 }

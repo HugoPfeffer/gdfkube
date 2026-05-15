@@ -7,5 +7,6 @@
 .cursor/debug-*.log
 **/target/
 **/build/
+**/coverage/
 .claude/worktrees/
 .tmp/
