@@ -1,0 +1,40 @@
+---
+description: Commit all changes after opsx:apply and opsx:archive commands finish
+alwaysApply: true
+---
+
+# Commit After OPSX Commands
+
+After `/opsx:apply` or `/opsx:archive` completes successfully, **always commit all changes** before ending the turn.
+
+## When to commit
+
+- After all tasks in `/opsx:apply` are implemented (or the session is paused with completed work)
+- After `/opsx:archive` moves the change to the archive directory
+- After `/archive-finish` completes its retrospective, verify, and archive steps
+
+## How to commit
+
+1. Stage all related changes (`git add`)
+2. Write a concise, imperative commit message summarizing the work
+3. Run `git commit`
+4. Confirm the commit succeeded with `git status`
+
+## Commit message format
+
+```
+# After apply
+opsx: implement <change-name> tasks (N/M complete)
+
+# After archive (all tasks done)
+opsx: complete and archive <change-name>
+
+# After archive (partial)
+opsx: archive <change-name> (with warnings)
+```
+
+## Do not skip
+
+- Even if only task checkboxes changed, commit
+- Even if the archive only moved a directory, commit
+- If pre-commit hooks fail, fix the issue and retry — do not leave uncommitted work

@@ -1,0 +1,1 @@
+Generate `retrospective.md` and `verify.md` artifacts for $ARGUMENTS. Check change deltas — if any exist, sync them first, then run `/opsx:archive`. After the archive completes, commit all changes with message: `opsx: complete and archive <change-name>`.

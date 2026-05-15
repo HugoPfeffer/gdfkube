@@ -1,6 +1,10 @@
 {
   "permissions": {
-    "allow": [],
+    "allow": [
+      "Bash(find *)",
+      "Bash(xargs ls -lh)"
+    ],
     "deny": []
-  }
+  },
+  "outputStyle": "default"
 }

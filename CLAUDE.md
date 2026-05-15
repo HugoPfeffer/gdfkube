@@ -30,6 +30,7 @@ Everything outside `gdfkube-src/` is development environment configuration.
 - MCP servers: context7, firecrawl, kubernetes, github (configured in `.mcp.json`)
 - Pre-commit hook: trufflehog secret scanning
 - CI: GitHub Actions trufflehog workflow + Dependabot
+- When a new tool requires `sudo` to install inside the devcontainer, update the Dockerfile and `devcontainer.json` in `.devcontainer/` to include it permanently, then return the install command to the user to run from the host for the current session.
 
 ## Workflow: OpenSpec + Superpowers
 
@@ -54,8 +55,10 @@ All changes follow a spec-driven workflow powered by OpenSpec (primary framework
 - Eliminate drift: generated manifests must match their source of truth
 - Never commit secrets — trufflehog pre-commit hook enforces this
 - Add `# trufflehog:ignore` only for intentionally safe values (like `.env.example` placeholders)
+- Always run manual verification and test tasks. If the required packages or tools are not installed, return the command to the user to run manually instead of skipping.
 
 ## Git
 
 - Run `pre-commit run --all-files` before pushing
 - Commit messages: concise, imperative ("add route", not "added route")
+- When completing a development branch, always choose the first option: `Merge back to the base branch locally`.

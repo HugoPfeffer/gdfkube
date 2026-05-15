@@ -1,0 +1,22 @@
+---
+description: Enforce running all manual verification and test tasks
+alwaysApply: true
+---
+
+# Verification & Test Tasks
+
+Always run manual verification and test tasks (linters, builds, test suites, pre-commit hooks, etc.) when a workflow or spec requires them.
+
+If the required package or tool is not installed in the current environment, do **not** silently skip the step. Instead, return the exact command to the user so they can run it manually.
+
+```
+# ❌ BAD — skipping because tool is missing
+"helm is not installed, skipping lint"
+
+# ✅ GOOD — run it when available
+helm lint gdfkube-src/gdfkube-orgs/charts/my-chart
+
+# ✅ GOOD — hand off when tool is missing
+"I can't run `helm lint` because helm is not installed. Please run:
+  helm lint gdfkube-src/gdfkube-orgs/charts/my-chart"
+```

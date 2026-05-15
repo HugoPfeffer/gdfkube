@@ -44,14 +44,7 @@
     ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "context7",
-    "firecrawl-mcp"
-  ],
-  "statusLine": {
-    "type": "command",
-    "command": "npx -y @owloops/claude-powerline@latest --style=powerline --theme=tokyo-night"
-  },
+  "enabledMcpjsonServers": ["context7", "firecrawl-mcp"],
   "enabledPlugins": {
     "code-simplifier@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
@@ -96,5 +89,5 @@
   },
   "plansDirectory": "/workspace/.claude/plans",
   "teammateMode": "in-process",
-  "defaultMode": "default"
+  "defaultMode": "auto"
 }
