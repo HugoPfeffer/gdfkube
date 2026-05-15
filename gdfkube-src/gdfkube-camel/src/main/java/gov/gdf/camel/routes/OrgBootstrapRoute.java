@@ -1,5 +1,6 @@
 package gov.gdf.camel.routes;
 
+import java.time.Clock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,6 +28,7 @@ import gov.gdf.camel.bean.HelmValuesBuilder;
 import gov.gdf.camel.git.GitAuthor;
 import gov.gdf.camel.git.GitProvider;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -58,6 +60,9 @@ public class OrgBootstrapRoute extends RouteBuilder {
 
     @Inject
     AuditInterceptor auditInterceptor;
+
+    @Inject
+    Clock clock;
 
     @Override
     public void configure() {
@@ -201,7 +206,7 @@ public class OrgBootstrapRoute extends RouteBuilder {
             String message = "[gdfkube] GROUP-" + groupId + ": bootstrap org manifests";
             gitProvider.commitAndPush(workTree, addedPaths, message, GitAuthor.CAMEL);
 
-            dedupCache.put(groupId, System.currentTimeMillis());
+            dedupCache.put(groupId, clock.millis());
 
             auditInterceptor.emit(ROUTE_ID, groupId, 0, "bootstrap",
                     Map.of("groupId", groupId, "files", addedPaths.stream()
@@ -246,7 +251,7 @@ public class OrgBootstrapRoute extends RouteBuilder {
     }
 
     private void evictExpired() {
-        long now = System.currentTimeMillis();
+        long now = clock.millis();
         dedupCache.entrySet().removeIf(e -> (now - e.getValue()) > TTL_MS);
     }
 
@@ -256,6 +261,12 @@ public class OrgBootstrapRoute extends RouteBuilder {
 
     boolean dedupCacheContainsForTesting(String key) {
         return dedupCache.containsKey(key);
+    }
+
+    @Produces
+    @ApplicationScoped
+    Clock systemClock() {
+        return Clock.systemUTC();
     }
 
     private void commitKafkaOffset(Exchange exchange) {

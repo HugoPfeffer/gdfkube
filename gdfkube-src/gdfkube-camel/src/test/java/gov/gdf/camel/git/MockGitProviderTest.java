@@ -64,7 +64,7 @@ class MockGitProviderTest {
 
         Path workTree = provider.cloneOrPull("gdfkube", "commit-test", "main");
 
-        Path tempFile = Files.createTempFile("test-manifest", ".yaml");
+        Path tempFile = workTree.resolve("test-manifest.yaml");
         Files.writeString(tempFile, "apiVersion: v1\nkind: Namespace\n");
 
         provider.commitAndPush(workTree, List.of(tempFile),
@@ -76,8 +76,6 @@ class MockGitProviderTest {
         assertFalse(commits.get(0).getFiles().isEmpty(),
                 "Commit should reference at least one file");
         assertEquals(GitAuthor.CAMEL.getName(), commits.get(0).getAuthor().getName());
-
-        Files.deleteIfExists(tempFile);
     }
 
     @Test
@@ -87,8 +85,8 @@ class MockGitProviderTest {
 
         Path workTree = provider.cloneOrPull("gdfkube", "multi-test", "main");
 
-        Path file1 = Files.createTempFile("manifest-1", ".yaml");
-        Path file2 = Files.createTempFile("manifest-2", ".yaml");
+        Path file1 = workTree.resolve("manifest-1.yaml");
+        Path file2 = workTree.resolve("manifest-2.yaml");
         Files.writeString(file1, "first: true");
         Files.writeString(file2, "second: true");
 
@@ -99,9 +97,6 @@ class MockGitProviderTest {
         assertEquals(2, commits.size(), "Should have two commits");
         assertEquals("first commit", commits.get(0).getMessage());
         assertEquals("second commit", commits.get(1).getMessage());
-
-        Files.deleteIfExists(file1);
-        Files.deleteIfExists(file2);
     }
 
     @Test

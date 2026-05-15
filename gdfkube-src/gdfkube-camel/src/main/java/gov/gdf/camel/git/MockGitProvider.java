@@ -77,13 +77,15 @@ public class MockGitProvider implements GitProvider {
 
         List<String> relativePaths = new ArrayList<>();
         for (Path file : files) {
-            Path dest = workingTree.resolve(file.getFileName());
+            Path relative = workingTree.relativize(file);
+            Path dest = workingTree.resolve(relative);
             try {
+                Files.createDirectories(dest.getParent());
                 Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 throw new UncheckedIOException("Failed to copy file to mock working tree: " + file, e);
             }
-            relativePaths.add(file.getFileName().toString());
+            relativePaths.add(relative.toString());
         }
 
         repos.get(k).add(new MockCommit(message, relativePaths, author));
@@ -93,6 +95,15 @@ public class MockGitProvider implements GitProvider {
     public List<MockCommit> getCommits(String owner, String name) {
         List<MockCommit> commits = repos.get(key(owner, name));
         return commits != null ? Collections.unmodifiableList(commits) : List.of();
+    }
+
+    public List<Path> getCommittedPaths(String owner, String name) {
+        List<MockCommit> commits = repos.get(key(owner, name));
+        if (commits == null) return List.of();
+        return commits.stream()
+                .flatMap(c -> c.getFiles().stream())
+                .map(Path::of)
+                .toList();
     }
 
     public void reset() {

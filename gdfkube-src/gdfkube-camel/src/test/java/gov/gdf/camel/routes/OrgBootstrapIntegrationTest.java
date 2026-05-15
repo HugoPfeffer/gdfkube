@@ -2,13 +2,17 @@ package gov.gdf.camel.routes;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.camel.CamelContext;
+import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
+import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.gdf.camel.bean.HelmTemplateRunner;
 import gov.gdf.camel.git.MockGitProvider;
+import gov.gdf.camel.testsupport.MutableClock;
+import gov.gdf.camel.testsupport.TestClockProducer;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -64,10 +70,19 @@ class OrgBootstrapIntegrationTest {
     @InjectMock
     HelmTemplateRunner helmTemplateRunner;
 
+    @EndpointInject("mock:dlq.gdfkube.groups")
+    MockEndpoint dlqMock;
+
+    private final MutableClock mutableClock = TestClockProducer.getMutableClock();
+
     @BeforeAll
     void adviceRoutes() throws Exception {
-        AdviceWith.adviceWith(context, "org-bootstrap", route ->
-                route.replaceFromWith("direct:org-bootstrap-test"));
+        AdviceWith.adviceWith(context, "org-bootstrap", route -> {
+            route.replaceFromWith("direct:org-bootstrap-test");
+            route.interceptSendToEndpoint("kafka:dlq.gdfkube.groups*")
+                    .skipSendToOriginalEndpoint()
+                    .to("mock:dlq.gdfkube.groups");
+        });
     }
 
     @BeforeEach
@@ -75,6 +90,8 @@ class OrgBootstrapIntegrationTest {
         mockGitProvider.reset();
         reset(helmTemplateRunner);
         orgBootstrapRoute.clearDedupCacheForTesting();
+        dlqMock.reset();
+        mutableClock.set(Instant.parse("2026-01-01T00:00:00Z"));
         stubHelmRender();
     }
 
@@ -107,7 +124,7 @@ class OrgBootstrapIntegrationTest {
     }
 
     @Test
-    void firstEvent_bootstrapsBothReposAndWritesAllFour() throws Exception {
+    void firstEvent_bootstrapsBothReposAndWritesAllThree() throws Exception {
         sendGroupEvent("cultura", "gdfkube-cultura", "c");
 
         assertTrue(mockGitProvider.repoExists(OWNER, "gdfkube-cultura"),
@@ -124,9 +141,17 @@ class OrgBootstrapIntegrationTest {
 
         var files = commit.getFiles();
         assertEquals(3, files.size(), "Should commit exactly 3 files");
-        assertTrue(files.contains("appproject.yaml"));
-        assertTrue(files.contains("applicationset.yaml"));
-        assertTrue(files.contains("cultura-clusterset.yaml"));
+        assertTrue(files.contains("orgs/cultura/appproject.yaml"));
+        assertTrue(files.contains("orgs/cultura/applicationset.yaml"));
+        assertTrue(files.contains("orgs/cultura/cultura-clusterset.yaml"));
+
+        List<Path> committedPaths = mockGitProvider.getCommittedPaths(OWNER, "gdfkube-orgs");
+        assertTrue(committedPaths.contains(Path.of("orgs/cultura/appproject.yaml")),
+                "Must contain orgs/cultura/appproject.yaml");
+        assertTrue(committedPaths.contains(Path.of("orgs/cultura/applicationset.yaml")),
+                "Must contain orgs/cultura/applicationset.yaml");
+        assertTrue(committedPaths.contains(Path.of("orgs/cultura/cultura-clusterset.yaml")),
+                "Must contain orgs/cultura/cultura-clusterset.yaml");
     }
 
     @Test
@@ -157,9 +182,9 @@ class OrgBootstrapIntegrationTest {
 
         var files = commits.get(0).getFiles();
         assertEquals(2, files.size(), "Only 2 missing files should be committed");
-        assertTrue(files.contains("applicationset.yaml"));
-        assertTrue(files.contains("cultura-clusterset.yaml"));
-        assertFalse(files.contains("appproject.yaml"),
+        assertTrue(files.contains("orgs/cultura/applicationset.yaml"));
+        assertTrue(files.contains("orgs/cultura/cultura-clusterset.yaml"));
+        assertFalse(files.contains("orgs/cultura/appproject.yaml"),
                 "Pre-existing appproject.yaml must not be overwritten");
     }
 
@@ -195,23 +220,46 @@ class OrgBootstrapIntegrationTest {
         mockGitProvider.createRepo(OWNER, "gdfkube-orgs",
                 new gov.gdf.camel.git.RepoOptions("main", true, "re-created"));
 
+        mutableClock.advance(Duration.ofSeconds(30));
         sendGroupEvent("cultura", "gdfkube-cultura", "c");
         var commits = mockGitProvider.getCommits(OWNER, "gdfkube-orgs");
         assertTrue(commits.isEmpty(),
-                "Second event within 60s should be suppressed by dedup cache (no work done)");
+                "Event within 60s should be deduped");
+    }
+
+    @Test
+    void replayAfterTtl_reprocesses() throws Exception {
+        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        assertEquals(1, mockGitProvider.getCommits(OWNER, "gdfkube-orgs").size());
+
+        mockGitProvider.reset();
+        mockGitProvider.createRepo(OWNER, "gdfkube-orgs",
+                new gov.gdf.camel.git.RepoOptions("main", true, "re-created"));
+
+        mutableClock.advance(Duration.ofSeconds(61));
+        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        assertEquals(1, mockGitProvider.getCommits(OWNER, "gdfkube-orgs").size(),
+                "Event after 60s TTL should be re-processed");
     }
 
     @Test
     void helmRenderFailure_dlq() throws Exception {
+        dlqMock.expectedMessageCount(1);
+        dlqMock.message(0).header("x-error-class").isEqualTo("java.lang.RuntimeException");
+        dlqMock.message(0).header("x-error-msg").isNotNull();
+        dlqMock.message(0).header("x-first-failure-at").isNotNull();
+        dlqMock.message(0).header("x-replayed").isEqualTo("false");
+        dlqMock.message(0).header("x-stage").isNotNull();
+        dlqMock.message(0).header("x-attempts").isNotNull();
+
         reset(helmTemplateRunner);
         when(helmTemplateRunner.render(anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("helm template failed (exit 1): chart not found"));
 
-        Exchange result = sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendGroupEvent("cultura", "gdfkube-cultura", "c");
 
-        assertNull(result.getException(),
-                "Error handler must handle the failure (no exception propagated to caller)");
-        verify(helmTemplateRunner, atLeastOnce()).render(anyString(), anyString(), anyString(), anyString());
+        dlqMock.assertIsSatisfied(45_000);
+
         assertTrue(mockGitProvider.getCommits(OWNER, "gdfkube-orgs").isEmpty(),
                 "No commits expected when helm render fails");
     }

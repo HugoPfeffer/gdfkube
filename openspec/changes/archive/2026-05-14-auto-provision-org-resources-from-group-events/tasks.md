@@ -38,13 +38,13 @@
 ## 5. Tests
 
 - [x] 5.1 Create `gdfkube-src/gdfkube-camel/src/test/java/gov/gdf/camel/routes/OrgBootstrapIntegrationTest.java`. Mirror `PipelineIntegrationTest.MockProfile` (`app.git.provider=mock`). Inject `MockGitProvider`. Use `AdviceWith` to swap the Kafka source on `org-bootstrap` for a `seda:` source.
-- [x] 5.2 Test `firstEvent_bootstrapsBothReposAndWritesAllFour`: send a group create event for `_id=cultura`, `repo=gdfkube-cultura`. Assert per-org repo `gdfkube-cultura` created, central `gdfkube-orgs` created, single commit on `gdfkube-orgs` containing exactly `orgs/cultura/{appproject.yaml, applicationset.yaml, cultura-clusterset.yaml}`, commit message matches `[gdfkube] GROUP-cultura: bootstrap org manifests`.
+- [x] 5.2 Test `firstEvent_bootstrapsBothReposAndWritesAllThree`: send a group create event for `_id=cultura`, `repo=gdfkube-cultura`. Assert per-org repo `gdfkube-cultura` created, central `gdfkube-orgs` created, single commit on `gdfkube-orgs` containing exactly `orgs/cultura/{appproject.yaml, applicationset.yaml, cultura-clusterset.yaml}`, commit message matches `[gdfkube] GROUP-cultura: bootstrap org manifests`.
 - [x] 5.3 Test `secondEvent_idempotentNoop`: replay the same event. Assert no second commit, no repo recreate, audit emit shows `noop`.
 - [x] 5.4 Test `partialState_onlyMissingFilesPushed`: pre-populate `gdfkube-orgs` with `orgs/cultura/appproject.yaml` only, send the event. Assert commit contains `applicationset.yaml` and `cultura-clusterset.yaml` only; existing `appproject.yaml` untouched.
 - [x] 5.5 Test `existingPerOrgRepo_centralRepoStillBootstraps`: pre-create `gdfkube-cultura` (mirrors `goldenPath_existingRepoIsNotRecreated`); assert central repo + manifests still get created.
 - [x] 5.6 Test `deleteEvent_dropped`: send `__op=d`; assert no clone, no commit, no DLQ message.
 - [x] 5.7 Test `replayWithinTtl_dedupedByCache`: send the same event twice within 60s; assert exactly one commit (suppressed by dedup cache, not by file-exists check).
-- [x] 5.8 Test `helmRenderFailure_dlq`: make `HelmTemplateRunner` throw; assert message lands on `dlq.gdfkube.groups` with the 9 mandatory headers.
+- [ ] 5.8 Test `helmRenderFailure_dlq`: make `HelmTemplateRunner` throw; assert message lands on `dlq.gdfkube.groups` with the 9 mandatory headers. (Previously marked complete but the test only asserted render() was called; rewriting per H-6 to assert DLQ topic + mandatory headers — see strengthen-org-bootstrap-tests change.)
 
 ## 6. Spec updates
 
