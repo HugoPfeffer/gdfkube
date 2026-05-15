@@ -6,7 +6,7 @@
 
 ## Specs
 
-- [`hypershift-cluster-stack`](../openspec/changes/realize-gitops-provisioning-templates/specs/hypershift-cluster-stack/spec.md)
+- [`hypershift-cluster-stack`](../openspec/specs/hypershift-cluster-stack/spec.md)
 
 ## Role in the Pipeline
 

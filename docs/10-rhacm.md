@@ -6,7 +6,7 @@
 
 ## Specs
 
-- [`rhacm-org-stack`](../openspec/changes/realize-gitops-provisioning-templates/specs/rhacm-org-stack/spec.md)
+- [`rhacm-org-stack`](../openspec/specs/rhacm-org-stack/spec.md)
 
 ## Role in the Pipeline
 

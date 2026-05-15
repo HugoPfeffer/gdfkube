@@ -6,7 +6,7 @@
 
 ## Specs
 
-- [`argocd-org-stack`](../openspec/changes/realize-gitops-provisioning-templates/specs/argocd-org-stack/spec.md)
+- [`argocd-org-stack`](../openspec/specs/argocd-org-stack/spec.md)
 
 ## Role in the Pipeline
 
