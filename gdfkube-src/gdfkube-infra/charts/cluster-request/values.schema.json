@@ -20,7 +20,9 @@
       "properties": {
         "clusterName": { "type": "string" },
         "nodeCount": { "type": "integer" },
-        "environment": { "type": "string" }
+        "environment": { "type": "string" },
+        "clusterNetworkCidr": { "type": "string" },
+        "serviceNetworkCidr": { "type": "string" }
       }
     },
     "system": {
@@ -33,12 +35,13 @@
         "giteaOwner": { "type": "string" },
         "naming": {
           "type": "object",
-          "required": ["hostedClusterName", "namespace", "appProject", "clusterSet"],
+          "required": ["hostedClusterName", "namespace", "appProject", "clusterSet", "policyNamespace"],
           "properties": {
             "hostedClusterName": { "type": "string" },
             "namespace": { "type": "string" },
             "appProject": { "type": "string" },
-            "clusterSet": { "type": "string" }
+            "clusterSet": { "type": "string" },
+            "policyNamespace": { "type": "string" }
           }
         },
         "labels": {

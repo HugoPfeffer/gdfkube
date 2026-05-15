@@ -21,12 +21,13 @@
       "properties": {
         "naming": {
           "type": "object",
-          "required": ["hostedClusterName", "namespace", "appProject", "clusterSet"],
+          "required": ["hostedClusterName", "namespace", "appProject", "clusterSet", "policyNamespace"],
           "properties": {
             "hostedClusterName": { "type": "string" },
             "namespace": { "type": "string" },
             "appProject": { "type": "string" },
-            "clusterSet": { "type": "string" }
+            "clusterSet": { "type": "string" },
+            "policyNamespace": { "type": "string" }
           }
         },
         "labels": {

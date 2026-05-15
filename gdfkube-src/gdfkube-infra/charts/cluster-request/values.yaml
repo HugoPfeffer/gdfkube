@@ -10,6 +10,8 @@ vars:
   clusterName: "vacinacao"
   nodeCount: 3
   environment: "production"
+  clusterNetworkCidr: "10.132.0.0/14"
+  serviceNetworkCidr: "172.31.0.0/16"
 
 system:
   baseDomain: "apps.gdfkube.gov"
@@ -21,10 +23,15 @@ system:
     namespace: "hc-saude-vacinacao"
     appProject: "saude"
     clusterSet: "saude"
+    policyNamespace: "gdfkube-policies"
   labels:
     cluster.open-cluster-management.io/clusterset: "saude"
     setic.gov.br/managed: "true"
     setic.gov.br/customer: "saude"
+    setic.gov.br/cluster: "vacinacao"
     gdfkube.io/managed: "true"
     gdfkube.io/organization: "saude"
     gdfkube.io/request-id: "01HK6X-EXAMPLE"
+    gdfkube.io/cluster: "vacinacao"
+    gdfkube.io/form-type: "cluster-request"
+    gdfkube.io/env: "production"
