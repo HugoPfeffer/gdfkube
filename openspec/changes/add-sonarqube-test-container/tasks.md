@@ -30,12 +30,12 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Bring-up: `docker compose up -d sonarqube sonar-db sonar-bootstrap`; assert `sonar-bootstrap` exits 0 and logs the non-secret summary; `curl 127.0.0.1:9000/api/system/status` → UP
+- [x] 5.1 Bring-up: `docker compose up -d sonarqube sonar-db sonar-bootstrap`; assert `sonar-bootstrap` exits 0 and logs the non-secret summary; `curl 127.0.0.1:9000/api/system/status` → UP
 - [ ] 5.2 DB-dependency proof: stop `sonar-db`, restart `sonarqube` → not UP
-- [ ] 5.3 Bootstrap idempotency: re-run → exits 0 via already-rotated branch; wrong `SONAR_ADMIN_PASSWORD` on rotated instance → exit 1
+- [x] 5.3 Bootstrap idempotency: re-run → exits 0 via already-rotated branch; wrong `SONAR_ADMIN_PASSWORD` on rotated instance → exit 1
 - [ ] 5.4 camel: `scripts/sonar.sh camel` → `build/jacoco-report/jacoco.xml` present, project populated, exit 0; raise gate coverage to 99% → `sonar:sonar` exits non-zero
 - [ ] 5.5 SPA: `npm ci` succeeds; `scripts/sonar.sh web` → `coverage/lcov.info`, project populated, exit 0; add uncovered file → New-Code gate fails non-zero
 - [ ] 5.6 server: `npm ci` succeeds; `scripts/sonar.sh server` → `coverage/lcov.info`, project populated, exit 0; inject blocker smell → gate fails non-zero
 - [ ] 5.7 orchestrator: `scripts/sonar.sh all` exits 0 all-green; one module failing → `all` exits non-zero and names the module
 - [ ] 5.8 No-drift: plain `docker compose up -d` → app stack healthy as before; `git diff --stat` touches only the blast-radius files; `./mvnw verify` and `npm test` unchanged and need no SonarQube
-- [ ] 5.9 Secret hygiene: `pre-commit run --all-files` (trufflehog) clean; token absent from logs, repo, and env
+- [x] 5.9 Secret hygiene: `pre-commit run --all-files` (trufflehog) clean; token absent from logs, repo, and env

@@ -1,7 +1,7 @@
 # SonarQube Community Edition
 
 Local/devcontainer code-quality and coverage analysis for all three test suites
-(camel, itsm SPA, itsm server).
+(camel, itsm SPA, itsm server). Image: `sonarqube:26.4.0.121862-community`.
 
 ## Bring-up
 
@@ -30,7 +30,7 @@ The analysis token lives in the `sonar-init` named volume at `/sonar/token`
 survives `stop`/`up` and is intentionally wiped by `docker compose down -v`.
 
 SonarQube UI: <http://127.0.0.1:9000> (admin credentials are set via
-`SONAR_ADMIN_PASSWORD`, default `gdfkube-sonar-admin`).
+`SONAR_ADMIN_PASSWORD`, default `GdfKube-S0nar!`).
 
 ## `vm.max_map_count` (Elasticsearch requirement)
 

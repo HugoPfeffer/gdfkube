@@ -16,7 +16,7 @@ api() {
 
 # 1. Rotate default admin/admin; tolerate already-rotated (idempotent re-run).
 AUTH="admin:admin"
-ROT=$(api POST "/api/authentication/change_password" \
+ROT=$(api POST "/api/users/change_password" \
   --data-urlencode "login=admin" \
   --data-urlencode "previousPassword=admin" \
   --data-urlencode "password=$SONAR_ADMIN_PASSWORD" || echo 000)
