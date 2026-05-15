@@ -77,15 +77,16 @@ describe('NewGroupPage', () => {
     expect(repoInput.value).toBe('custom-repo');
   });
 
-  it('preview block renders four lines: Keycloak group / AppProject / ManagedClusterSetBinding / Git repo', () => {
+  it('preview block renders three lines: AppProject / ManagedClusterSetBinding / Git repo (no Keycloak)', () => {
     render(withProvider(makeState(), <NewGroupPage onClose={vi.fn()} />));
     typeName('Cultura');
 
     const preview = screen.getByTestId('group-preview');
-    expect(preview.textContent).toMatch(/Keycloak group:\s*gdf-cultura/);
     expect(preview.textContent).toMatch(/AppProject:\s*cultura-apps/);
     expect(preview.textContent).toMatch(/ManagedClusterSetBinding:\s*cultura\s*→\s*cultura/);
     expect(preview.textContent).toMatch(/Git repo:\s*gdfkube-cultura/);
+    expect(preview.textContent).not.toMatch(/Keycloak group/i);
+    expect(preview.querySelectorAll('li')).toHaveLength(3);
   });
 
   it('Create disabled when Display name empty, disabled when slug empty, enabled when slug non-empty', () => {
@@ -139,6 +140,6 @@ describe('NewGroupPage', () => {
 
     expect(idInput.value).toBe('min-da-fazenda');
     expect(repoInput.value).toBe('gdfkube-min-da-fazenda');
-    expect(preview.textContent).toMatch(/Keycloak group:\s*gdf-min-da-fazenda/);
+    expect(preview.textContent).toMatch(/AppProject:\s*min-da-fazenda-apps/);
   });
 });

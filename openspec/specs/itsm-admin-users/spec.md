@@ -61,7 +61,7 @@ The Users tab MUST provide a primary "+" button that opens a New User page colle
 
 ### Requirement: Per-group editor and New group page
 
-Selecting a group row MUST open an editor with inputs for id, display name, full name, and mapped Git repo. A "+" button MUST open a New Group page with the same fields (with the Git repo input auto-suggested from id, editable to override) plus a live preview of the Keycloak group, repo, AppProject, and ManagedClusterSetBinding to be created.
+Selecting a group row MUST open an editor with inputs for id, display name, full name, and mapped Git repo. A "+" button MUST open a New Group page with the same fields (with the Git repo input auto-suggested from id, editable to override) plus a live preview of the repo, AppProject, and ManagedClusterSetBinding to be created.
 
 #### Scenario: git repo auto-suggested from id
 
@@ -105,8 +105,7 @@ The NewUserPage MUST render an info banner above the form fields explaining the 
 
 ### Requirement: NewGroupPage resource-creation preview
 
-The "Resources that will be created" preview block on the NewGroupPage MUST list four lines showing the exact identifiers that will be provisioned downstream by the Camel automation, in this order:
-- `Keycloak group: gdf-{id}`
+The "Resources that will be created" preview block on the NewGroupPage MUST list three lines showing the exact identifiers that will be provisioned downstream by the Camel automation, in this order:
 - `AppProject: {id}-apps`
 - `ManagedClusterSetBinding: {id} → {id}`
 - `Git repo: {gitRepo}`
@@ -117,8 +116,7 @@ The NewGroupPage MUST NOT render a ManagedClusterSet `<select>` input — the bi
 
 - **GIVEN** the user has typed `cultura` into the Display name input
 - **WHEN** the preview block renders
-- **THEN** an element with text `Keycloak group: gdf-cultura` is present
-- **AND** an element with text `AppProject: cultura-apps` is present
+- **THEN** an element with text `AppProject: cultura-apps` is present
 - **AND** an element with text matching `ManagedClusterSetBinding: cultura → cultura` is present
 - **AND** an element with text `Git repo: gdfkube-cultura` is present
 

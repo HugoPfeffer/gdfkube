@@ -2,9 +2,9 @@
 //
 // Form for id, display name, full name, mapped Git repo (auto-suggested
 // from id when the repo has not been edited manually). A "Resources that
-// will be created" preview block lists the four artifacts the Camel
-// automation will provision: Keycloak group, AppProject,
-// ManagedClusterSetBinding ({id} → {id}), Git repo.
+// will be created" preview block lists the three artifacts the Camel
+// automation will provision: AppProject, ManagedClusterSetBinding
+// ({id} → {id}), Git repo.
 // Create disabled until id and display name are non-empty.
 
 import { useState } from 'react';
@@ -95,7 +95,7 @@ export function NewGroupPage({ onClose, setToast }: NewGroupPageProps) {
         <div className="field">
           <label htmlFor="new-group-id">ID</label>
           <input id="new-group-id" type="text" value={id} disabled readOnly />
-          <div className="help">Auto-derived from Display name. Used for Keycloak group, repo, and AppProject names.</div>
+          <div className="help">Auto-derived from Display name. Used for repo and AppProject names.</div>
         </div>
         <div className="field">
           <label htmlFor="new-group-name">Display name</label>
@@ -120,7 +120,6 @@ export function NewGroupPage({ onClose, setToast }: NewGroupPageProps) {
       <div className="card" data-testid="group-preview" style={{ marginTop: 18 }}>
         <h3 style={{ margin: 0, fontSize: 14 }}>Resources that will be created</h3>
         <ul className="mono" style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', fontSize: 13 }}>
-          <li>Keycloak group: gdf-{idDisplay}</li>
           <li>AppProject: {idDisplay}-apps</li>
           <li>ManagedClusterSetBinding: {idDisplay} → {idDisplay}</li>
           <li>Git repo: {repoDisplay}</li>
