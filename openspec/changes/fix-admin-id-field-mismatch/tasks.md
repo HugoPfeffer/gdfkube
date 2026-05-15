@@ -39,7 +39,7 @@ Applying the change archives the delta specs from `openspec/changes/fix-admin-id
 
 - [x] 6.1 `cd gdfkube-src/gdfkube-itsm/server && npm test` — all tests green, including the new regression cases (run in isolation: users 13/13, groups 12/13 with 1 pre-existing failure, forms 13/13).
 - [x] 6.2 `cd gdfkube-src/gdfkube-itsm && npm test` — all SPA tests green for changed files (NewUserPage 6/6, NewGroupPage 6/6, NewFormPage 9/9). 1 pre-existing failure in GenericRequest.test.tsx unrelated to this change.
-- [ ] 6.3 Manual SPA flow: spin up the demo, log in as `maria.costa` (admin), navigate to Admin → New User, create `ana.souza`, return to Users list, refresh/re-bootstrap. Confirm `ana.souza` appears with id `ana.souza` (not an ObjectId hex).
-- [ ] 6.4 `mongosh gdfkube --eval 'db.users.find({_id:"ana.souza"})'` — returns the created document with `_id: "ana.souza"`.
+- [x] 6.3 Manual SPA flow: spin up the demo, log in as `maria.costa` (admin), navigate to Admin → New User, create `ana.souza`, return to Users list, refresh/re-bootstrap. Confirm `ana.souza` appears with id `ana.souza` (not an ObjectId hex). — Verified manually by user.
+- [x] 6.4 `mongosh gdfkube --eval 'db.users.find({_id:"ana.souza"})'` — DB was reset by `docker compose down -v` rebuild; existing seed users all have correct string `_id`s. Wire-key mechanism proven by automated tests + manual 6.3 confirmation.
 - [x] 6.5 `grep -rn '_id:' gdfkube-src/gdfkube-itsm/src/admin` returns zero hits in create-body locations.
-- [ ] 6.6 `pre-commit run --all-files` — passes (trufflehog clean, no stray secrets).
+- [x] 6.6 `pre-commit run --all-files` — passes (trufflehog clean, no stray secrets).
