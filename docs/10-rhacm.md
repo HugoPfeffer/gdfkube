@@ -1,12 +1,12 @@
 # RHACM
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Partially implemented
 > **Source:** Handoff `app.jsx` + `uploads/gitops-platform.md`
-> **Last validated:** 2026-05-14
+> **Last validated:** 2026-05-15
 
 ## Specs
 
-_No specs yet — this component is not contracted._
+- [`rhacm-org-stack`](../openspec/changes/realize-gitops-provisioning-templates/specs/rhacm-org-stack/spec.md)
 
 ## Role in the Pipeline
 

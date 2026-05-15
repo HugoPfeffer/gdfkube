@@ -1,12 +1,12 @@
 # HyperShift
 
-> **Implementation Status:** Planned
+> **Implementation Status:** Partially implemented
 > **Source:** Handoff `app.jsx` (HostedCluster topology, KubeVirt, addon)
-> **Last validated:** 2026-05-14
+> **Last validated:** 2026-05-15
 
 ## Specs
 
-_No specs yet — this component is not contracted._
+- [`hypershift-cluster-stack`](../openspec/changes/realize-gitops-provisioning-templates/specs/hypershift-cluster-stack/spec.md)
 
 ## Role in the Pipeline
 
@@ -56,12 +56,18 @@ apiVersion: hypershift.openshift.io/v1beta1
 kind: HostedCluster
 metadata:
   name: hc-saude-vacinacao
-  namespace: hc-saude-vacinacao
-  labels:
+  namespace: hc-saude-vacinacao           # per-cluster namespace (system.naming.namespace)
+  labels:                                 # 10-label canonical set (see 10-rhacm.md Label Schema)
     cluster.open-cluster-management.io/clusterset: saude
+    setic.gov.br/managed: "true"
+    setic.gov.br/customer: saude
+    setic.gov.br/cluster: vacinacao
     gdfkube.io/managed: "true"
     gdfkube.io/organization: saude
     gdfkube.io/cluster: vacinacao
+    gdfkube.io/form-type: cluster-request
+    gdfkube.io/env: production
+    gdfkube.io/request-id: 01HK6X3F5G9Q
 spec:
   release:
     image: quay.io/openshift-release-dev/ocp-release:4.16.7-x86_64
@@ -72,26 +78,31 @@ spec:
   platform:
     type: KubeVirt
     kubevirt:
-      baseDomainPassthrough: true
+      baseDomain: apps.gdfkube.gov       # value-driven (system.baseDomain)
   dns:
     baseDomain: apps.gdfkube.gov
   networking:
     clusterNetwork:
-      - cidr: 10.132.0.0/14              # default; per-form override possible
+      - cidr: 10.132.0.0/14              # default; per-form override via vars.clusterNetworkCidr
     serviceNetwork:
-      - cidr: 172.31.0.0/16              # default; per-form override possible
+      - cidr: 172.31.0.0/16              # default; per-form override via vars.serviceNetworkCidr
     networkType: OVNKubernetes
-  services:                              # default service publishing strategies
+  services:
     - service: APIServer
-      servicePublishingStrategy: { type: LoadBalancer }
+      servicePublishingStrategy:
+        type: LoadBalancer
     - service: OAuthServer
-      servicePublishingStrategy: { type: Route }
+      servicePublishingStrategy:
+        type: Route
     - service: OIDC
-      servicePublishingStrategy: { type: Route }
+      servicePublishingStrategy:
+        type: Route
     - service: Konnectivity
-      servicePublishingStrategy: { type: Route }
+      servicePublishingStrategy:
+        type: Route
     - service: Ignition
-      servicePublishingStrategy: { type: Route }
+      servicePublishingStrategy:
+        type: Route
 ```
 
 ### NodePool
@@ -100,11 +111,13 @@ spec:
 apiVersion: hypershift.openshift.io/v1beta1
 kind: NodePool
 metadata:
-  name: hc-saude-vacinacao-default
+  name: hc-saude-vacinacao-workers       # suffix: -workers (matches scale-request patch)
   namespace: hc-saude-vacinacao
 spec:
   clusterName: hc-saude-vacinacao
-  replicas: 3                            # from vars.nodeCount
+  replicas: 3                            # from vars.nodeCount (initial provisioning)
+  management:
+    autoRepair: true                     # HyperShift re-creates unhealthy nodes automatically
   release:
     image: quay.io/openshift-release-dev/ocp-release:4.16.7-x86_64
   platform:
@@ -119,6 +132,8 @@ spec:
           size: 64Gi
           storageClass: ocs-storagecluster-ceph-rbd
 ```
+
+**Scaling:** initial provisioning uses `vars.nodeCount` (from the `cluster-request` form). Subsequent scale operations use `vars.replicas` in the `scale-request` chart, which patches the same NodePool's `.spec.replicas`. The two variable names are intentionally distinct to separate the "create" and "scale" request semantics.
 
 ### CIDR Override (optional Advanced UI)
 
@@ -169,7 +184,7 @@ The hypershift-addon deploys the agent in **hosted mode** — the klusterlet run
 
 - **Capacity:** each hosted cluster consumes hub CPU/memory for control-plane Pods + KubeVirt VMs. Capacity planning out of scope here.
 - **Storage:** chart hardcodes `ocs-storagecluster-ceph-rbd`. Demo assumes ODF/OCS is available on the hub.
-- **DNS:** `apps.gdfkube.gov` is the platform's wildcard domain. KubeVirt `baseDomainPassthrough` reuses it.
+- **DNS:** `apps.gdfkube.gov` is the platform's wildcard domain. Both `kubevirt.baseDomain` and `dns.baseDomain` reference it (value-driven from `system.baseDomain`).
 - **Failure modes:** if RHACM or HyperShift is unavailable, ArgoCD sync stalls but doesn't roll back. Camel doesn't see this directly — pipeline status reflects "git pushed" but not "cluster ready" until `status-emitter` polls or RHACM signals.
 
 ## Decisions Resolved
