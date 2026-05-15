@@ -175,7 +175,7 @@ class HelmValuesBuilderTest {
     @Test
     @SuppressWarnings("unchecked")
     void buildForOrg_writesCanonicalValues() throws Exception {
-        String path = builder.buildForOrg("cultura", "gdfkube-cultura");
+        String path = builder.buildForOrg("cultura");
 
         try {
             Map<String, Object> values = parseYaml(path);

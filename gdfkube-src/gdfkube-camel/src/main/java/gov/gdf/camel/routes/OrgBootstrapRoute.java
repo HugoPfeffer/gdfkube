@@ -99,7 +99,6 @@ public class OrgBootstrapRoute extends RouteBuilder {
         JsonNode node = MAPPER.readTree(body);
 
         String groupId = node.path("_id").asText();
-        String groupRepo = node.path("repo").asText("gdfkube-" + groupId);
 
         evictExpired();
         if (dedupCache.containsKey(groupId)) {
@@ -109,10 +108,10 @@ public class OrgBootstrapRoute extends RouteBuilder {
         dedupCache.put(groupId, System.currentTimeMillis());
 
         boolean perOrgCreated = gitRepoBootstrapper.ensure(
-                giteaOwner, "gdfkube-" + groupId, "GitOps manifests for " + groupId);
+                giteaOwner, helmValuesBuilder.getRepoName(groupId), "GitOps manifests for " + groupId);
         if (perOrgCreated) {
             auditInterceptor.emit(ROUTE_ID, groupId, 0, "create-repo",
-                    Map.of("repo", giteaOwner + "/gdfkube-" + groupId));
+                    Map.of("repo", giteaOwner + "/" + helmValuesBuilder.getRepoName(groupId)));
         }
 
         boolean centralCreated = gitRepoBootstrapper.ensure(
@@ -143,7 +142,7 @@ public class OrgBootstrapRoute extends RouteBuilder {
                 return;
             }
 
-            String valuesPath = helmValuesBuilder.buildForOrg(groupId, groupRepo);
+            String valuesPath = helmValuesBuilder.buildForOrg(groupId);
             String outputDir = "/tmp/" + groupId + "-bootstrap-out";
 
             try {

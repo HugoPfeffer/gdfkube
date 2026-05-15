@@ -69,7 +69,7 @@ public class HelmValuesBuilder {
         return "gdfkube-" + groupId;
     }
 
-    public String buildForOrg(String groupId, String groupRepo) throws IOException {
+    public String buildForOrg(String groupId) throws IOException {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("requestId", "bootstrap-" + groupId);
         meta.put("formId", "org-bootstrap");

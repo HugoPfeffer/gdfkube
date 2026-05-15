@@ -7,6 +7,7 @@ import org.jboss.logging.Logger;
 
 import gov.gdf.camel.bean.AuditInterceptor;
 import gov.gdf.camel.bean.GitRepoBootstrapper;
+import gov.gdf.camel.bean.HelmValuesBuilder;
 import gov.gdf.camel.bean.StageUpdater;
 import gov.gdf.camel.model.RequestEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -32,6 +33,9 @@ public class RepoBootstrapRoute extends RouteBuilder {
     @Inject
     StageUpdater stageUpdater;
 
+    @Inject
+    HelmValuesBuilder helmValuesBuilder;
+
     @Override
     public void configure() {
         errorHandler(deadLetterChannel("kafka:dlq.gdfkube." + ROUTE_ID)
@@ -47,7 +51,7 @@ public class RepoBootstrapRoute extends RouteBuilder {
             .process(exchange -> {
                 RequestEvent event = exchange.getProperty("requestEvent", RequestEvent.class);
                 String org = event.requesterGroupName;
-                String repoName = giteaOwner + "-" + org;
+                String repoName = helmValuesBuilder.getRepoName(org);
 
                 boolean created = gitRepoBootstrapper.ensure(
                         giteaOwner, repoName, "GitOps manifests for " + org);
