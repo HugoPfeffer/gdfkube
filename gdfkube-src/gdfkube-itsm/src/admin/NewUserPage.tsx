@@ -48,7 +48,7 @@ export function NewUserPage({ onClose }: NewUserPageProps) {
     setIsSaving(true);
     try {
       const body: Record<string, unknown> = {
-        _id: username.trim(),
+        id: username.trim(),
         name: name.trim(),
         fullName: name.trim(),
         username: username.trim(),

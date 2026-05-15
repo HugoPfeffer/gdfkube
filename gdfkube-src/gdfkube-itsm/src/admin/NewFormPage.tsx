@@ -54,7 +54,7 @@ export function NewFormPage({ onClose }: NewFormPageProps) {
     const today = todayIso();
     try {
       const body: Record<string, unknown> = {
-        _id: id,
+        id: id,
         name: name.trim(),
         topic: topic.trim() || 'dbz.gdfkube.requests',
         description: description.trim() || undefined,
