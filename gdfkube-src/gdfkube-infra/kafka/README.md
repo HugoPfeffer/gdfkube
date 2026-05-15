@@ -13,7 +13,7 @@ Bootstrap and configuration reference for services connecting to the Kafka clust
 
 | Group ID | Used By | Topics |
 |---|---|---|
-| `gdfkube-camel` | Camel routes | `dbz.gdfkube.requests`, `dbz.gdfkube.forms`, `dlq.gdfkube.*` |
+| `gdfkube-camel` | Camel routes | `dbz.gdfkube.requests`, `dbz.gdfkube.forms`, `dbz.gdfkube.groups`, `dlq.gdfkube.*` |
 | `itsm-sse-{podName}` | Express SSE (per-replica for broadcast fan-out) | `gdfkube.pipeline.status` |
 
 In compose, `{podName}` resolves to the container hostname.

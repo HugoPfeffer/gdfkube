@@ -38,6 +38,7 @@ The connector uses topic prefix `dbz.gdfkube`. Debezium produces events on `dbz.
 
 - `dbz.gdfkube.requests` — CDC events from the `requests` collection
 - `dbz.gdfkube.forms` — CDC events from the `forms` collection
+- `dbz.gdfkube.groups` — CDC events from the `groups` collection
 
 ## Dead-letter queue
 

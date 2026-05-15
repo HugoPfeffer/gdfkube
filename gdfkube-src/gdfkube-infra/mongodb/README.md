@@ -47,11 +47,11 @@ seed files and writes four JSON files to
 | `requests` | Cluster/namespace/scale provisioning requests | Yes |
 | `forms`    | Form definitions with fields and templates | Yes |
 | `users`    | Demo user identities (operator, admin, approver, service) | No |
-| `groups`   | Department/org groups | No |
+| `groups`   | Department/org groups | Yes |
 
-**CDC-watched** collections (`requests`, `forms`) have their changes captured
-by Debezium and published to Kafka topics. Admin-only collections (`users`,
-`groups`) are managed exclusively through the Express API and are not part of
+**CDC-watched** collections (`requests`, `forms`, `groups`) have their changes captured
+by Debezium and published to Kafka topics. The admin-only collection (`users`)
+is managed exclusively through the Express API and is not part of
 the CDC pipeline.
 
 ### Indexes
