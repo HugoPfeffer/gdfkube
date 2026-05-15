@@ -4,3 +4,6 @@ metadata:
   name: {{ .Values.system.naming.clusterSet }}
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
+spec:
+  clusterSelector:
+    selectorType: ExclusiveClusterSetLabel

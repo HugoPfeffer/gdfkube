@@ -1,0 +1,15 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: {{ .Values.meta.org }}-pullsecret-binding
+  namespace: {{ .Values.system.naming.policyNamespace }}
+  labels:
+    {{- toYaml .Values.system.labels | nindent 4 }}
+placementRef:
+  name: {{ .Values.meta.org }}-prod-clusters
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+subjects:
+  - name: {{ .Values.meta.org }}-pullsecret-distribution
+    apiGroup: policy.open-cluster-management.io
+    kind: Policy
