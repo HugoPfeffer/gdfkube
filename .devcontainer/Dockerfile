@@ -166,6 +166,18 @@ RUN npm install -g opencode-ai@latest
 # Install Spec-Kit
 RUN uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
 
+# Install Eclipse Temurin JDK 21 (required by gdfkube-camel / Quarkus)
+ARG JAVA_VERSION=21
+RUN ARCH=$(dpkg --print-architecture) && \
+  if [ "$ARCH" = "amd64" ]; then JDK_ARCH="x64"; else JDK_ARCH="$ARCH"; fi && \
+  curl -fsSL "https://api.adoptium.net/v3/binary/latest/${JAVA_VERSION}/ga/linux/${JDK_ARCH}/jdk/hotspot/normal/eclipse" \
+    -o /tmp/jdk.tar.gz && \
+  mkdir -p /home/node/.local/jdk && \
+  tar -xzf /tmp/jdk.tar.gz -C /home/node/.local/jdk --strip-components=1 && \
+  rm /tmp/jdk.tar.gz
+ENV JAVA_HOME=/home/node/.local/jdk
+ENV PATH=$JAVA_HOME/bin:$PATH
+
 # Install kubectl
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
   chmod +x kubectl && \
