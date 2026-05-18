@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: gdfkube
 resources:
   - rbac.yaml
+  - configmaps.yaml
   - mongo-init-job.yaml
   - mongo-seed-job.yaml
   - mongo-collections-init-job.yaml
@@ -13,34 +14,3 @@ resources:
   - gitea-token-sync-job.yaml
   - debezium-init-job.yaml
   - sonar-bootstrap-job.yaml
-configMapGenerator:
-  - name: mongo-init-scripts
-    files:
-      - ../../../mongodb/init-rs.js
-  - name: mongo-seed-scripts
-    files:
-      - ../../../mongodb/seed-collections.js
-  - name: mongo-seed-data
-    files:
-      - ../../../mongodb/seed-data/forms.json
-      - ../../../mongodb/seed-data/groups.json
-      - ../../../mongodb/seed-data/settings.json
-      - ../../../mongodb/seed-data/users.json
-  - name: mongo-collections-scripts
-    files:
-      - ../../../mongodb/init-camel-collections.js
-  - name: kafka-init-scripts
-    files:
-      - ../../../kafka/init-topics.sh
-  - name: connect-topics-scripts
-    files:
-      - ../../../debezium/init-connect-topics.sh
-  - name: debezium-init-scripts
-    files:
-      - ../../../debezium/register-connector.sh
-      - ../../../debezium/connector-config.json
-  - name: sonar-bootstrap-scripts
-    files:
-      - ../../../sonarqube/bootstrap.sh
-generatorOptions:
-  disableNameSuffixHash: true

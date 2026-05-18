@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gdfkube-gitea-cr
+  namespace: {{ .Values.argocd.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    {{- include "gdfkube-platform.source" . | nindent 4 }}
+    path: gdfkube-src/gdfkube-infra/platform/manifests/gitea-cr
+  destination:
+    {{- include "gdfkube-platform.destination" . | nindent 4 }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        maxDuration: 5m
+        factor: 2

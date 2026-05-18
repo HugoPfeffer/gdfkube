@@ -18,8 +18,7 @@ spec:
     to:
       kind: ImageStreamTag
       name: "gdfkube-itsm:latest"
-  triggers:
-    - type: ConfigChange
+  triggers: []
 ---
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
@@ -41,8 +40,7 @@ spec:
     to:
       kind: ImageStreamTag
       name: "gdfkube-itsm-api:latest"
-  triggers:
-    - type: ConfigChange
+  triggers: []
 ---
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
@@ -64,5 +62,4 @@ spec:
     to:
       kind: ImageStreamTag
       name: "gdfkube-camel:latest"
-  triggers:
-    - type: ConfigChange
+  triggers: []

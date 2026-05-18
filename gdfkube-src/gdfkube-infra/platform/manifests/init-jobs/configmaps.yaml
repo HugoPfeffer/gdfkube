@@ -1,0 +1,746 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-init-scripts
+  namespace: gdfkube
+data:
+  init-rs.js: |
+    let alreadyInitiated = false;
+    try {
+      alreadyInitiated = rs.status().ok === 1;
+    } catch (e) {
+      alreadyInitiated = false;
+    }
+
+    if (alreadyInitiated) {
+      print("rs0 already initiated; nothing to do");
+      quit(0);
+    }
+
+    const result = rs.initiate({
+      _id: "rs0",
+      members: [
+        { _id: 0, host: "mongo1:27017" },
+        { _id: 1, host: "mongo2:27017" },
+        { _id: 2, host: "mongo3:27017" },
+      ],
+    });
+
+    if (result.ok !== 1) {
+      print("rs.initiate failed: " + JSON.stringify(result));
+      quit(1);
+    }
+
+    print("rs0 initiated");
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-seed-scripts
+  namespace: gdfkube
+data:
+  seed-collections.js: |
+    /**
+     * Idempotent mongosh seed script.
+     * Loads JSON seed files and upserts documents + creates indexes.
+     *
+     * Usage (inside container with files mounted at /seed-data/):
+     *   mongosh --host mongo1:27017 /scripts/seed-collections.js
+     *
+     * The database name can be overridden via environment variable SEED_DB (default: gdfkube).
+     */
+
+    const dbName = process.env.SEED_DB || 'gdfkube';
+    const seedPath = process.env.SEED_PATH || '/seed-data';
+
+    let ready = false;
+    for (let i = 0; i < 30; i++) {
+      try {
+        const status = rs.status();
+        if (status.members && status.members.some(m => m.stateStr === 'PRIMARY')) {
+          ready = true;
+          break;
+        }
+      } catch (_) {}
+      print('Waiting for primary election...');
+      sleep(1000);
+    }
+    if (!ready) {
+      print('ERROR: no PRIMARY elected within 30s');
+      quit(1);
+    }
+
+    const database = db.getSiblingDB(dbName);
+
+    function loadSeedFile(filename) {
+      const raw = fs.readFileSync(`${seedPath}/${filename}`, 'utf8');
+      return JSON.parse(raw);
+    }
+
+    function upsertCollection(collectionName, docs) {
+      if (!docs || docs.length === 0) {
+        print(`  ${collectionName}: no documents to seed`);
+        return;
+      }
+
+      const ops = docs.map((doc) => ({
+        replaceOne: {
+          filter: { _id: doc._id },
+          replacement: doc,
+          upsert: true,
+        },
+      }));
+
+      const result = database.getCollection(collectionName).bulkWrite(ops);
+      print(
+        `  ${collectionName}: matched=${result.matchedCount} ` +
+          `modified=${result.modifiedCount} upserted=${result.upsertedCount}`
+      );
+    }
+
+    print(`\n=== Seeding database: ${dbName} ===\n`);
+
+    const forms = loadSeedFile('forms.json');
+    const users = loadSeedFile('users.json');
+    const groups = loadSeedFile('groups.json');
+
+    upsertCollection('forms', forms);
+    upsertCollection('users', users);
+    upsertCollection('groups', groups);
+
+    // gitea_settings: use $setOnInsert so re-seeds don't overwrite admin-edited values.
+    // This differs from other seeds (which use replaceOne) because settings are
+    // runtime admin config, not resettable demo fixtures.
+    const settingsRaw = fs.readFileSync(`${seedPath}/settings.json`, 'utf8');
+    const settingsData = JSON.parse(settingsRaw);
+    database.gitea_settings.updateOne(
+      { _id: settingsData._id },
+      { $setOnInsert: settingsData },
+      { upsert: true }
+    );
+    print('  gitea_settings: seeded (setOnInsert)');
+
+    print('\n--- Creating indexes ---\n');
+
+    database.requests.createIndex({ formId: 1, status: 1 }, { name: 'idx_formId_status' });
+    database.requests.createIndex({ requesterGroupName: 1, env: 1 }, { name: 'idx_org_env' });
+    database.requests.createIndex({ status: 1 }, { name: 'idx_status' });
+    database.requests.createIndex({ submittedAt: 1 }, { name: 'idx_createdAt' });
+    database.requests.createIndex({ 'meta.correlationId': 1 }, { name: 'idx_correlationId' });
+
+    database.forms.createIndex({ status: 1 }, { name: 'idx_form_status' });
+
+    database.users.createIndex({ group: 1 }, { name: 'idx_user_group' });
+    database.users.createIndex({ role: 1 }, { name: 'idx_user_role' });
+
+    database.groups.createIndex({ name: 1 }, { name: 'idx_group_name' });
+
+    print('\n=== Seed complete ===\n');
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-seed-data
+  namespace: gdfkube
+data:
+  forms.json: |
+    [
+      {
+        "_id": "cluster-request",
+        "id": "cluster-request",
+        "name": "OpenShift Cluster Request",
+        "topic": "dbz.gdfkube.requests",
+        "status": "active",
+        "submissions": 47,
+        "fieldCount": 3,
+        "updated": "2026-04-22",
+        "lastEdited": "2026-04-22",
+        "fields": [
+          {
+            "id": 1,
+            "key": "clusterName",
+            "label": "Cluster name",
+            "type": "text",
+            "required": true,
+            "bucket": "vars",
+            "validation": "^[a-z][a-z0-9-]*$",
+            "prefix": "hc-{requesterGroupName}-",
+            "help": "Lowercase letters, digits, hyphens. Must start with a letter. The full namespace will be hc-{requesterGroupName}-{clusterName}."
+          },
+          {
+            "id": 2,
+            "key": "environment",
+            "label": "Environment",
+            "type": "select",
+            "required": true,
+            "bucket": "vars",
+            "displayAs": "radio-cards",
+            "options": "development|Development|Dev sandbox, ephemeral|#16a34a; staging|Staging|Pre-prod, relaxed quotas|#f59e0b; production|Production|RHACM strict policy set|#dc2626",
+            "help": "Determines RHACM policy set."
+          },
+          {
+            "id": 3,
+            "key": "nodeCount",
+            "label": "Worker node count",
+            "type": "number",
+            "required": true,
+            "bucket": "vars",
+            "min": 1,
+            "max": 10,
+            "help": "KubeVirt VMs provisioned by HyperShift NodePool."
+          }
+        ],
+        "templates": [
+          {
+            "name": "hostedcluster.yaml",
+            "content": "# HyperShift HostedCluster manifest, rendered per submission.\napiVersion: hypershift.openshift.io/v1beta1\nkind: HostedCluster\nmetadata:\n  name: hc-{{ meta.requesterGroupName }}-{{ vars.clusterName }}\n  namespace: clusters\n  labels:\n    gdfkube.gov/group: {{ meta.requesterGroupName }}\n    gdfkube.gov/env:   {{ vars.environment }}\nspec:\n  release:\n    image: quay.io/openshift-release-dev/ocp-release:4.16.6-x86_64\n  pullSecret:\n    name: pull-secret\n  platform:\n    type: KubeVirt\n    kubevirt:\n      baseDomain: gdfkube.gov.local\n  services:\n    - service: APIServer\n      servicePublishingStrategy: { type: LoadBalancer }\n  nodePools:\n    - name: workers\n      replicas: {{ vars.nodeCount }}\n      platform: { type: KubeVirt }\n"
+          },
+          {
+            "name": "applicationset.yaml",
+            "content": "# ArgoCD ApplicationSet that fans out workloads to the new cluster.\napiVersion: argoproj.io/v1alpha1\nkind: ApplicationSet\nmetadata:\n  name: appset-{{ meta.requesterGroupName }}-{{ vars.clusterName }}\n  namespace: argocd\nspec:\n  generators:\n    - clusters:\n        selector:\n          matchLabels:\n            gdfkube.gov/group: {{ meta.requesterGroupName }}\n            gdfkube.gov/env:   {{ vars.environment }}\n  template:\n    metadata:\n      name: '{{ \"{{name}}\" }}-baseline'\n    spec:\n      project: {{ meta.requesterGroupName }}\n      source:\n        repoURL: https://git.gdfkube.gov/{{ meta.requesterGroupName }}/baseline.git\n        targetRevision: HEAD\n        path: overlays/{{ vars.environment }}\n      destination:\n        server: '{{ \"{{server}}\" }}'\n        namespace: kube-system\n"
+          },
+          {
+            "name": "managedcluster.yaml",
+            "content": "# RHACM ManagedCluster registration.\napiVersion: cluster.open-cluster-management.io/v1\nkind: ManagedCluster\nmetadata:\n  name: {{ vars.clusterName }}\n  labels:\n    gdfkube.gov/group: {{ meta.requesterGroupName }}\n    gdfkube.gov/env:   {{ vars.environment }}\nspec:\n  hubAcceptsClient: true\n"
+          }
+        ]
+      },
+      {
+        "_id": "namespace-request",
+        "id": "namespace-request",
+        "name": "Namespace Onboarding",
+        "topic": "dbz.gdfkube.requests",
+        "status": "active",
+        "submissions": 23,
+        "fieldCount": 5,
+        "updated": "2026-04-19",
+        "lastEdited": "2026-04-19",
+        "fields": [
+          {
+            "id": 11,
+            "key": "targetCluster",
+            "label": "Target cluster",
+            "type": "select",
+            "required": true,
+            "bucket": "vars",
+            "options": "shared-dev, shared-staging, shared-prod",
+            "help": "Pick a multi-tenant cluster."
+          },
+          {
+            "id": 12,
+            "key": "namespaceName",
+            "label": "Namespace name",
+            "type": "text",
+            "required": true,
+            "bucket": "vars",
+            "validation": "^[a-z][a-z0-9-]*$",
+            "help": "Lowercase, dash-separated."
+          },
+          {
+            "id": 13,
+            "key": "cpuQuota",
+            "label": "CPU quota (cores)",
+            "type": "number",
+            "required": true,
+            "bucket": "vars",
+            "min": 1,
+            "max": 32,
+            "help": "Total cores requested."
+          },
+          {
+            "id": 14,
+            "key": "memQuotaGi",
+            "label": "Memory quota (Gi)",
+            "type": "number",
+            "required": true,
+            "bucket": "vars",
+            "min": 1,
+            "max": 256,
+            "help": "GiB of RAM."
+          },
+          {
+            "id": 15,
+            "key": "purpose",
+            "label": "Purpose",
+            "type": "textarea",
+            "required": true,
+            "bucket": "meta",
+            "help": "What workloads will run here?"
+          }
+        ],
+        "templates": [
+          {
+            "name": "namespace.yaml",
+            "content": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: {{ vars.namespaceName }}\n  labels:\n    gdfkube.gov/group: {{ meta.requesterGroupName }}\n"
+          },
+          {
+            "name": "resourcequota.yaml",
+            "content": "apiVersion: v1\nkind: ResourceQuota\nmetadata:\n  name: default-quota\n  namespace: {{ vars.namespaceName }}\nspec:\n  hard:\n    requests.cpu: \"{{ vars.cpuQuota }}\"\n    requests.memory: \"{{ vars.memQuotaGi }}Gi\"\n"
+          }
+        ]
+      },
+      {
+        "_id": "scale-request",
+        "id": "scale-request",
+        "name": "Cluster Scale Change",
+        "topic": "dbz.gdfkube.requests",
+        "status": "active",
+        "submissions": 12,
+        "fieldCount": 3,
+        "updated": "2026-04-15",
+        "lastEdited": "2026-04-15",
+        "fields": [
+          {
+            "id": 21,
+            "key": "clusterName",
+            "label": "Cluster",
+            "type": "text",
+            "required": true,
+            "bucket": "vars",
+            "validation": "^[a-z][a-z0-9-]*$",
+            "help": "Existing cluster name."
+          },
+          {
+            "id": 22,
+            "key": "newNodeCount",
+            "label": "New node count",
+            "type": "number",
+            "required": true,
+            "bucket": "vars",
+            "min": 1,
+            "max": 20
+          },
+          {
+            "id": 23,
+            "key": "justification",
+            "label": "Justification",
+            "type": "textarea",
+            "required": true,
+            "bucket": "meta",
+            "help": "Why this scale change is needed."
+          }
+        ],
+        "templates": [
+          {
+            "name": "nodepool-patch.yaml",
+            "content": "# Patch applied to the existing NodePool.\napiVersion: hypershift.openshift.io/v1beta1\nkind: NodePool\nmetadata:\n  name: {{ vars.clusterName }}-workers\n  namespace: clusters\nspec:\n  replicas: {{ vars.newNodeCount }}\n"
+          }
+        ]
+      }
+    ]
+  groups.json: |
+    [
+      {
+        "_id": "saude",
+        "name": "Saúde",
+        "fullName": "Department of Health",
+        "users": 8,
+        "forms": 4,
+        "repo": "gdfkube-saude",
+        "clusters": 2
+      },
+      {
+        "_id": "educacao",
+        "name": "Educação",
+        "fullName": "Department of Education",
+        "users": 6,
+        "forms": 4,
+        "repo": "gdfkube-educacao",
+        "clusters": 2
+      },
+      {
+        "_id": "transportes",
+        "name": "Transportes",
+        "fullName": "Department of Transportation",
+        "users": 4,
+        "forms": 4,
+        "repo": "gdfkube-transportes",
+        "clusters": 2
+      },
+      {
+        "_id": "fazenda",
+        "name": "Fazenda",
+        "fullName": "Department of Finance",
+        "users": 5,
+        "forms": 4,
+        "repo": "gdfkube-fazenda",
+        "clusters": 1
+      },
+      {
+        "_id": "agricultura",
+        "name": "Agricultura",
+        "fullName": "Department of Agriculture",
+        "users": 3,
+        "forms": 4,
+        "repo": "gdfkube-agricultura",
+        "clusters": 0
+      },
+      {
+        "_id": "seguranca",
+        "name": "Segurança",
+        "fullName": "Department of Public Safety",
+        "users": 4,
+        "forms": 4,
+        "repo": "gdfkube-seguranca",
+        "clusters": 1
+      },
+      {
+        "_id": "setic",
+        "name": "SETIC",
+        "fullName": "Platform Engineering",
+        "users": 3,
+        "forms": 6,
+        "repo": "gdfkube-infra",
+        "clusters": null
+      }
+    ]
+  settings.json: |
+    {
+      "_id": "gitea",
+      "owner": "gdfkube",
+      "token": "CHANGE_ME",
+      "updatedBy": "seed"
+    }
+  users.json: |
+    [
+      {
+        "_id": "joao.silva",
+        "username": "joao.silva",
+        "name": "João Silva",
+        "fullName": "João Silva",
+        "email": "joao.silva@saude.gov",
+        "role": "operator",
+        "group": "saude",
+        "status": "active",
+        "mfa": null,
+        "last": "2 min ago"
+      },
+      {
+        "_id": "maria.costa",
+        "username": "maria.costa",
+        "name": "Maria Costa",
+        "fullName": "Maria Costa",
+        "email": "m.costa@setic.gov",
+        "role": "admin",
+        "group": "setic",
+        "status": "active",
+        "mfa": null,
+        "last": "now"
+      },
+      {
+        "_id": "carlos.mendes",
+        "username": "carlos.mendes",
+        "name": "Carlos Mendes",
+        "fullName": "Carlos Mendes",
+        "email": "c.mendes@transportes.gov",
+        "role": "operator",
+        "group": "transportes",
+        "status": "active",
+        "mfa": null,
+        "last": "18m ago"
+      },
+      {
+        "_id": "ana.rodrigues",
+        "username": "ana.rodrigues",
+        "name": "Ana Rodrigues",
+        "fullName": "Ana Rodrigues",
+        "email": "ana.r@fazenda.gov",
+        "role": "operator",
+        "group": "fazenda",
+        "status": "active",
+        "mfa": null,
+        "last": "1h ago"
+      },
+      {
+        "_id": "pedro.almeida",
+        "username": "pedro.almeida",
+        "name": "Pedro Almeida",
+        "fullName": "Pedro Almeida",
+        "email": "p.almeida@agricultura.gov",
+        "role": "operator",
+        "group": "agricultura",
+        "status": "disabled",
+        "mfa": null,
+        "last": "3d ago"
+      },
+      {
+        "_id": "rafael.souza",
+        "username": "rafael.souza",
+        "name": "Rafael Souza",
+        "fullName": "Rafael Souza",
+        "email": "r.souza@educacao.gov",
+        "role": "operator",
+        "group": "educacao",
+        "status": "active",
+        "mfa": null,
+        "last": "5h ago"
+      }
+    ]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-collections-scripts
+  namespace: gdfkube
+data:
+  init-camel-collections.js: |
+    const db = db.getSiblingDB('gdfkube');
+
+    function ensureCollection(name, options) {
+      if (!db.getCollectionNames().includes(name)) {
+        db.createCollection(name, options || {});
+        print(`created collection ${name}`);
+      } else {
+        print(`collection ${name} already exists`);
+      }
+    }
+
+    function ensurePreImage(name) {
+      try {
+        db.runCommand({ collMod: name, changeStreamPreAndPostImages: { enabled: true } });
+        print(`preImages enabled on ${name}`);
+      } catch (e) {
+        print(`preImages collMod on ${name} skipped: ${e.message}`);
+      }
+    }
+
+    ensureCollection('audit_log');
+    ensureCollection('dlq_log');
+    ensureCollection('debezium_signals');
+    ensurePreImage('requests');
+    ensurePreImage('forms');
+    ensurePreImage('groups');
+
+    db.audit_log.createIndex({ at: 1 }, { expireAfterSeconds: 2592000 });
+    db.audit_log.createIndex({ requestId: 1, at: -1 });
+    db.dlq_log.createIndex({ topic: 1, firstSeenAt: -1 });
+    db.dlq_log.createIndex({ requestId: 1 });
+
+    print('ok');
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-init-scripts
+  namespace: gdfkube
+data:
+  init-topics.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    BOOTSTRAP="kafka1:19092"
+    KAFKA_BIN="/opt/kafka/bin"
+
+    create_topic() {
+      local topic="$1" partitions="$2" rf="$3" retention_ms="$4"
+
+      "$KAFKA_BIN/kafka-topics.sh" \
+        --bootstrap-server "$BOOTSTRAP" \
+        --create \
+        --if-not-exists \
+        --topic "$topic" \
+        --partitions "$partitions" \
+        --replication-factor "$rf"
+
+      "$KAFKA_BIN/kafka-configs.sh" \
+        --bootstrap-server "$BOOTSTRAP" \
+        --entity-type topics \
+        --entity-name "$topic" \
+        --alter \
+        --add-config "retention.ms=$retention_ms,min.insync.replicas=2,cleanup.policy=delete"
+
+      echo "Topic '$topic' ready (partitions=$partitions, rf=$rf, retention=${retention_ms}ms)"
+    }
+
+    echo "=== Creating Kafka topics ==="
+
+    create_topic "dbz.gdfkube.requests"      6 3 604800000
+    create_topic "dbz.gdfkube.forms"          1 3 604800000
+    create_topic "dbz.gdfkube.groups"         1 3 604800000
+
+    create_topic "gdfkube.pipeline.status"    6 3 1209600000
+    create_topic "gdfkube.audit"              3 3 2592000000
+
+    create_topic "dlq.gdfkube.request-router"  3 3 2592000000
+    create_topic "dlq.gdfkube.helm-render"    1 3 2592000000
+    create_topic "dlq.gdfkube.git-push"       1 3 2592000000
+    create_topic "dlq.gdfkube.repo-bootstrap" 1 3 2592000000
+    create_topic "dlq.gdfkube.groups"         1 3 2592000000
+    create_topic "dlq.gdfkube.status-emitter" 1 3 2592000000
+    create_topic "dlq.gdfkube.audit-sink"     1 3 2592000000
+    create_topic "dlq.gdfkube.config-reload"  1 3 2592000000
+    create_topic "dlq.gdfkube.debezium"       1 3 2592000000
+
+    echo "=== All 14 topics created successfully ==="
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: connect-topics-scripts
+  namespace: gdfkube
+data:
+  init-connect-topics.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    BOOTSTRAP="kafka1:19092"
+    KAFKA_BIN="/opt/kafka/bin"
+
+    create() {
+      local topic="$1" partitions="$2"
+      "$KAFKA_BIN/kafka-topics.sh" --bootstrap-server "$BOOTSTRAP" --create --if-not-exists \
+        --topic "$topic" --partitions "$partitions" --replication-factor 3
+      "$KAFKA_BIN/kafka-configs.sh" --bootstrap-server "$BOOTSTRAP" --entity-type topics \
+        --entity-name "$topic" --alter --add-config "cleanup.policy=compact"
+      echo "topic $topic ready"
+    }
+
+    create connect-configs 1
+    create connect-offsets 25
+    create connect-status 5
+    echo "connect topics ready"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: debezium-init-scripts
+  namespace: gdfkube
+data:
+  register-connector.sh: |
+    #!/bin/sh
+    set -e
+    URL="http://gdfkube-debezium-connect:8083/connectors/gdfkube-mongo-source/config"
+    for i in 1 2 3; do
+      if curl -sf -X PUT -H 'Content-Type: application/json' --data @/connector-config.json "$URL"; then
+        echo ""
+        echo "connector registered"
+        exit 0
+      fi
+      echo "retry $i..."
+      sleep 2
+    done
+    echo "connector registration failed"
+    exit 1
+  connector-config.json: |
+    {
+      "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+      "tasks.max": "1",
+      "mongodb.connection.string": "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0",
+      "topic.prefix": "dbz.gdfkube",
+      "database.include.list": "gdfkube",
+      "collection.include.list": "gdfkube.requests,gdfkube.forms,gdfkube.groups",
+      "snapshot.mode": "initial",
+      "capture.mode": "change_streams_update_full_with_pre_image",
+      "signal.data.collection": "gdfkube.debezium_signals",
+      "transforms": "unwrap,reroute",
+      "transforms.unwrap.type": "io.debezium.connector.mongodb.transforms.ExtractNewDocumentState",
+      "transforms.unwrap.delete.handling.mode": "rewrite",
+      "transforms.unwrap.add.headers": "op,source.ts_ms",
+      "transforms.unwrap.field.exclude.list": "_stageWriteback",
+      "transforms.reroute.type": "org.apache.kafka.connect.transforms.RegexRouter",
+      "transforms.reroute.regex": "dbz.gdfkube.gdfkube.(.*)",
+      "transforms.reroute.replacement": "dbz.gdfkube.$1",
+      "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+      "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+      "key.converter.schemas.enable": "false",
+      "value.converter.schemas.enable": "false",
+      "errors.tolerance": "all",
+      "errors.deadletterqueue.topic.name": "dlq.gdfkube.debezium",
+      "errors.deadletterqueue.topic.replication.factor": "3",
+      "errors.deadletterqueue.context.headers.enable": "true"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sonar-bootstrap-scripts
+  namespace: gdfkube
+data:
+  bootstrap.sh: |
+    #!/bin/sh
+    set -eu
+
+    : "${SONAR_URL:=http://sonarqube:9000}"
+    : "${SONAR_ADMIN_PASSWORD:?required}"
+    : "${SONAR_TOKEN_NAME:=gdfkube-analysis}"
+    : "${SONAR_PROJECTS:=gdfkube-camel,gdfkube-itsm-web,gdfkube-itsm-server}"
+    : "${SONAR_GATE_NAME:=gdfkube-gate}"
+    TOKEN_DIR=/sonar
+
+    log() { echo "[sonar-bootstrap] $*"; }
+    api() {
+      _m=$1; _p=$2; shift 2
+      curl -s -o /tmp/resp -w '%{http_code}' -u "$AUTH" -X "$_m" "$SONAR_URL$_p" "$@"
+    }
+
+    # 1. Rotate default admin/admin; tolerate already-rotated (idempotent re-run).
+    AUTH="admin:admin"
+    ROT=$(api POST "/api/users/change_password" \
+      --data-urlencode "login=admin" \
+      --data-urlencode "previousPassword=admin" \
+      --data-urlencode "password=$SONAR_ADMIN_PASSWORD" || echo 000)
+    if [ "$ROT" = "204" ] || [ "$ROT" = "200" ]; then
+      log "admin password rotated"
+      AUTH="admin:$SONAR_ADMIN_PASSWORD"
+    else
+      AUTH="admin:$SONAR_ADMIN_PASSWORD"
+      CHK=$(api GET "/api/authentication/validate" || echo 000)
+      if ! grep -q '"valid":true' /tmp/resp 2>/dev/null; then
+        log "FATAL: neither default nor rotated admin credentials are valid (http=$ROT/$CHK)" >&2
+        exit 1
+      fi
+      log "admin password already rotated (idempotent)"
+    fi
+
+    # 2. Create projects (tolerate "already exists" -> 400).
+    OLD_IFS=$IFS; IFS=,
+    for KEY in $SONAR_PROJECTS; do
+      IFS=$OLD_IFS
+      C=$(api POST "/api/projects/create" \
+        --data-urlencode "project=$KEY" --data-urlencode "name=$KEY" || echo 000)
+      [ "$C" = "200" ] && log "project created: $KEY" || log "project $KEY exists/skip (http=$C)"
+      IFS=,
+    done
+    IFS=$OLD_IFS
+
+    # 3. Quality gate on New Code; set default; bind all projects.
+    api POST "/api/qualitygates/create" --data-urlencode "name=$SONAR_GATE_NAME" >/dev/null || true
+    addcond() {
+      api POST "/api/qualitygates/create_condition" \
+        --data-urlencode "gateName=$SONAR_GATE_NAME" \
+        --data-urlencode "metric=$1" --data-urlencode "op=$2" \
+        --data-urlencode "error=$3" >/dev/null || true
+    }
+    addcond new_coverage LT 80
+    addcond new_duplicated_lines_density GT 3
+    addcond new_maintainability_rating GT 1
+    addcond new_reliability_rating GT 1
+    addcond new_security_rating GT 1
+    addcond new_blocker_violations GT 0
+    addcond new_critical_violations GT 0
+    api POST "/api/qualitygates/set_as_default" \
+      --data-urlencode "name=$SONAR_GATE_NAME" >/dev/null || true
+    OLD_IFS=$IFS; IFS=,
+    for KEY in $SONAR_PROJECTS; do
+      IFS=$OLD_IFS
+      api POST "/api/qualitygates/select" \
+        --data-urlencode "gateName=$SONAR_GATE_NAME" \
+        --data-urlencode "projectKey=$KEY" >/dev/null || true
+      IFS=,
+    done
+    IFS=$OLD_IFS
+
+    # 4. Mint a fresh global analysis token into the sonar-init volume.
+    mkdir -p "$TOKEN_DIR"
+    api POST "/api/user_tokens/generate" \
+      --data-urlencode "name=${SONAR_TOKEN_NAME}-$(date +%s)" \
+      --data-urlencode "type=GLOBAL_ANALYSIS_TOKEN" >/dev/null
+    TOKEN=$(sed -n 's/.*"token":"\([^"]*\)".*/\1/p' /tmp/resp)
+    if [ -z "$TOKEN" ]; then
+      log "FATAL: token generation returned empty token" >&2
+      exit 1
+    fi
+    printf '%s' "$TOKEN" > "$TOKEN_DIR/token"
+    chmod 600 "$TOKEN_DIR/token"
+    printf '%s' "$SONAR_URL" > "$TOKEN_DIR/url"
+    unset TOKEN
+    log "done: projects=$SONAR_PROJECTS gate=$SONAR_GATE_NAME url=$SONAR_URL"

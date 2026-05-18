@@ -22,6 +22,6 @@ spec:
               set -e
               for b in gdfkube-itsm gdfkube-itsm-api gdfkube-camel; do
                 echo "Starting build: $b"
-                oc start-build "$b" -n gdfkube --wait --follow || exit 1
+                oc start-build "$b" -n gdfkube --wait || exit 1
                 echo "Build complete: $b"
               done

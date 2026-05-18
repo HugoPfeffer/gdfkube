@@ -10,8 +10,6 @@ spec:
   source:
     {{- include "gdfkube-platform.source" . | nindent 4 }}
     path: gdfkube-src/gdfkube-infra/platform/manifests/init-jobs
-    kustomize:
-      buildOptions: --load-restrictor LoadRestrictionsNone
   destination:
     {{- include "gdfkube-platform.destination" . | nindent 4 }}
   syncPolicy:
