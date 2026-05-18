@@ -8,7 +8,7 @@ metadata:
 spec:
   giteaImageTag: "1.22"
   giteaVolumeSize: 4Gi
-  giteaSsl: false
+  giteaSsl: true
   postgresqlVolumeSize: 4Gi
   giteaAdminUser: gdfkube-admin
   giteaAdminPassword: admin

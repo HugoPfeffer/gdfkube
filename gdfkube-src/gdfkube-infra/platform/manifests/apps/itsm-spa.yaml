@@ -63,3 +63,6 @@ spec:
     name: itsm
   port:
     targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
