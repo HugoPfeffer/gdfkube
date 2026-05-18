@@ -5,8 +5,11 @@ metadata:
   namespace: gdfkube
   annotations:
     argocd.argoproj.io/sync-wave: "16"
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    # PostSync + HookFailed: runs after the init Sync phase, persists on
+    # success, retried cleanly on failure. Wave 16 runs after gitea-bootstrap
+    # (wave 15) so Gitea and the org exist before the repo is seeded.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookFailed
 spec:
   backoffLimit: 4
   template:

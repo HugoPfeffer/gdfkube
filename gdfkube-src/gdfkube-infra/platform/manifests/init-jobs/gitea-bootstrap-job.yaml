@@ -5,8 +5,11 @@ metadata:
   namespace: gdfkube
   annotations:
     argocd.argoproj.io/sync-wave: "15"
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    # PostSync (not Sync) so it runs after the init Sync phase; HookFailed
+    # (not BeforeHookCreation) keeps a successful Job so it isn't required to
+    # re-run, while a failed one is cleaned for a clean retry on next sync.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookFailed
 spec:
   backoffLimit: 6
   template:
