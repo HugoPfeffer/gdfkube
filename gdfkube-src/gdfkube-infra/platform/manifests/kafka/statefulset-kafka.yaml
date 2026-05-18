@@ -46,6 +46,8 @@ spec:
               value: "3"
             - name: KAFKA_CLUSTER_ID
               value: ghD8_7zXTOW9WdFd5VvQAg
+            - name: CLUSTER_ID
+              value: ghD8_7zXTOW9WdFd5VvQAg
             - name: KAFKA_LOG_DIRS
               value: /var/lib/kafka/data
           readinessProbe:
@@ -135,6 +137,8 @@ spec:
               value: "3"
             - name: KAFKA_CLUSTER_ID
               value: ghD8_7zXTOW9WdFd5VvQAg
+            - name: CLUSTER_ID
+              value: ghD8_7zXTOW9WdFd5VvQAg
             - name: KAFKA_LOG_DIRS
               value: /var/lib/kafka/data
           readinessProbe:
@@ -223,6 +227,8 @@ spec:
             - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
               value: "3"
             - name: KAFKA_CLUSTER_ID
+              value: ghD8_7zXTOW9WdFd5VvQAg
+            - name: CLUSTER_ID
               value: ghD8_7zXTOW9WdFd5VvQAg
             - name: KAFKA_LOG_DIRS
               value: /var/lib/kafka/data
