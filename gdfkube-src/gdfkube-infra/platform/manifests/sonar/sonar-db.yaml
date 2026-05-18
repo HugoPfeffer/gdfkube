@@ -17,9 +17,11 @@ spec:
         app: sonar-db
     spec:
       serviceAccountName: gdfkube-anyuid
+      securityContext:
+        fsGroup: 70
       containers:
         - name: postgres
-          image: postgres:15.10-alpine
+          image: docker.io/library/postgres:15.10-alpine
           ports:
             - containerPort: 5432
           env:

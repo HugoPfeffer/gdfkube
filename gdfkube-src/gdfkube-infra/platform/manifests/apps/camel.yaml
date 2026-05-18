@@ -17,6 +17,19 @@ spec:
       labels:
         app: gdfkube-camel
     spec:
+      initContainers:
+        - name: fetch-charts
+          image: docker.io/alpine/git:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              git clone --depth 1 --sparse -b worktree-openshift-argocd-bootstrap-plan https://github.com/HugoPfeffer/gdfkube.git /tmp/repo
+              cd /tmp/repo
+              git sparse-checkout set gdfkube-src/gdfkube-infra/charts
+              cp -r gdfkube-src/gdfkube-infra/charts/* /opt/charts/
+          volumeMounts:
+            - name: charts
+              mountPath: /opt/charts
       containers:
         - name: camel
           image: " "
@@ -47,6 +60,13 @@ spec:
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
+          volumeMounts:
+            - name: charts
+              mountPath: /opt/charts
+              readOnly: true
+      volumes:
+        - name: charts
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

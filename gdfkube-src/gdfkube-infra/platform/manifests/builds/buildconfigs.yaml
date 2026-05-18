@@ -55,10 +55,11 @@ spec:
     git:
       uri: https://github.com/HugoPfeffer/gdfkube.git
       ref: main-openshift
+    contextDir: gdfkube-src/gdfkube-camel
   strategy:
     type: Docker
     dockerStrategy:
-      dockerfilePath: gdfkube-src/gdfkube-camel/Dockerfile.jvm
+      dockerfilePath: Dockerfile.jvm
   output:
     to:
       kind: ImageStreamTag

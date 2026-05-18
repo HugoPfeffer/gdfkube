@@ -14,7 +14,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: debezium-init
-          image: curlimages/curl:8.10.1
+          image: docker.io/curlimages/curl:8.10.1
           command: ["sh", "/scripts/register-connector.sh"]
           volumeMounts:
             - name: scripts

@@ -14,7 +14,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: kafka-init
-          image: apache/kafka:3.7.2
+          image: docker.io/apache/kafka:3.7.2
           command: ["bash", "/scripts/init-topics.sh"]
           volumeMounts:
             - name: scripts

@@ -17,9 +17,11 @@ spec:
         app: sonarqube
     spec:
       serviceAccountName: gdfkube-anyuid
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: sonarqube
-          image: sonarqube:26.4.0.121862-community
+          image: docker.io/library/sonarqube:26.4.0.121862-community
           ports:
             - containerPort: 9000
           env:

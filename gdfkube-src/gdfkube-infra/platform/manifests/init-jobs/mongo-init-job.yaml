@@ -14,7 +14,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: mongo-init
-          image: mongo:7.0
+          image: docker.io/library/mongo:7.0
           command: ["mongosh", "--host", "mongo1:27017", "/scripts/init-rs.js"]
           volumeMounts:
             - name: scripts

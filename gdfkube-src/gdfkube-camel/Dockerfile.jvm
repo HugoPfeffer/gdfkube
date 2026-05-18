@@ -31,8 +31,6 @@ COPY --from=build --chown=185 /build/build/quarkus-app/lib/ /deployments/lib/
 COPY --from=build --chown=185 /build/build/quarkus-app/*.jar /deployments/
 COPY --from=build --chown=185 /build/build/quarkus-app/app/ /deployments/app/
 COPY --from=build --chown=185 /build/build/quarkus-app/quarkus/ /deployments/quarkus/
-COPY --chown=185:0 gdfkube-src/gdfkube-infra/charts /opt/charts
-
 EXPOSE 8080
 
 ENV JAVA_OPTS_APPEND="-Xmx512m"

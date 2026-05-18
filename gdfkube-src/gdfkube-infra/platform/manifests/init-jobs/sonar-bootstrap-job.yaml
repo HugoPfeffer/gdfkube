@@ -15,7 +15,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: sonar-bootstrap
-          image: curlimages/curl:8.11.1
+          image: docker.io/curlimages/curl:8.11.1
           command: ["/bin/sh", "-c"]
           args:
             - |

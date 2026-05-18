@@ -17,9 +17,11 @@ spec:
         app: kafka1
     spec:
       serviceAccountName: gdfkube-anyuid
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: kafka
-          image: apache/kafka:3.7.2
+          image: docker.io/apache/kafka:3.7.2
           ports:
             - containerPort: 19092
             - containerPort: 9093
@@ -104,9 +106,11 @@ spec:
         app: kafka2
     spec:
       serviceAccountName: gdfkube-anyuid
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: kafka
-          image: apache/kafka:3.7.2
+          image: docker.io/apache/kafka:3.7.2
           ports:
             - containerPort: 19092
             - containerPort: 9093
@@ -191,9 +195,11 @@ spec:
         app: kafka3
     spec:
       serviceAccountName: gdfkube-anyuid
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: kafka
-          image: apache/kafka:3.7.2
+          image: docker.io/apache/kafka:3.7.2
           ports:
             - containerPort: 19092
             - containerPort: 9093

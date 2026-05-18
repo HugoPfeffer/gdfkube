@@ -1,24 +1,32 @@
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: gitea-og
+  name: install-gitea-operator
   namespace: gdfkube
   annotations:
     argocd.argoproj.io/sync-wave: "-11"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
-  targetNamespaces:
-    - gdfkube
----
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: gitea-operator
-  namespace: gdfkube
-  annotations:
-    argocd.argoproj.io/sync-wave: "-10"
-spec:
-  channel: stable
-  name: gitea-operator
-  source: community-operators
-  sourceNamespace: openshift-marketplace
-  installPlanApproval: Automatic
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: gitea-operator-installer
+      restartPolicy: OnFailure
+      containers:
+        - name: install-operator
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "Installing Gitea operator from rhpds/gitea-operator..."
+              oc apply -k https://github.com/rhpds/gitea-operator/OLMDeploy || true
+              echo "Waiting for Gitea CRD..."
+              for i in $(seq 1 60); do
+                oc get crd giteas.pfe.rhpds.com >/dev/null 2>&1 && break
+                echo "Waiting... ($i/60)"
+                sleep 10
+              done
+              oc get crd giteas.pfe.rhpds.com
+              echo "Gitea operator installed"

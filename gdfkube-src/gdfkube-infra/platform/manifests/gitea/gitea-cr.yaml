@@ -1,9 +1,4 @@
-# NOTE: apiVersion, kind, and spec fields are a best-guess for the community
-# Gitea operator (gpte.opentlc.com). Confirm at deploy time via:
-#   oc get packagemanifest gitea-operator -o yaml
-#   oc explain gitea.spec
-# Adjust fields below to match the actual CRD.
-apiVersion: gpte.opentlc.com/v1
+apiVersion: pfe.rhpds.com/v1
 kind: Gitea
 metadata:
   name: gitea
@@ -11,14 +6,11 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
-  giteaSsl: false
-  giteaRoute: gitea
+  giteaImageTag: "1.22"
   giteaVolumeSize: 4Gi
+  giteaSsl: false
+  postgresqlVolumeSize: 4Gi
   giteaAdminUser: gdfkube-admin
   giteaAdminPassword: admin
-  giteaAdminPasswordSecretRef: gitea-admin
   giteaAdminEmail: admin@gdfkube.local
   giteaDisableRegistration: true
-  giteaInstallLock: true
-  giteaDatabaseType: sqlite3
-  postgresqlVolumeSize: 0Gi

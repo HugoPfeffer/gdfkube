@@ -14,7 +14,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: gitea-seed
-          image: alpine/git:latest
+          image: docker.io/alpine/git:latest
           command: ["/bin/sh", "-c"]
           args:
             - |

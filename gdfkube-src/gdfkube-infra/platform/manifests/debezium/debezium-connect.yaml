@@ -18,7 +18,7 @@ spec:
       serviceAccountName: gdfkube-anyuid
       containers:
         - name: debezium-connect
-          image: debezium/connect:2.7.3.Final
+          image: docker.io/debezium/connect:2.7.3.Final
           ports:
             - containerPort: 8083
           env:
