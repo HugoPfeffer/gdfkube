@@ -20,8 +20,16 @@ spec:
           args:
             - |
               set -e
-              echo "Installing Gitea operator from rhpds/gitea-operator..."
-              oc apply -k https://github.com/rhpds/gitea-operator/OLMDeploy || true
+              echo "Installing Gitea operator from rhpds/gitea-operator (OLM)..."
+              # Apply the OLMDeploy manifests directly over HTTPS. `oc apply -k`
+              # against a github.com URL needs the `git` binary, which the
+              # ose-cli image does not ship; these manifests are self-contained
+              # (each pins namespace: gitea-operator) so -f works without git.
+              base="https://raw.githubusercontent.com/rhpds/gitea-operator/main/OLMDeploy"
+              oc apply -f "$base/namespace.yaml"
+              oc apply -f "$base/catalogsource.yaml"
+              oc apply -f "$base/operatorgroup.yaml"
+              oc apply -f "$base/subscription.yaml"
               echo "Waiting for Gitea CRD..."
               for i in $(seq 1 60); do
                 oc get crd giteas.pfe.rhpds.com >/dev/null 2>&1 && break
