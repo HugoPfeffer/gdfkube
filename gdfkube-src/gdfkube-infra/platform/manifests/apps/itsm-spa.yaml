@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "55"
     image.openshift.io/triggers: >-
-      [{"from":{"kind":"ImageStreamTag","name":"gdfkube-itsm:latest"},"fieldPath":"spec.template.spec.containers[0].image"}]
+      [{"from":{"kind":"ImageStreamTag","name":"gdfkube-itsm:latest","namespace":"gdfkube"},"fieldPath":"spec.template.spec.containers[0].image"}]
 spec:
   replicas: 1
   selector:

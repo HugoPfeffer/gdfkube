@@ -16,6 +16,7 @@ spec:
       labels:
         app: mongo1
     spec:
+      serviceAccountName: gdfkube-anyuid
       containers:
         - name: mongo
           image: mongo:7.0
@@ -79,6 +80,7 @@ spec:
       labels:
         app: mongo2
     spec:
+      serviceAccountName: gdfkube-anyuid
       containers:
         - name: mongo
           image: mongo:7.0
@@ -142,6 +144,7 @@ spec:
       labels:
         app: mongo3
     spec:
+      serviceAccountName: gdfkube-anyuid
       containers:
         - name: mongo
           image: mongo:7.0

@@ -15,6 +15,7 @@ spec:
       labels:
         app: gdfkube-debezium-connect
     spec:
+      serviceAccountName: gdfkube-anyuid
       containers:
         - name: debezium-connect
           image: debezium/connect:2.7.3.Final

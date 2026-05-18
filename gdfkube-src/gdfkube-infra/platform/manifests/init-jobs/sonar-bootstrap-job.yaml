@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "16"
     argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/sync-options: Replace=true
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   backoffLimit: 6
   template:
@@ -64,7 +64,9 @@ spec:
 
               api POST "/api/qualitygates/create" --data-urlencode "name=$SONAR_GATE_NAME" >/dev/null || true
               for m_op_e in "new_coverage:LT:80" "new_duplicated_lines_density:GT:3" "new_maintainability_rating:GT:1" "new_reliability_rating:GT:1" "new_security_rating:GT:1" "new_blocker_violations:GT:0" "new_critical_violations:GT:0"; do
-                IFS=: read metric op error <<< "$m_op_e"
+                metric=$(echo "$m_op_e" | cut -d: -f1)
+                op=$(echo "$m_op_e" | cut -d: -f2)
+                error=$(echo "$m_op_e" | cut -d: -f3)
                 api POST "/api/qualitygates/create_condition" \
                   --data-urlencode "gateName=$SONAR_GATE_NAME" \
                   --data-urlencode "metric=$metric" --data-urlencode "op=$op" \

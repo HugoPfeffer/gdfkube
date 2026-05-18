@@ -16,6 +16,7 @@ spec:
       labels:
         app: kafka1
     spec:
+      serviceAccountName: gdfkube-anyuid
       containers:
         - name: kafka
           image: apache/kafka:3.7.2
@@ -102,6 +103,7 @@ spec:
       labels:
         app: kafka2
     spec:
+      serviceAccountName: gdfkube-anyuid
       containers:
         - name: kafka
           image: apache/kafka:3.7.2
@@ -188,6 +190,7 @@ spec:
       labels:
         app: kafka3
     spec:
+      serviceAccountName: gdfkube-anyuid
       containers:
         - name: kafka
           image: apache/kafka:3.7.2
