@@ -3,6 +3,8 @@ kind: OperatorGroup
 metadata:
   name: gitea-og
   namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "-11"
 spec:
   targetNamespaces:
     - gdfkube
