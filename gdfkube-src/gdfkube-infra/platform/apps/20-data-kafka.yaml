@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gdfkube-data-kafka
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/HugoPfeffer/gdfkube.git
+    targetRevision: main-openshift
+    path: gdfkube-src/gdfkube-infra/platform/manifests/kafka
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gdfkube
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

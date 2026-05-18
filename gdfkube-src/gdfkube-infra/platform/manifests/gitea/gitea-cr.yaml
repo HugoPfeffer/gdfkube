@@ -1,0 +1,21 @@
+# NOTE: apiVersion, kind, and spec fields are a best-guess for the community
+# Gitea operator. Confirm at deploy time via:
+#   oc get packagemanifest gitea-operator -o yaml
+#   oc explain gitea.spec
+apiVersion: gpte.opentlc.com/v1
+kind: Gitea
+metadata:
+  name: gitea
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  giteaSsl: false
+  giteaRoute: gitea
+  giteaVolumeSize: 4Gi
+  postgresqlVolumeSize: 4Gi
+  giteaAdminUser: gdfkube-admin
+  giteaAdminPassword: admin
+  giteaAdminEmail: admin@gdfkube.local
+  giteaDisableRegistration: true
+  giteaInstallLock: true

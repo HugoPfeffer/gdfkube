@@ -1,0 +1,70 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gitea-repo-seed
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "16"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-options: Replace=true
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: gitea-seed
+          image: alpine/git:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              apk add --no-cache curl >/dev/null 2>&1
+
+              TOKEN=$(cat /etc/gitea-pat/token)
+              [ -z "$TOKEN" ] && { echo "[gitea-repo-seed] empty PAT" >&2; exit 1; }
+
+              for REPO in gdfkube-main; do
+                STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+                  -H "Authorization: token $TOKEN" \
+                  -X POST "http://gitea:3000/api/v1/orgs/gdfkube/repos" \
+                  -H "Content-Type: application/json" \
+                  -d "{\"name\":\"$REPO\",\"auto_init\":false,\"default_branch\":\"main\"}" || true)
+                case "$STATUS" in
+                  201|409) echo "[gitea-repo-seed] repo=$REPO ok ($STATUS)" ;;
+                  *) echo "[gitea-repo-seed] repo create failed ($STATUS)" >&2; exit 1 ;;
+                esac
+              done
+
+              WORK=$(mktemp -d)
+              git clone --depth 1 -b main-openshift https://github.com/HugoPfeffer/gdfkube.git "$WORK/src"
+              cd "$WORK/src/gdfkube-src"
+
+              find . \( -name node_modules -o -name target -o -name dist -o -name build -o -name .git -o -name .DS_Store -o -name '*.pem' -o -name '*.key' \) -prune -exec rm -rf {} +
+              find . \( -name '.env' -o -name '.env.*' \) -type f -delete
+
+              git init -q -b main
+              git config user.email "bootstrap@gdfkube.local"
+              git config user.name "gitea-bootstrap"
+              git add -A
+              git commit -q -m "Initial bootstrap from GitHub ($(date -u +%FT%TZ))"
+
+              REMOTE="http://${GITEA_ADMIN_USERNAME}:${TOKEN}@gitea:3000/gdfkube/gdfkube-main.git"
+              git push -q --force "$REMOTE" main
+
+              cd /; rm -rf "$WORK"
+              echo "[gitea-repo-seed] done"
+          env:
+            - name: GITEA_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: gitea-admin
+                  key: username
+          volumeMounts:
+            - name: gitea-pat
+              mountPath: /etc/gitea-pat
+              readOnly: true
+      volumes:
+        - name: gitea-pat
+          secret:
+            secretName: gitea-pat

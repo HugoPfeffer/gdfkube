@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongo-seed
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "11"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-options: Replace=true
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mongo-seed
+          image: mongo:7.0
+          command:
+            - mongosh
+            - "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0"
+            - /scripts/seed-collections.js
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: seed-data
+              mountPath: /seed-data
+      volumes:
+        - name: scripts
+          configMap:
+            name: mongo-seed-scripts
+        - name: seed-data
+          configMap:
+            name: mongo-seed-data

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gdfkube-itsm-api
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "50"
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"gdfkube-itsm-api:latest"},"fieldPath":"spec.template.spec.containers[0].image"}]
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gdfkube-itsm-api
+  template:
+    metadata:
+      labels:
+        app: gdfkube-itsm-api
+    spec:
+      containers:
+        - name: itsm-api
+          image: " "
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MONGO_URL
+              value: "mongodb://mongo1:27017/gdfkube?replicaSet=rs0"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka1:19092,kafka2:19092,kafka3:19092"
+          readinessProbe:
+            httpGet:
+              path: /healthz/live
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gdfkube-itsm-api
+  namespace: gdfkube
+spec:
+  type: ClusterIP
+  selector:
+    app: gdfkube-itsm-api
+  ports:
+    - port: 3000
+      targetPort: 3000

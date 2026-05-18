@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gdfkube-debezium-init
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "16"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-options: Replace=true
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: debezium-init
+          image: curlimages/curl:8.10.1
+          command: ["sh", "/scripts/register-connector.sh"]
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: config
+              mountPath: /connector-config.json
+              subPath: connector-config.json
+      volumes:
+        - name: scripts
+          configMap:
+            name: debezium-init-scripts
+            defaultMode: 0755
+        - name: config
+          configMap:
+            name: debezium-init-scripts

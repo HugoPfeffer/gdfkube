@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gdfkube-camel
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "50"
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"gdfkube-camel:latest"},"fieldPath":"spec.template.spec.containers[0].image"}]
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gdfkube-camel
+  template:
+    metadata:
+      labels:
+        app: gdfkube-camel
+    spec:
+      containers:
+        - name: camel
+          image: " "
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka1:19092,kafka2:19092,kafka3:19092"
+            - name: MONGODB_URI
+              value: "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0"
+            - name: APP_SYSTEM_GITEA_EXTERNAL_URL
+              value: "http://gitea:3000"
+            - name: APP_SYSTEM_GITEA_OWNER
+              value: gdfkube
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 18
+          livenessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gdfkube-camel
+  namespace: gdfkube
+spec:
+  type: ClusterIP
+  selector:
+    app: gdfkube-camel
+  ports:
+    - port: 8080
+      targetPort: 8080

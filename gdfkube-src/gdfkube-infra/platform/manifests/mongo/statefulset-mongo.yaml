@@ -1,0 +1,188 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo1
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  serviceName: mongo1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo1
+  template:
+    metadata:
+      labels:
+        app: mongo1
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7.0
+          command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+          ports:
+            - containerPort: 27017
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo1
+  namespace: gdfkube
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo1
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo2
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  serviceName: mongo2
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo2
+  template:
+    metadata:
+      labels:
+        app: mongo2
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7.0
+          command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+          ports:
+            - containerPort: 27017
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo2
+  namespace: gdfkube
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo2
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo3
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  serviceName: mongo3
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo3
+  template:
+    metadata:
+      labels:
+        app: mongo3
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7.0
+          command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+          ports:
+            - containerPort: 27017
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo3
+  namespace: gdfkube
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo3
+  ports:
+    - port: 27017
+      targetPort: 27017

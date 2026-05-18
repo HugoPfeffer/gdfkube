@@ -1,0 +1,107 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sonar-bootstrap
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "16"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-options: Replace=true
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      serviceAccountName: gitea-jobs
+      restartPolicy: OnFailure
+      containers:
+        - name: sonar-bootstrap
+          image: curlimages/curl:8.11.1
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              : "${SONAR_URL:=http://sonarqube:9000}"
+              : "${SONAR_ADMIN_PASSWORD:?required}"
+              : "${SONAR_TOKEN_NAME:=gdfkube-analysis}"
+              : "${SONAR_PROJECTS:=gdfkube-camel,gdfkube-itsm-web,gdfkube-itsm-server}"
+              : "${SONAR_GATE_NAME:=gdfkube-gate}"
+
+              log() { echo "[sonar-bootstrap] $*"; }
+              api() {
+                _m=$1; _p=$2; shift 2
+                curl -s -o /tmp/resp -w '%{http_code}' -u "$AUTH" -X "$_m" "$SONAR_URL$_p" "$@"
+              }
+
+              echo "[sonar-bootstrap] waiting for SonarQube..."
+              until curl -sf "$SONAR_URL/api/system/status" | grep -q '"status":"UP"'; do sleep 5; done
+
+              AUTH="admin:admin"
+              ROT=$(api POST "/api/users/change_password" \
+                --data-urlencode "login=admin" \
+                --data-urlencode "previousPassword=admin" \
+                --data-urlencode "password=$SONAR_ADMIN_PASSWORD" || echo 000)
+              if [ "$ROT" = "204" ] || [ "$ROT" = "200" ]; then
+                log "admin password rotated"
+                AUTH="admin:$SONAR_ADMIN_PASSWORD"
+              else
+                AUTH="admin:$SONAR_ADMIN_PASSWORD"
+                CHK=$(api GET "/api/authentication/validate" || echo 000)
+                if ! grep -q '"valid":true' /tmp/resp 2>/dev/null; then
+                  log "FATAL: credentials invalid (http=$ROT/$CHK)" >&2; exit 1
+                fi
+                log "admin password already rotated (idempotent)"
+              fi
+
+              OLD_IFS=$IFS; IFS=,
+              for KEY in $SONAR_PROJECTS; do
+                IFS=$OLD_IFS
+                C=$(api POST "/api/projects/create" \
+                  --data-urlencode "project=$KEY" --data-urlencode "name=$KEY" || echo 000)
+                [ "$C" = "200" ] && log "project created: $KEY" || log "project $KEY exists/skip ($C)"
+                IFS=,
+              done
+              IFS=$OLD_IFS
+
+              api POST "/api/qualitygates/create" --data-urlencode "name=$SONAR_GATE_NAME" >/dev/null || true
+              for m_op_e in "new_coverage:LT:80" "new_duplicated_lines_density:GT:3" "new_maintainability_rating:GT:1" "new_reliability_rating:GT:1" "new_security_rating:GT:1" "new_blocker_violations:GT:0" "new_critical_violations:GT:0"; do
+                IFS=: read metric op error <<< "$m_op_e"
+                api POST "/api/qualitygates/create_condition" \
+                  --data-urlencode "gateName=$SONAR_GATE_NAME" \
+                  --data-urlencode "metric=$metric" --data-urlencode "op=$op" \
+                  --data-urlencode "error=$error" >/dev/null || true
+              done
+              api POST "/api/qualitygates/set_as_default" --data-urlencode "name=$SONAR_GATE_NAME" >/dev/null || true
+              OLD_IFS=$IFS; IFS=,
+              for KEY in $SONAR_PROJECTS; do
+                IFS=$OLD_IFS
+                api POST "/api/qualitygates/select" \
+                  --data-urlencode "gateName=$SONAR_GATE_NAME" --data-urlencode "projectKey=$KEY" >/dev/null || true
+                IFS=,
+              done
+              IFS=$OLD_IFS
+
+              api POST "/api/user_tokens/generate" \
+                --data-urlencode "name=${SONAR_TOKEN_NAME}-$(date +%s)" \
+                --data-urlencode "type=GLOBAL_ANALYSIS_TOKEN" >/dev/null
+              TOKEN=$(sed -n 's/.*"token":"\([^"]*\)".*/\1/p' /tmp/resp)
+              [ -z "$TOKEN" ] && { log "FATAL: empty token" >&2; exit 1; }
+
+              log "writing token to Secret sonar-token"
+              cat <<PATCH_EOF | curl -sf -X PATCH \
+                -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+                -H "Content-Type: application/strategic-merge-patch+json" \
+                "https://kubernetes.default.svc/api/v1/namespaces/gdfkube/secrets/sonar-token" \
+                -d @- --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              {"stringData":{"token":"${TOKEN}"}}
+              PATCH_EOF
+              log "done"
+          env:
+            - name: SONAR_URL
+              value: "http://sonarqube:9000"
+            - name: SONAR_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sonar-admin
+                  key: password
+            - name: SONAR_PROJECTS
+              value: "gdfkube-camel,gdfkube-itsm-web,gdfkube-itsm-server"

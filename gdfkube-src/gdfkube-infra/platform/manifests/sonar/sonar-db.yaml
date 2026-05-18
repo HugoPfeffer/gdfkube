@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sonar-db
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  serviceName: sonar-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonar-db
+  template:
+    metadata:
+      labels:
+        app: sonar-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15.10-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sonar-db
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sonar-db
+                  key: password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: sonar-db
+                  key: database
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "sonar", "-d", "sonar"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 18
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "sonar", "-d", "sonar"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonar-db
+  namespace: gdfkube
+spec:
+  type: ClusterIP
+  selector:
+    app: sonar-db
+  ports:
+    - port: 5432
+      targetPort: 5432

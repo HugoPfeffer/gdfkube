@@ -1,0 +1,22 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: gitea-og
+  namespace: gdfkube
+spec:
+  targetNamespaces:
+    - gdfkube
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: gitea-operator
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  channel: stable
+  name: gitea-operator
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic

@@ -1,0 +1,67 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: gdfkube-itsm
+  namespace: gdfkube
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/HugoPfeffer/gdfkube.git
+      ref: main-openshift
+    contextDir: gdfkube-src/gdfkube-itsm
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: "gdfkube-itsm:latest"
+  triggers:
+    - type: ConfigChange
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: gdfkube-itsm-api
+  namespace: gdfkube
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/HugoPfeffer/gdfkube.git
+      ref: main-openshift
+    contextDir: gdfkube-src/gdfkube-itsm/server
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: "gdfkube-itsm-api:latest"
+  triggers:
+    - type: ConfigChange
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: gdfkube-camel
+  namespace: gdfkube
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/HugoPfeffer/gdfkube.git
+      ref: main-openshift
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: gdfkube-src/gdfkube-camel/Dockerfile.jvm
+  output:
+    to:
+      kind: ImageStreamTag
+      name: "gdfkube-camel:latest"
+  triggers:
+    - type: ConfigChange

@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gitea-jobs
+  namespace: gdfkube
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: secret-patcher
+  namespace: gdfkube
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["gitea-pat", "sonar-token"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gitea-jobs-secret-patcher
+  namespace: gdfkube
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: secret-patcher
+subjects:
+  - kind: ServiceAccount
+    name: gitea-jobs
+    namespace: gdfkube
