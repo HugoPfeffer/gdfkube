@@ -1,0 +1,15 @@
+source:
+  repoURL: https://github.com/HugoPfeffer/gdfkube.git
+  targetRevision: main-openshift
+
+deployer:
+  domain: ""
+
+argocd:
+  namespace: openshift-gitops
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+
+workload:
+  namespace: gdfkube

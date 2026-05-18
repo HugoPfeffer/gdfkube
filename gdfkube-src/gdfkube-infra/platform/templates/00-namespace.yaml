@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gdfkube-namespace
+  namespace: {{ .Values.argocd.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    {{- include "gdfkube-platform.source" . | nindent 4 }}
+    path: gdfkube-src/gdfkube-infra/platform/manifests/namespace
+  destination:
+    {{- include "gdfkube-platform.destination" . | nindent 4 }}
+  syncPolicy:
+    {{- include "gdfkube-platform.syncPolicy" . | nindent 4 }}

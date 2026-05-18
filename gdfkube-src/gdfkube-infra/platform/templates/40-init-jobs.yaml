@@ -2,21 +2,17 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: gdfkube-init-jobs
-  namespace: openshift-gitops
+  namespace: {{ .Values.argocd.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "10"
 spec:
-  project: default
+  project: {{ .Values.argocd.project }}
   source:
-    repoURL: https://github.com/HugoPfeffer/gdfkube.git
-    targetRevision: main-openshift
+    {{- include "gdfkube-platform.source" . | nindent 4 }}
     path: gdfkube-src/gdfkube-infra/platform/manifests/init-jobs
     kustomize:
       buildOptions: --load-restrictor LoadRestrictionsNone
   destination:
-    server: https://kubernetes.default.svc
-    namespace: gdfkube
+    {{- include "gdfkube-platform.destination" . | nindent 4 }}
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    {{- include "gdfkube-platform.syncPolicy" . | nindent 4 }}

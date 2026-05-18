@@ -1,3 +1,5 @@
+# Manual bootstrap entrypoint (alternative to RHDP ordering).
+# Usage: oc apply -n openshift-gitops -f app-of-apps.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -10,9 +12,11 @@ spec:
   source:
     repoURL: https://github.com/HugoPfeffer/gdfkube.git
     targetRevision: main-openshift
-    path: gdfkube-src/gdfkube-infra/platform/apps
-    directory:
-      recurse: true
+    path: gdfkube-src/gdfkube-infra/platform
+    helm:
+      valuesObject:
+        deployer:
+          domain: ""
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops

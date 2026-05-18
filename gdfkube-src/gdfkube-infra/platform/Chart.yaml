@@ -1,0 +1,5 @@
+apiVersion: v2
+name: gdfkube-platform
+description: ArgoCD app-of-apps that deploys the gdfkube platform on OpenShift
+version: 0.1.0
+type: application
