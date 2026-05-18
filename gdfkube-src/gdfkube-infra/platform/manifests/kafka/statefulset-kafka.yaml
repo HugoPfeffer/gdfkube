@@ -63,6 +63,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/kafka/data
+              # Mount a subdir, not the volume root: a freshly provisioned ext4
+              # PV has a lost+found dir at its root, and Kafka's LogManager
+              # aborts if the log dir contains anything that isn't a partition.
+              subPath: kafka-data
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -158,6 +162,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/kafka/data
+              # Mount a subdir, not the volume root: a freshly provisioned ext4
+              # PV has a lost+found dir at its root, and Kafka's LogManager
+              # aborts if the log dir contains anything that isn't a partition.
+              subPath: kafka-data
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -250,6 +258,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/kafka/data
+              # Mount a subdir, not the volume root: a freshly provisioned ext4
+              # PV has a lost+found dir at its root, and Kafka's LogManager
+              # aborts if the log dir contains anything that isn't a partition.
+              subPath: kafka-data
   volumeClaimTemplates:
     - metadata:
         name: data
