@@ -23,7 +23,7 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              git clone --depth 1 --sparse -b worktree-openshift-argocd-bootstrap-plan https://github.com/HugoPfeffer/gdfkube.git /tmp/repo
+              git clone --depth 1 --sparse -b main-openshift https://github.com/HugoPfeffer/gdfkube.git /tmp/repo
               cd /tmp/repo
               git sparse-checkout set gdfkube-src/gdfkube-infra/charts
               cp -r gdfkube-src/gdfkube-infra/charts/* /opt/charts/

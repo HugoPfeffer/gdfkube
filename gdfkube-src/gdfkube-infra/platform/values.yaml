@@ -1,6 +1,6 @@
 source:
   repoURL: https://github.com/HugoPfeffer/gdfkube.git
-  targetRevision: worktree-openshift-argocd-bootstrap-plan
+  targetRevision: main-openshift
 
 deployer:
   domain: ""

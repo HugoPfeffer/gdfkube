@@ -11,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/HugoPfeffer/gdfkube.git
-    targetRevision: worktree-openshift-argocd-bootstrap-plan
+    targetRevision: main-openshift
     path: gdfkube-src/gdfkube-infra/platform
     helm:
       valuesObject:
