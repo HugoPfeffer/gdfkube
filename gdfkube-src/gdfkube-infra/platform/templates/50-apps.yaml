@@ -12,5 +12,13 @@ spec:
     path: gdfkube-src/gdfkube-infra/platform/manifests/apps
   destination:
     {{- include "gdfkube-platform.destination" . | nindent 4 }}
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jqPathExpressions:
+        - .spec.template.spec.containers[].image
+        - .spec.template.spec.initContainers[]?.image
   syncPolicy:
     {{- include "gdfkube-platform.syncPolicy" . | nindent 4 }}
+    syncOptions:
+      - RespectIgnoreDifferences=true

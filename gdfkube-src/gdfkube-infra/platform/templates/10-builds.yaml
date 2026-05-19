@@ -12,5 +12,13 @@ spec:
     path: gdfkube-src/gdfkube-infra/platform/manifests/builds
   destination:
     {{- include "gdfkube-platform.destination" . | nindent 4 }}
+  ignoreDifferences:
+    - group: build.openshift.io
+      kind: BuildConfig
+      jqPathExpressions:
+        - .status
+        - .spec.triggers
   syncPolicy:
     {{- include "gdfkube-platform.syncPolicy" . | nindent 4 }}
+    syncOptions:
+      - RespectIgnoreDifferences=true
