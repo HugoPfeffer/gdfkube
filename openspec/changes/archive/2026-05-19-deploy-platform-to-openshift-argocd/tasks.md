@@ -13,7 +13,7 @@
 - [x] 2.1 Write `manifests/secrets/` Secret manifests (gitea-admin, sonar-db, sonar-admin) with obviously-fake demo defaults + `# trufflehog:ignore` on every value line; wave -5
 - [x] 2.2 Add empty/placeholder Secrets for runtime tokens (`gitea-pat`, `sonar-token`) populated by Jobs, not committed with real values
 - [x] 2.3 Add ServiceAccount + Role/RoleBinding granting `build.openshift.io` `builds`/`buildconfigs/instantiate` for the build-bootstrap Job; document the ArgoCD controller OLM RBAC assumption
-- [ ] 2.4 `pre-commit run --all-files` — trufflehog must pass with the ignore markers
+- [x] 2.4 `pre-commit run --all-files` — trufflehog must pass with the ignore markers
 
 ## 3. In-cluster builds (+ the one source edit)
 
