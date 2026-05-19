@@ -22,21 +22,25 @@ spec:
           args:
             - |
               set -eu
-              apk add --no-cache curl >/dev/null 2>&1
+              export HOME=/tmp
 
               TOKEN=$(cat /etc/gitea-pat/token)
               [ -z "$TOKEN" ] && { echo "[gitea-repo-seed] empty PAT" >&2; exit 1; }
 
               for REPO in gdfkube-main; do
-                STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
-                  -H "Authorization: token $TOKEN" \
-                  -X POST "http://gitea:3000/api/v1/orgs/gdfkube/repos" \
-                  -H "Content-Type: application/json" \
-                  -d "{\"name\":\"$REPO\",\"auto_init\":false,\"default_branch\":\"main\"}" || true)
-                case "$STATUS" in
-                  201|409) echo "[gitea-repo-seed] repo=$REPO ok ($STATUS)" ;;
-                  *) echo "[gitea-repo-seed] repo create failed ($STATUS)" >&2; exit 1 ;;
-                esac
+                if wget -q -O /dev/null \
+                     --header="Authorization: token $TOKEN" \
+                     --header="Content-Type: application/json" \
+                     --post-data="{\"name\":\"$REPO\",\"auto_init\":false,\"default_branch\":\"main\"}" \
+                     "http://gitea:3000/api/v1/orgs/gdfkube/repos" 2>/dev/null; then
+                  echo "[gitea-repo-seed] repo=$REPO created"
+                elif wget -q -O /dev/null \
+                       --header="Authorization: token $TOKEN" \
+                       "http://gitea:3000/api/v1/repos/gdfkube/$REPO" 2>/dev/null; then
+                  echo "[gitea-repo-seed] repo=$REPO already exists"
+                else
+                  echo "[gitea-repo-seed] repo=$REPO create failed" >&2; exit 1
+                fi
               done
 
               WORK=$(mktemp -d)
@@ -63,10 +67,19 @@ spec:
                 secretKeyRef:
                   name: gitea-admin
                   key: username
+            - name: HOME
+              value: /tmp
           volumeMounts:
             - name: gitea-pat
               mountPath: /etc/gitea-pat
               readOnly: true
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop: [ALL]
       volumes:
         - name: gitea-pat
           secret:
