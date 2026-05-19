@@ -32,9 +32,9 @@ spec:
               oc apply -f "$base/subscription.yaml"
               echo "Waiting for Gitea CRD..."
               for i in $(seq 1 60); do
-                oc get crd giteas.pfe.rhpds.com >/dev/null 2>&1 && break
+                oc get crd gitea.pfe.rhpds.com >/dev/null 2>&1 && break
                 echo "Waiting... ($i/60)"
                 sleep 10
               done
-              oc get crd giteas.pfe.rhpds.com
+              oc get crd gitea.pfe.rhpds.com
               echo "Gitea operator installed"
