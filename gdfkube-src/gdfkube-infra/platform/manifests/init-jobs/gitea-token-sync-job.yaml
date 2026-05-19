@@ -18,6 +18,16 @@ spec:
       containers:
         - name: token-sync
           image: docker.io/library/mongo:7.0
+          env:
+            - name: HOME
+              value: /tmp
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop: [ALL]
           command: ["/bin/sh", "-c"]
           args:
             - |
