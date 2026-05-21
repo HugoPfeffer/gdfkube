@@ -49,7 +49,7 @@ metadata:
 spec:
   generators:
     - git:
-        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-orgs.git
+        repoURL: http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-orgs.git
         revision: HEAD
         directories:
           - path: orgs/*
@@ -59,7 +59,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-orgs.git
+        repoURL: http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-orgs.git
         targetRevision: HEAD
         path: '{{path}}'
       destination:
@@ -81,7 +81,7 @@ metadata:
 spec:
   description: "Customer org: saude (Secretaria de Saúde)"
   sourceRepos:
-    - https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-saude.git
+    - http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-saude.git
   destinations:
     - namespace: 'hc-saude-*'
       server: https://kubernetes.default.svc
@@ -122,7 +122,7 @@ metadata:
 spec:
   generators:
     - git:
-        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-saude.git
+        repoURL: http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-saude.git
         revision: HEAD
         directories:
           - path: clusters/*
@@ -134,7 +134,7 @@ spec:
     spec:
       project: saude
       source:
-        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-saude.git
+        repoURL: http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-saude.git
         targetRevision: HEAD
         path: '{{path}}'
       destination:

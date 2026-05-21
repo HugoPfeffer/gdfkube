@@ -92,7 +92,7 @@ vars:                    # form-submitted values (the operator's input)
 system:                  # injected by the bean — never from the form
   baseDomain: apps.gdfkube.gov
   releaseImage: quay.io/.../release-image:4.16.7
-  giteaExternalUrl: https://gitea-gitea.apps.gdfkube.gov
+  giteaExternalUrl: http://gitea.gdfkube.svc:3000
   giteaOwner: gdfkube
   naming:
     hostedClusterName: hc-saude-vacinacao
