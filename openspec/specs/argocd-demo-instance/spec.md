@@ -43,7 +43,7 @@ The bundle MUST ship a `ClusterRoleBinding` named `gdfkube-gitops-argocd-applica
 
 ### Requirement: Demo ArgoCD reads Gitea repos anonymously
 
-The `argocd-demo` bundle MUST NOT ship a repository or `repo-creds` `Secret` for the Gitea host `gitea-gitea.apps.gdfkube.gov`. The platform's `gitea-bootstrap` job (`gdfkube-src/gdfkube-infra/platform/manifests/init-jobs/gitea-bootstrap-job.yaml`) creates the `gdfkube` Gitea organisation with `visibility: "public"`, so its repositories are anonymously cloneable and the demo ArgoCD MUST authenticate using no credentials. If the Gitea org's visibility is ever changed to `private`, this requirement SHALL be revisited via a follow-up change that introduces a `repo-creds` Secret populated from `gitea-pat`.
+The `argocd-demo` bundle MUST NOT ship a repository or `repo-creds` `Secret` for the in-cluster Gitea service `gitea.gdfkube.svc:3000`. The platform's `gitea-bootstrap` job (`gdfkube-src/gdfkube-infra/platform/manifests/init-jobs/gitea-bootstrap-job.yaml`) creates the `gdfkube` Gitea organisation with `visibility: "public"`, so its repositories are anonymously cloneable and the demo ArgoCD MUST authenticate using no credentials. If the Gitea org's visibility is ever changed to `private`, this requirement SHALL be revisited via a follow-up change that introduces a `repo-creds` Secret populated from `gitea-pat`.
 
 #### Scenario: Bundle ships no Gitea Secret
 
@@ -55,7 +55,7 @@ The `argocd-demo` bundle MUST NOT ship a repository or `repo-creds` `Secret` for
 
 ### Requirement: Discovery ApplicationSet lives in the demo ArgoCD namespace
 
-The bundle MUST ship an `argoproj.io/v1alpha1` `ApplicationSet` named `gdfkube-infra-orgs` in namespace `gdfkube-gitops` with a git directory generator over `https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-orgs.git` at revision `HEAD` scanning `orgs/*`, generating Applications in project `default` whose `destination.namespace` is exactly `gdfkube-gitops` and whose `source.path` is `{{path}}`.
+The bundle MUST ship an `argoproj.io/v1alpha1` `ApplicationSet` named `gdfkube-infra-orgs` in namespace `gdfkube-gitops` with a git directory generator over `http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-orgs.git` at revision `HEAD` scanning `orgs/*`, generating Applications in project `default` whose `destination.namespace` is exactly `gdfkube-gitops` and whose `source.path` is `{{path}}`.
 
 #### Scenario: Discovery ApplicationSet targets the demo ArgoCD namespace
 

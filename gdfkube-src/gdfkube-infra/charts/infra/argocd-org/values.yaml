@@ -7,7 +7,7 @@ meta:
   correlationId: "01HK6X-EXAMPLE"
 
 system:
-  giteaExternalUrl: "https://gitea-gitea.apps.gdfkube.gov"
+  giteaExternalUrl: "http://gitea.gdfkube.svc:3000"
   giteaOwner: "gdfkube"
   naming:
     hostedClusterName: "hc-saude-vacinacao"

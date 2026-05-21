@@ -30,7 +30,7 @@ never see these repos directly.
 
 ### Provider
 
-- **Gitea** is the only provider, hosted in-cluster at `https://gitea-gitea.apps.gdfkube.gov`.
+- **Gitea** is the only provider, hosted in-cluster at `http://gitea.gdfkube.svc:3000`.
 - Wrapped by a pluggable **`GitProvider`** interface so a future PRD can add GitHub or GitLab without touching Camel routes.
 
 ### `GitProvider` Interface (Java, in Camel app)

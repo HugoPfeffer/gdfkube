@@ -6,7 +6,7 @@ metadata:
 spec:
   generators:
     - git:
-        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-orgs.git
+        repoURL: http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-orgs.git
         revision: HEAD
         directories:
           - path: orgs/*
@@ -16,7 +16,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-orgs.git
+        repoURL: http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-orgs.git
         targetRevision: HEAD
         path: '{{path}}'
       destination:

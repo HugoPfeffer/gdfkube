@@ -82,7 +82,7 @@ spec:
           command:
             - sh
             - -c
-            - "git clone --depth 1 https://gitea-gitea.apps.gdfkube.gov/gdfkube/gdfkube-infra.git /charts && cp -r /charts/charts/. /opt/charts/"
+            - "git clone --depth 1 http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-infra.git /charts && cp -r /charts/charts/. /opt/charts/"
           volumeMounts:
             - name: charts
               mountPath: /opt/charts
