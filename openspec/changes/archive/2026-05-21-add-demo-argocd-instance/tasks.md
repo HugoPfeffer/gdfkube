@@ -58,5 +58,5 @@
 
 ## 10. Commit and pre-commit hygiene
 
-- [ ] 10.1 `git add` only the files explicitly created or modified by this change (no `git add -A`).
-- [ ] 10.2 `git commit -m "feat(argocd): add gdfkube-gitops demo ArgoCD instance and per-group AppProjects"`; ensure trufflehog pre-commit passes.
+- [x] 10.1 `git add` only the files explicitly created or modified by this change (no `git add -A`). — done in `e63db76` and corrective `2bfb0dd`.
+- [x] 10.2 `git commit -m "feat(argocd): add gdfkube-gitops demo ArgoCD instance and per-group AppProjects"`; ensure trufflehog pre-commit passes. — done in `e63db76`; corrective fix landed in `2bfb0dd` (trufflehog passed both times).
