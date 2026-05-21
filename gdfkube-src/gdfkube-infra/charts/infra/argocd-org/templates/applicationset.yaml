@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: appset-{{ .Values.meta.org }}
-  namespace: openshift-gitops
+  namespace: gdfkube-gitops
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:
@@ -25,3 +25,9 @@ spec:
         path: "{{ `{{path}}` }}"
       destination:
         server: https://kubernetes.default.svc
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

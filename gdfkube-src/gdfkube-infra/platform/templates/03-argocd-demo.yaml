@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gdfkube-argocd-demo
+  namespace: {{ .Values.argocd.namespace }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "-8"
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    {{- include "gdfkube-platform.source" . | nindent 4 }}
+    path: gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo
+  destination:
+    server: {{ .Values.argocd.destination.server }}
+    namespace: gdfkube-gitops
+  syncPolicy:
+    {{- include "gdfkube-platform.syncPolicy" . | nindent 4 }}
