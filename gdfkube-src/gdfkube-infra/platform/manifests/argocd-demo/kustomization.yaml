@@ -4,5 +4,4 @@ resources:
   - namespace.yaml
   - argocd.yaml
   - clusterrolebinding.yaml
-  - repo-secret.yaml
   - org-repos-discovery.yaml

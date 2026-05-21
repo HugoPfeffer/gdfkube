@@ -38,18 +38,17 @@ The bundle MUST ship a `ClusterRoleBinding` named `gdfkube-gitops-argocd-applica
 - **THEN** its `roleRef` is `ClusterRole/cluster-admin`
 - **AND** it has exactly one subject of kind `ServiceAccount`, name `gdfkube-gitops-argocd-application-controller`, namespace `gdfkube-gitops`
 
-### Requirement: Demo ArgoCD has Gitea repository credentials
+### Requirement: Demo ArgoCD reads Gitea repos anonymously
 
-The bundle MUST ship a `Secret` in namespace `gdfkube-gitops` labeled `argocd.argoproj.io/secret-type: repository` (for the `gdfkube-orgs` repo) or `argocd.argoproj.io/secret-type: repo-creds` (for the `https://gitea-gitea.apps.gdfkube.gov/gdfkube` URL prefix) whose `url`, `username`, and `password` fields source from existing platform-managed Gitea credentials and SHALL NOT embed any literal token value in git.
+The `argocd-demo` bundle MUST NOT ship a repository or `repo-creds` `Secret` for the Gitea host `gitea-gitea.apps.gdfkube.gov`. The platform's `gitea-bootstrap` job (`gdfkube-src/gdfkube-infra/platform/manifests/init-jobs/gitea-bootstrap-job.yaml`) creates the `gdfkube` Gitea organisation with `visibility: "public"`, so its repositories are anonymously cloneable and the demo ArgoCD MUST authenticate using no credentials. If the Gitea org's visibility is ever changed to `private`, this requirement SHALL be revisited via a follow-up change that introduces a `repo-creds` Secret populated from `gitea-pat`.
 
-#### Scenario: Repo Secret resolves without a literal token in source
+#### Scenario: Bundle ships no Gitea Secret
 
 - **GIVEN** the rendered `argocd-demo` bundle
-- **WHEN** the repository Secret is inspected
-- **THEN** its `type` is `Opaque`
-- **AND** its `metadata.labels["argocd.argoproj.io/secret-type"]` is `repository` or `repo-creds`
-- **AND** its `data.url` (when decoded) points at the Gitea host `gitea-gitea.apps.gdfkube.gov`
-- **AND** the raw YAML in git does not contain a base64-decoded Gitea token or password
+- **WHEN** all rendered manifests are inspected
+- **THEN** no `Secret` resource is present in the rendered output
+- **AND** the `kustomization.yaml` `resources` list does not include `repo-secret.yaml`
+- **AND** the source tree under `gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo/` contains no file declaring an `argocd.argoproj.io/secret-type` label
 
 ### Requirement: Discovery ApplicationSet lives in the demo ArgoCD namespace
 

@@ -4,9 +4,9 @@
 - [x] 1.2 Add `namespace.yaml` declaring `Namespace` `gdfkube-gitops` with the labels OpenShift expects (`openshift.io/cluster-monitoring: "true"` if other platform namespaces use it; do not set `argocd.argoproj.io/managed-by`).
 - [x] 1.3 Add `argocd.yaml` declaring an `argoproj.io/v1beta1 ArgoCD` named `gdfkube-gitops` in `gdfkube-gitops` with: `sourceNamespaces: ["gdfkube-gitops"]`, `defaultClusterScopedRoleDisabled: false`, application controller / repo server / applicationset controller / server / redis components enabled, Route enabled, SSO disabled.
 - [x] 1.4 Add `clusterrolebinding.yaml` binding ServiceAccount `gdfkube-gitops-argocd-application-controller` in namespace `gdfkube-gitops` to ClusterRole `cluster-admin`, with exactly one subject.
-- [x] 1.5 Add `repo-secret.yaml` — a `Secret` labeled `argocd.argoproj.io/secret-type: repo-creds` for URL prefix `https://gitea-gitea.apps.gdfkube.gov/gdfkube`, sourcing `username`/`password` from the existing platform-managed Gitea credentials (no literal token in git). Confirm against the existing `gitea-token` Secret used by the platform; if it lives in a different namespace, ship a copy job under `init-jobs` rather than referencing across namespaces.
+- [x] 1.5 No Gitea repository Secret is needed: `gitea-bootstrap-job.yaml` creates the `gdfkube` org with `visibility: "public"`, so the demo ArgoCD clones anonymously. If the org is ever flipped to private, ship a `repo-creds` Secret in a follow-up change and wire `username`/`password` from `gitea-pat` via a copy job in `init-jobs`.
 - [x] 1.6 Add `org-repos-discovery.yaml` — the existing discovery `ApplicationSet`, with two edits relative to `argocd/discovery/org-repos-discovery.yaml`: `metadata.namespace: gdfkube-gitops` and `spec.template.spec.destination.namespace: gdfkube-gitops`. Keep `repoURL`, `revision: HEAD`, generator `directories: [orgs/*]`, `project: default`, `path: '{{path}}'`.
-- [x] 1.7 Add `kustomization.yaml` listing all five manifests above under `resources:`. Do not add Helm dependencies, ConfigMap generators, or patches.
+- [x] 1.7 Add `kustomization.yaml` listing all four manifests above under `resources:`. Do not add Helm dependencies, ConfigMap generators, or patches.
 
 ## 2. Platform Application that ships the bundle
 
@@ -35,7 +35,7 @@
 ## 6. Local render verification
 
 - [x] 6.1 Run `helm template platform gdfkube-src/gdfkube-infra/platform` and confirm: a `Namespace gdfkube-gitops` and `Application gdfkube-argocd-demo` are present; the Application's `source.path` is `gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo`, `destination.namespace` is `gdfkube-gitops`, sync-wave is `"-8"`, and `syncPolicy.automated` has both `prune` and `selfHeal` `true`.
-- [x] 6.2 Run `kustomize build gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo` and confirm: `Namespace`, `ArgoCD`, `ClusterRoleBinding`, `Secret`, `ApplicationSet` all render; the `ClusterRoleBinding` has exactly one `ServiceAccount` subject named `gdfkube-gitops-argocd-application-controller`; the `Secret` does not contain a base64-decoded token; the `ApplicationSet` is named `gdfkube-infra-orgs` in `gdfkube-gitops`.
+- [x] 6.2 Run `kustomize build gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo` and confirm: `Namespace`, `ArgoCD`, `ClusterRoleBinding`, `ApplicationSet` all render (no `Secret` — repos are public); the `ClusterRoleBinding` has exactly one `ServiceAccount` subject named `gdfkube-gitops-argocd-application-controller`; the `ApplicationSet` is named `gdfkube-infra-orgs` in `gdfkube-gitops`.
 - [x] 6.3 Run `helm template saude gdfkube-src/gdfkube-infra/charts/infra/argocd-org --set meta.org=saude --set system.naming.appProject=saude` and confirm: `AppProject saude` is in `gdfkube-gitops`; `ApplicationSet appset-saude` is in `gdfkube-gitops`; the generated template's `syncPolicy.automated` has both `prune` and `selfHeal` `true`; `syncOptions` contains `CreateNamespace=true`.
 - [x] 6.4 Run `pre-commit run --all-files` and address any findings (trufflehog must pass — confirm no literal Gitea token landed in `repo-secret.yaml`).
 

@@ -90,40 +90,21 @@ subjects:
 Run: `yq '.subjects | length, .roleRef.name' gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo/clusterrolebinding.yaml`
 Expected: `1` then `cluster-admin`.
 
-## Task 4: Gitea repo-creds Secret (no literal token)
+## Task 4: No Gitea repo credentials Secret (Gitea org is public-read)
 
-**Files:**
-- Create: `gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo/repo-secret.yaml`
-- Confirm sourcing: read `gdfkube-src/gdfkube-infra/platform/templates/05-secrets.yaml` or any existing `gitea-token` Secret reference under `platform/` to learn how the platform already exposes Gitea creds.
+The `gitea-bootstrap` job at `gdfkube-src/gdfkube-infra/platform/manifests/init-jobs/gitea-bootstrap-job.yaml:35` creates the `gdfkube` Gitea org with `visibility: "public"`, and the Camel `GiteaGitProvider.createRepo` call (`gdfkube-src/gdfkube-camel/src/main/java/gov/gdf/camel/git/GiteaGitProvider.java:78-81`) does not set `private`, so generated tenant repos default to public-read. The demo ArgoCD therefore clones anonymously and the bundle ships no repository Secret.
 
-- [ ] **Step 1:** Find the existing Gitea credentials source.
+- [ ] **Step 1:** Confirm Gitea org visibility.
 
-Run: `grep -rn "gitea-token\|GITEA_TOKEN" gdfkube-src/gdfkube-infra/platform/ | head`
-Expected: at least one Secret or env reference; record its namespace and key names.
+Run: `grep -n 'visibility' gdfkube-src/gdfkube-infra/platform/manifests/init-jobs/gitea-bootstrap-job.yaml`
+Expected: a line containing `"visibility":"public"`.
 
-- [ ] **Step 2:** Write the Secret as `repo-creds` (URL prefix), with `username`/`password` sourced via a sync hook or a `gitea-token-sync-job` style copy into `gdfkube-gitops`. **No literal token in YAML.**
+- [ ] **Step 2:** Confirm Camel does not set per-repo private.
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: gitea-orgs-repo-creds
-  namespace: gdfkube-gitops
-  labels:
-    argocd.argoproj.io/secret-type: repo-creds
-type: Opaque
-stringData:
-  url: https://gitea-gitea.apps.gdfkube.gov/gdfkube
-  # username and password are populated by gitea-token-sync-job at runtime;
-  # see gdfkube-src/gdfkube-infra/platform/manifests/init-jobs/gitea-token-sync-job.yaml
-```
+Run: `grep -n 'private\|visibility' gdfkube-src/gdfkube-camel/src/main/java/gov/gdf/camel/git/GiteaGitProvider.java`
+Expected: no matches inside `createRepo`.
 
-- [ ] **Step 3:** If the existing `gitea-token-sync-job` writes only into `gdfkube` namespace, extend it (or add a sibling job) to also copy the username/password keys into the `gitea-orgs-repo-creds` Secret in `gdfkube-gitops`. Keep this in the same kustomize bundle so the lifecycle is co-located.
-
-- [ ] **Step 4:** Trufflehog check — confirm no literal token landed.
-
-Run: `pre-commit run trufflehog --files gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo/repo-secret.yaml`
-Expected: pass.
+- [ ] **Step 3:** If a future change flips the org to `private`, follow up with a `repo-creds` Secret in this bundle whose `username`/`password` are populated from `gitea-pat` via a sibling copy job under `init-jobs/`. Do not pre-emptively ship an empty Secret — ArgoCD treats it as a no-op and it obscures the actual auth mode.
 
 ## Task 5: Relocated discovery ApplicationSet
 
@@ -180,19 +161,18 @@ resources:
   - namespace.yaml
   - argocd.yaml
   - clusterrolebinding.yaml
-  - repo-secret.yaml
   - org-repos-discovery.yaml
 ```
 
 - [ ] **Step 2:** Render and count documents.
 
-Run: `kustomize build gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo | grep -c '^kind:'`
-Expected: `5`.
+Run: `kubectl kustomize gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo | grep -c '^kind:'`
+Expected: `4`.
 
 - [ ] **Step 3:** Confirm each Kind appears once.
 
-Run: `kustomize build gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo | yq -p yaml -o yaml '.kind' | sort -u`
-Expected: `ApplicationSet`, `ArgoCD`, `ClusterRoleBinding`, `Namespace`, `Secret`.
+Run: `kubectl kustomize gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo | grep '^kind:' | sort -u`
+Expected: `kind: ApplicationSet`, `kind: ArgoCD`, `kind: ClusterRoleBinding`, `kind: Namespace`.
 
 ## Task 7: Platform Application that ships the bundle
 
