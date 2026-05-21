@@ -1,11 +1,8 @@
-# Hand-applied once to bootstrap per-org Applications.
-# Not rendered by Helm — apply directly to the hub:
-#   oc apply -f gdfkube-src/gdfkube-infra/argocd/discovery/org-repos-discovery.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: gdfkube-infra-orgs
-  namespace: openshift-gitops
+  namespace: gdfkube-gitops
 spec:
   generators:
     - git:
@@ -24,5 +21,5 @@ spec:
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: openshift-gitops
+        namespace: gdfkube-gitops
       syncPolicy: {}
