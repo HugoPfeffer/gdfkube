@@ -30,7 +30,7 @@
 
 - [x] 5.1 `./mvnw -o test` (JDK 21 at `/home/node/.local/jdk`): `Tests run: 61, Failures: 0, Errors: 0, Skipped: 0` — BUILD SUCCESS.
 - [x] 5.2 `dbz.gdfkube.groups` gone from `connector-config.json` and `init-topics.sh`; `collection.include.list` no longer contains `gdfkube.groups`; `dlq.gdfkube.groups` retained.
-- [ ] 5.3 Run `pre-commit run --all-files` (trufflehog) before pushing.
+- [x] 5.3 `pre-commit run --all-files` → TruffleHog Passed.
 - [ ] 5.4 (Cluster, if available) Fresh bootstrap → no `gdfkube-{org}` repos and no `gdfkube-orgs/orgs/*`; then submit + approve an ITSM request and confirm scaffolding + workloads appear and ArgoCD syncs cleanly.
 
 ## 6. main-openshift follow-up (configmaps.yaml mirror)
