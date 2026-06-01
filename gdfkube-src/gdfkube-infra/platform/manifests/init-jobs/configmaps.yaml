@@ -509,7 +509,6 @@ data:
     ensureCollection('debezium_signals');
     ensurePreImage('requests');
     ensurePreImage('forms');
-    ensurePreImage('groups');
 
     db.audit_log.createIndex({ at: 1 }, { expireAfterSeconds: 2592000 });
     db.audit_log.createIndex({ requestId: 1, at: -1 });
@@ -556,7 +555,6 @@ data:
 
     create_topic "dbz.gdfkube.requests"      6 3 604800000
     create_topic "dbz.gdfkube.forms"          1 3 604800000
-    create_topic "dbz.gdfkube.groups"         1 3 604800000
 
     create_topic "gdfkube.pipeline.status"    6 3 1209600000
     create_topic "gdfkube.audit"              3 3 2592000000
@@ -627,7 +625,7 @@ data:
       "mongodb.connection.string": "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0",
       "topic.prefix": "dbz.gdfkube",
       "database.include.list": "gdfkube",
-      "collection.include.list": "gdfkube.requests,gdfkube.forms,gdfkube.groups",
+      "collection.include.list": "gdfkube.requests,gdfkube.forms",
       "snapshot.mode": "initial",
       "capture.mode": "change_streams_update_full_with_pre_image",
       "signal.data.collection": "gdfkube.debezium_signals",

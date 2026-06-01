@@ -35,4 +35,4 @@
 
 ## 6. main-openshift follow-up (configmaps.yaml mirror)
 
-- [ ] 6.1 On `main-openshift`, apply the same edits to `gdfkube-src/gdfkube-infra/platform/manifests/init-jobs/configmaps.yaml`: drop `gdfkube.groups` from the embedded `collection.include.list`, remove `ensurePreImage('groups')`, and remove the `create_topic "dbz.gdfkube.groups"` line. Keep `dlq.gdfkube.groups`, the group seeding, and the group index. This eliminates the source/mirror drift when the change merges to the deployment branch.
+- [x] 6.1 Applied on `main-openshift` to `gdfkube-src/gdfkube-infra/platform/manifests/init-jobs/configmaps.yaml`: drop `gdfkube.groups` from the embedded `collection.include.list`, remove `ensurePreImage('groups')`, and remove the `create_topic "dbz.gdfkube.groups"` line. Keep `dlq.gdfkube.groups`, the group seeding, and the group index. This eliminates the source/mirror drift when the change merges to the deployment branch.
