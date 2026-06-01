@@ -29,7 +29,6 @@ echo "=== Creating Kafka topics ==="
 
 create_topic "dbz.gdfkube.requests"      6 3 604800000
 create_topic "dbz.gdfkube.forms"          1 3 604800000
-create_topic "dbz.gdfkube.groups"         1 3 604800000
 
 create_topic "gdfkube.pipeline.status"    6 3 1209600000
 create_topic "gdfkube.audit"              3 3 2592000000
@@ -44,4 +43,4 @@ create_topic "dlq.gdfkube.audit-sink"     1 3 2592000000
 create_topic "dlq.gdfkube.config-reload"  1 3 2592000000
 create_topic "dlq.gdfkube.debezium"       1 3 2592000000
 
-echo "=== All 14 topics created successfully ==="
+echo "=== All 13 topics created successfully ==="

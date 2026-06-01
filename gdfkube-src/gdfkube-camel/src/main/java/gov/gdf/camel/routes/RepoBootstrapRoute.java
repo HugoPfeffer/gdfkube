@@ -61,6 +61,11 @@ public class RepoBootstrapRoute extends RouteBuilder {
                 }
 
                 stageUpdater.updateStage(event._id, STAGE_REPO_BOOTSTRAPPED);
-            });
+            })
+            .process(exchange -> {
+                RequestEvent event = exchange.getProperty("requestEvent", RequestEvent.class);
+                exchange.setProperty("org", event.requesterGroupName);
+            })
+            .to("direct:org-bootstrap");
     }
 }
