@@ -14,12 +14,7 @@ import java.util.stream.Stream;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.kafka.KafkaConstants;
-import org.apache.camel.component.kafka.consumer.KafkaManualCommit;
 import org.jboss.logging.Logger;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.gdf.camel.bean.AuditInterceptor;
 import gov.gdf.camel.bean.GitRepoBootstrapper;
@@ -37,7 +32,6 @@ public class OrgBootstrapRoute extends RouteBuilder {
 
     private static final Logger LOG = Logger.getLogger(OrgBootstrapRoute.class);
     private static final String ROUTE_ID = "org-bootstrap";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final long TTL_MS = 60_000;
     private static final ConcurrentHashMap<String, ReentrantLock> REPO_LOCKS = new ConcurrentHashMap<>();
 
@@ -74,11 +68,7 @@ public class OrgBootstrapRoute extends RouteBuilder {
                 .logRetryAttempted(true)
                 .onPrepareFailure(DlqHeaders::stamp));
 
-        from("kafka:dbz.gdfkube.groups"
-                + "?groupId=gdfkube-camel"
-                + "&autoOffsetReset=earliest"
-                + "&autoCommitEnable=false"
-                + "&allowManualCommit=true")
+        from("direct:org-bootstrap")
             .routeId(ROUTE_ID)
             .onCompletion()
                 .process(exchange -> {
@@ -96,37 +86,11 @@ public class OrgBootstrapRoute extends RouteBuilder {
                     }
                 })
             .end()
-            .process(exchange -> {
-                String op = exchange.getIn().getHeader("__op", String.class);
-                if (op == null) {
-                    op = exchange.getIn().getHeader("op", String.class);
-                }
-
-                if (op == null) {
-                    LOG.warnf("groups event missing __op/op header, dropping: %s",
-                              exchange.getIn().getBody(String.class));
-                    exchange.setProperty("accepted", false);
-                } else if ("d".equals(op)) {
-                    LOG.debugf("groups.delete dropped: %s", exchange.getIn().getBody(String.class));
-                    exchange.setProperty("accepted", false);
-                } else {
-                    exchange.setProperty("accepted", true);
-                }
-            })
-            .choice()
-                .when(exchangeProperty("accepted").isEqualTo(true))
-                    .process(this::processGroupEvent)
-                .otherwise()
-                    .log("org-bootstrap: delete event dropped")
-            .end()
-            .process(this::commitKafkaOffset);
+            .process(this::processOrgEvent);
     }
 
-    private void processGroupEvent(Exchange exchange) throws Exception {
-        String body = exchange.getIn().getBody(String.class);
-        JsonNode node = MAPPER.readTree(body);
-
-        String groupId = node.path("_id").asText();
+    private void processOrgEvent(Exchange exchange) throws Exception {
+        String groupId = exchange.getProperty("org", String.class);
 
         evictExpired();
         if (dedupCache.containsKey(groupId)) {
@@ -267,13 +231,5 @@ public class OrgBootstrapRoute extends RouteBuilder {
     @ApplicationScoped
     Clock systemClock() {
         return Clock.systemUTC();
-    }
-
-    private void commitKafkaOffset(Exchange exchange) {
-        KafkaManualCommit commit = exchange.getIn().getHeader(
-                KafkaConstants.MANUAL_COMMIT, KafkaManualCommit.class);
-        if (commit != null) {
-            commit.commit();
-        }
     }
 }

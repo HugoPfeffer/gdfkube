@@ -18,8 +18,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import gov.gdf.camel.bean.HelmTemplateRunner;
 import gov.gdf.camel.git.MockGitProvider;
 import gov.gdf.camel.testsupport.MutableClock;
@@ -52,7 +50,6 @@ class OrgBootstrapIntegrationTest {
         }
     }
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final String OWNER = "gdfkube";
 
     @Inject
@@ -125,7 +122,7 @@ class OrgBootstrapIntegrationTest {
 
     @Test
     void firstEvent_bootstrapsBothReposAndWritesAllThree() throws Exception {
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
 
         assertTrue(mockGitProvider.repoExists(OWNER, "gdfkube-cultura"),
                 "Per-org repo must be created");
@@ -156,11 +153,11 @@ class OrgBootstrapIntegrationTest {
 
     @Test
     void secondEvent_idempotentNoop() throws Exception {
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
         var commitsAfterFirst = mockGitProvider.getCommits(OWNER, "gdfkube-orgs");
         assertEquals(1, commitsAfterFirst.size());
 
-        sendGroupEvent("cultura", "gdfkube-cultura", "u");
+        sendOrgEvent("cultura");
         var commitsAfterSecond = mockGitProvider.getCommits(OWNER, "gdfkube-orgs");
         assertEquals(1, commitsAfterSecond.size(),
                 "No second commit expected — files already exist (noop)");
@@ -175,7 +172,7 @@ class OrgBootstrapIntegrationTest {
         Files.createDirectories(orgDir);
         Files.writeString(orgDir.resolve("appproject.yaml"), "pre-existing content");
 
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
 
         var commits = mockGitProvider.getCommits(OWNER, "gdfkube-orgs");
         assertEquals(1, commits.size());
@@ -193,7 +190,7 @@ class OrgBootstrapIntegrationTest {
         mockGitProvider.createRepo(OWNER, "gdfkube-cultura",
                 new gov.gdf.camel.git.RepoOptions("main", true, "pre-existing"));
 
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
 
         assertTrue(mockGitProvider.repoExists(OWNER, "gdfkube-orgs"),
                 "Central repo must still be created");
@@ -202,18 +199,8 @@ class OrgBootstrapIntegrationTest {
     }
 
     @Test
-    void deleteEvent_dropped() throws Exception {
-        sendGroupEvent("cultura", "gdfkube-cultura", "d");
-
-        assertFalse(mockGitProvider.repoExists(OWNER, "gdfkube-orgs"),
-                "No repos created for delete event");
-        var commits = mockGitProvider.getCommits(OWNER, "gdfkube-orgs");
-        assertTrue(commits.isEmpty(), "No commits for delete event");
-    }
-
-    @Test
     void replayWithinTtl_dedupedByCache() throws Exception {
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
         assertEquals(1, mockGitProvider.getCommits(OWNER, "gdfkube-orgs").size());
 
         mockGitProvider.reset();
@@ -221,7 +208,7 @@ class OrgBootstrapIntegrationTest {
                 new gov.gdf.camel.git.RepoOptions("main", true, "re-created"));
 
         mutableClock.advance(Duration.ofSeconds(30));
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
         var commits = mockGitProvider.getCommits(OWNER, "gdfkube-orgs");
         assertTrue(commits.isEmpty(),
                 "Event within 60s should be deduped");
@@ -229,7 +216,7 @@ class OrgBootstrapIntegrationTest {
 
     @Test
     void replayAfterTtl_reprocesses() throws Exception {
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
         assertEquals(1, mockGitProvider.getCommits(OWNER, "gdfkube-orgs").size());
 
         mockGitProvider.reset();
@@ -237,7 +224,7 @@ class OrgBootstrapIntegrationTest {
                 new gov.gdf.camel.git.RepoOptions("main", true, "re-created"));
 
         mutableClock.advance(Duration.ofSeconds(61));
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
         assertEquals(1, mockGitProvider.getCommits(OWNER, "gdfkube-orgs").size(),
                 "Event after 60s TTL should be re-processed");
     }
@@ -256,7 +243,7 @@ class OrgBootstrapIntegrationTest {
         when(helmTemplateRunner.render(anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("helm template failed (exit 1): chart not found"));
 
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
 
         dlqMock.assertIsSatisfied(45_000);
 
@@ -265,21 +252,8 @@ class OrgBootstrapIntegrationTest {
     }
 
     @Test
-    void missingOpHeader_droppedWithoutCommit() throws Exception {
-        Exchange result = sendGroupEventWithoutOp("cultura");
-
-        assertTrue(mockGitProvider.getCommits(OWNER, "gdfkube-orgs").isEmpty(),
-                "No commits expected for event with missing op header");
-        assertFalse(mockGitProvider.repoExists(OWNER, "gdfkube-cultura"),
-                "No per-org repo created for malformed event");
-        verify(helmTemplateRunner, never()).render(anyString(), anyString(), anyString(), anyString());
-        assertNull(result.getException(),
-                "No exception expected — event is dropped, not error-handled");
-    }
-
-    @Test
     void outputDir_cleanedUpAfterSuccess() throws Exception {
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
 
         try (var listing = Files.list(Path.of(System.getProperty("java.io.tmpdir")))) {
             long leftover = listing
@@ -297,7 +271,7 @@ class OrgBootstrapIntegrationTest {
         when(helmTemplateRunner.render(anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("helm template failed"));
 
-        sendGroupEvent("cultura", "gdfkube-cultura", "c");
+        sendOrgEvent("cultura");
 
         assertFalse(orgBootstrapRoute.dedupCacheContainsForTesting("cultura"),
                 "dedupCache must NOT contain cultura after a failed exchange");
@@ -306,51 +280,14 @@ class OrgBootstrapIntegrationTest {
         stubHelmRender();
         mockGitProvider.reset();
 
-        sendGroupEvent("cultura", "gdfkube-cultura", "u");
+        sendOrgEvent("cultura");
 
         assertFalse(mockGitProvider.getCommits(OWNER, "gdfkube-orgs").isEmpty(),
                 "Second event must NOT be suppressed — cache was not poisoned by the failure");
     }
 
-    private Exchange sendGroupEventWithoutOp(String groupId) {
-        String body;
-        try {
-            body = MAPPER.writeValueAsString(Map.of(
-                    "_id", groupId,
-                    "name", groupId.substring(0, 1).toUpperCase() + groupId.substring(1),
-                    "fullName", "Department of " + groupId,
-                    "users", 0,
-                    "forms", 0,
-                    "clusters", 0
-            ));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return producer.send("direct:org-bootstrap-test", exchange -> {
-            exchange.getIn().setBody(body);
-        });
-    }
-
-    private Exchange sendGroupEvent(String groupId, String repo, String op) {
-        String body;
-        try {
-            body = MAPPER.writeValueAsString(Map.of(
-                    "_id", groupId,
-                    "name", groupId.substring(0, 1).toUpperCase() + groupId.substring(1),
-                    "fullName", "Department of " + groupId,
-                    "repo", repo,
-                    "users", 0,
-                    "forms", 0,
-                    "clusters", 0
-            ));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return producer.send("direct:org-bootstrap-test", exchange -> {
-            exchange.getIn().setBody(body);
-            exchange.getIn().setHeader("__op", op);
-        });
+    private Exchange sendOrgEvent(String org) {
+        return producer.send("direct:org-bootstrap-test",
+                exchange -> exchange.setProperty("org", org));
     }
 }
