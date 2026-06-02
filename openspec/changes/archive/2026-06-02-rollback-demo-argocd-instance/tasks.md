@@ -37,4 +37,4 @@
 - [x] 7.2 `helm template platform ./platform` → `gdfkube-org-discovery` Application in `openshift-gitops`, path `org-discovery`, no `gdfkube-argocd-demo`.
 - [x] 7.3 `kubectl kustomize ./platform/manifests/org-discovery` → `gdfkube-infra-orgs` ApplicationSet in `openshift-gitops`.
 - [x] 7.4 `helm template org ./charts/infra/argocd-org` → AppProject + ApplicationSet in `openshift-gitops`, automated syncPolicy intact.
-- [ ] 7.5 `pre-commit run --all-files` (trufflehog) passes.
+- [x] 7.5 `pre-commit run --all-files` (trufflehog) passes.

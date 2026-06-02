@@ -81,10 +81,10 @@ helper. No second ArgoCD instance (namespace, `ArgoCD` CR, or `cluster-admin`
 
 ### Requirement: Discovery ApplicationSet lives in `openshift-gitops`
 
-The `org-discovery` kustomize bundle at
-`gdfkube-src/gdfkube-infra/platform/manifests/org-discovery/` MUST ship exactly one
+The `org-discovery` kustomize bundle MUST ship exactly one
 `argoproj.io/v1alpha1` `ApplicationSet` named `gdfkube-infra-orgs` in namespace
-`openshift-gitops`, with a git directory generator over
+`openshift-gitops` (from `gdfkube-src/gdfkube-infra/platform/manifests/org-discovery/`),
+with a git directory generator over
 `http://gitea.gdfkube.svc:3000/gdfkube/gdfkube-orgs.git` at revision `HEAD` scanning `orgs/*`,
 generating Applications in project `default` whose `destination.namespace` is
 `openshift-gitops` and whose `source.path` is `{{path}}`. The bundle SHALL NOT ship a
