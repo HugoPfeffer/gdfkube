@@ -1,0 +1,11 @@
+# Binds the built-in `global` ManagedClusterSet into the policy namespace so the
+# hub-targeting Placement (templates/placement.yaml) can select local-cluster.
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: global
+  namespace: {{ .Values.system.naming.policyNamespace }}
+  labels:
+    {{- toYaml .Values.system.labels | nindent 4 }}
+spec:
+  clusterSet: global

@@ -10,6 +10,14 @@ spec:
   replicas: {{ .Values.vars.nodeCount | default 1 }}
   management:
     autoRepair: true
+    # upgradeType defaults to Replace, which requires an explicit replace
+    # strategy; without it the NodePool fails validation (UpdateManagementEnabled).
+    upgradeType: Replace
+    replace:
+      strategy: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
   release:
     image: {{ .Values.system.releaseImage }}
   platform:

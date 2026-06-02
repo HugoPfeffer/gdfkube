@@ -6,6 +6,13 @@ metadata:
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:
+  # The demo management cluster has limited worker capacity. A HighlyAvailable
+  # control plane (the default) runs a 3-replica etcd with one-pod-per-node
+  # anti-affinity; with more than one hosted cluster the third etcd replica
+  # cannot schedule, so the control-plane-operator never creates kube-apiserver
+  # and provisioning hangs. SingleReplica keeps each control plane to one replica.
+  controllerAvailabilityPolicy: SingleReplica
+  infrastructureAvailabilityPolicy: SingleReplica
   release:
     image: {{ .Values.system.releaseImage }}
   pullSecret:

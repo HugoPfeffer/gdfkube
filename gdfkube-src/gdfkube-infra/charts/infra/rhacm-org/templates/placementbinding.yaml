@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 placementRef:
-  name: {{ .Values.meta.org }}-prod-clusters
+  name: {{ .Values.meta.org }}-hub
   apiGroup: cluster.open-cluster-management.io
   kind: Placement
 subjects:

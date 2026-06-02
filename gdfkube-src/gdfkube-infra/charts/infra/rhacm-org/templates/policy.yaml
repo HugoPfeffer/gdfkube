@@ -14,3 +14,41 @@ spec:
         kind: ConfigurationPolicy
         metadata:
           name: hc-pullsecret-distributor
+        spec:
+          remediationAction: enforce
+          severity: medium
+          pruneObjectBehavior: None
+          # Enforced on the hub (local-cluster). For every HostedCluster owned by
+          # this org, ensure pull-secret + sshkey exist in its control-plane
+          # namespace so HyperShift can provision. pull-secret is copied from the
+          # hub's cluster-wide pull secret; sshkey from the seeded kubevirt-secret.
+          # Templated dynamically so new clusters are covered without re-rendering.
+          # sshkey is only emitted when its source exists, so a missing
+          # kubevirt-secret never blocks the required pull-secret.
+          object-templates-raw: |
+{{ printf `{{- range $hc := (lookup "hypershift.openshift.io/v1beta1" "HostedCluster" "" "").items }}
+{{- if hasPrefix "hc-%s-" $hc.metadata.namespace }}
+- complianceType: musthave
+  objectDefinition:
+    apiVersion: v1
+    kind: Secret
+    type: kubernetes.io/dockerconfigjson
+    metadata:
+      name: pull-secret
+      namespace: '{{ $hc.metadata.namespace }}'
+    data:
+      .dockerconfigjson: '{{ fromSecret "openshift-config" "pull-secret" ".dockerconfigjson" }}'
+{{- if (lookup "v1" "Secret" "open-cluster-management" "kubevirt-secret") }}
+- complianceType: musthave
+  objectDefinition:
+    apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: sshkey
+      namespace: '{{ $hc.metadata.namespace }}'
+    data:
+      id_rsa.pub: '{{ fromSecret "open-cluster-management" "kubevirt-secret" "ssh-publickey" }}'
+{{- end }}
+{{- end }}
+{{- end }}` .Values.meta.org | nindent 12 }}

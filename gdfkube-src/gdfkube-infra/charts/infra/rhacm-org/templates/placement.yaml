@@ -1,15 +1,19 @@
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
 metadata:
-  name: {{ .Values.meta.org }}-prod-clusters
+  name: {{ .Values.meta.org }}-hub
   namespace: {{ .Values.system.naming.policyNamespace }}
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:
+  # The pull-secret/sshkey must land in the HostedCluster control-plane
+  # namespaces (hc-<org>-*), which live on the hub/management cluster — not on
+  # the org's hosted clusters. Target the hub (local-cluster) via the built-in
+  # `global` ManagedClusterSet so the secrets exist before HyperShift reconciles.
   clusterSets:
-    - {{ .Values.system.naming.clusterSet }}
+    - global
   predicates:
     - requiredClusterSelector:
         labelSelector:
           matchLabels:
-            gdfkube.io/env: production
+            local-cluster: "true"
