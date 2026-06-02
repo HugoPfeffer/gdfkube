@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: appset-{{ .Values.meta.org }}
-  namespace: gdfkube-gitops
+  namespace: openshift-gitops
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:

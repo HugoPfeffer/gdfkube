@@ -41,7 +41,7 @@ spec:
             - name: MONGODB_URI
               value: "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/gdfkube?replicaSet=rs0"
             - name: APP_SYSTEM_GITEA_EXTERNAL_URL
-              # Cross-namespace-resolvable so ArgoCD (in gdfkube-gitops) can
+              # Cross-namespace-resolvable so ArgoCD (in openshift-gitops) can
               # clone the per-org Gitea repos referenced in the AppProject /
               # ApplicationSet manifests Camel renders and pushes.
               value: "http://gitea.gdfkube.svc:3000"

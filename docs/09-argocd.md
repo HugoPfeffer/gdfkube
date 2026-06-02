@@ -7,7 +7,6 @@
 ## Specs
 
 - [`argocd-org-stack`](../openspec/specs/argocd-org-stack/spec.md)
-- [`argocd-demo-instance`](../openspec/specs/argocd-demo-instance/spec.md)
 
 ## Role in the Pipeline
 
@@ -16,7 +15,7 @@
 [Gitea: gdfkube-{org}]  ──▶ per-org ApplicationSets ──▶ Applications ──▶ HostedCluster / NodePool / ManagedCluster
 ```
 
-Two ArgoCD instances collaborate. The **platform ArgoCD** (`openshift-gitops`) manages infrastructure and bootstraps the **demo ArgoCD** (`gdfkube-gitops`). The demo instance owns all tenant workloads — org discovery, AppProjects, and per-org ApplicationSets. Both instances use automated sync with prune and self-heal.
+A single ArgoCD instance — the **platform ArgoCD** (`openshift-gitops`) on the hub cluster — owns everything: platform infrastructure, org discovery, per-org AppProjects, and per-org ApplicationSets. It uses automated sync with prune and self-heal. The demo relies heavily on cluster-scoped manifests, and `openshift-gitops` already holds the cluster-scoped permissions to manage them; consolidating on it avoids re-configuring a second ArgoCD operator instance.
 
 ## Responsibilities
 
@@ -30,22 +29,21 @@ Two ArgoCD instances collaborate. The **platform ArgoCD** (`openshift-gitops`) m
 ### Tech
 
 - ArgoCD on OpenShift GitOps (Argo Operator).
-- Platform instance in namespace `openshift-gitops`, on the hub cluster.
-- Demo instance `gdfkube-gitops` in namespace `gdfkube-gitops`, bootstrapped by the platform ArgoCD as child Application `gdfkube-argocd-demo`.
+- Single instance in namespace `openshift-gitops`, on the hub cluster. It owns platform infrastructure and all tenant artifacts.
 - API: `argoproj.io/v1alpha1`.
 
 ### Repo Wiring
 
 #### Discovery (GitOps-managed)
 
-The discovery ApplicationSet is reconciled by the platform Application `gdfkube-argocd-demo`, which syncs everything under `platform/manifests/argocd-demo/`. The manifest lives at `gdfkube-src/gdfkube-infra/platform/manifests/argocd-demo/org-repos-discovery.yaml`.
+The discovery ApplicationSet is reconciled by the platform Application `gdfkube-org-discovery`, which syncs everything under `platform/manifests/org-discovery/`. The manifest lives at `gdfkube-src/gdfkube-infra/platform/manifests/org-discovery/org-repos-discovery.yaml`.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: gdfkube-infra-orgs
-  namespace: gdfkube-gitops
+  namespace: openshift-gitops
 spec:
   generators:
     - git:
@@ -64,11 +62,11 @@ spec:
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: gdfkube-gitops
+        namespace: openshift-gitops
       syncPolicy: {}
 ```
 
-This ApplicationSet renders the per-org AppProject + ApplicationSet pair inside the `gdfkube-gitops` namespace. Camel's `org-bootstrap` route pushes rendered output into `gdfkube-orgs/orgs/{org}/`.
+This ApplicationSet renders the per-org AppProject + ApplicationSet pair inside the `openshift-gitops` namespace. Camel's `org-bootstrap` route pushes rendered output into `gdfkube-orgs/orgs/{org}/`.
 
 #### Per-org AppProject (rendered by Camel into `gdfkube-orgs/orgs/{org}/`)
 
@@ -77,7 +75,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: saude
-  namespace: gdfkube-gitops
+  namespace: openshift-gitops
 spec:
   description: "Customer org: saude (Secretaria de Saúde)"
   sourceRepos:
@@ -118,7 +116,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: appset-saude
-  namespace: gdfkube-gitops
+  namespace: openshift-gitops
 spec:
   generators:
     - git:
@@ -151,8 +149,8 @@ spec:
 
 **All syncs are automated** with prune and self-heal:
 
-- **Platform apps** (`openshift-gitops`) — the `gdfkube-platform` Helm helper sets `syncPolicy.automated` with prune and selfHeal on every child Application, including `gdfkube-argocd-demo`.
-- **Tenant workloads** (`gdfkube-gitops`) — per-org ApplicationSets generate Applications with `syncPolicy.automated` (prune + selfHeal + `CreateNamespace=true`). When Camel pushes rendered manifests to a tenant repo, the demo ArgoCD syncs them automatically.
+- **Platform apps** — the `gdfkube-platform` Helm helper sets `syncPolicy.automated` with prune and selfHeal on every child Application, including `gdfkube-org-discovery`.
+- **Tenant workloads** — per-org ApplicationSets generate Applications with `syncPolicy.automated` (prune + selfHeal + `CreateNamespace=true`). When Camel pushes rendered manifests to a tenant repo, `openshift-gitops` syncs them automatically.
 
 The earlier design decision requiring manual sync has been superseded. Automated sync simplifies the demo flow by removing the operator-approval step; real deployments can re-add sync windows or manual gates as needed.
 
@@ -207,7 +205,7 @@ Manifests use sync-wave annotations so dependencies apply in order:
 
 ## Decisions Resolved
 
-- Dual ArgoCD instances: platform (`openshift-gitops`) for infrastructure, demo (`gdfkube-gitops`) for tenant workloads. The platform instance bootstraps the demo instance via `gdfkube-argocd-demo`.
+- Single ArgoCD instance (`openshift-gitops`) owns both platform infrastructure and tenant workloads. A dedicated demo instance (`gdfkube-gitops`) was trialed and rolled back: the demo leans on cluster-scoped manifests and `openshift-gitops` already has those permissions, so a second operator instance added configuration burden without benefit.
 - Automated sync (prune + selfHeal) for both platform and tenant workloads — simplifies the demo flow.
 - Two-layer isolation: AppProject scope (source repos + destinations) **plus** Casbin RBAC (per-org sync rights).
 - Discovery ApplicationSet bootstraps per-org Applications from `gdfkube-orgs/orgs/*`.
@@ -222,11 +220,11 @@ Manifests use sync-wave annotations so dependencies apply in order:
 
 ## Migration Notes
 
-For clusters that previously ran the demo with the single-instance layout:
+For clusters that previously ran the two-instance layout (with the `gdfkube-gitops` demo ArgoCD):
 
 1. Apply the platform app-of-apps: `oc apply -n openshift-gitops -f gdfkube-src/gdfkube-infra/platform/app-of-apps.yaml`
-2. Remove stale tenant resources from the old namespace: `oc delete application,appproject,applicationset -n openshift-gitops -l gdfkube.io/managed=true`
-3. The demo ArgoCD (`gdfkube-gitops`) will recreate all tenant artifacts in its own namespace automatically.
+2. Remove the old demo instance and its namespace: `oc delete argocd gdfkube-gitops -n gdfkube-gitops` then `oc delete namespace gdfkube-gitops`.
+3. `openshift-gitops` reconciles the `gdfkube-org-discovery` Application, which recreates the discovery ApplicationSet and all per-org AppProjects/ApplicationSets in the `openshift-gitops` namespace automatically.
 
 ## References
 

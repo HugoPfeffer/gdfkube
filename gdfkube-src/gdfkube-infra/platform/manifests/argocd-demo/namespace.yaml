@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: gdfkube-gitops
-  labels:
-    gdfkube.io/managed: "true"
