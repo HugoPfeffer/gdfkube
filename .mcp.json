@@ -18,7 +18,12 @@
     },
     "kubernetes": {
       "command": "npx",
-      "args": ["-y", "--read-only", "kubernetes-mcp-server@latest"]
+      "args": [
+        "-y",
+        "kubernetes-mcp-server@latest",
+        "--read-only",
+        "--toolsets=helm,core,config"
+      ]
     },
     "github": {
       "type": "http",

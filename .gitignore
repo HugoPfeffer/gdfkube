@@ -10,3 +10,4 @@
 **/coverage/
 .claude/worktrees/
 .tmp/
+docs/ARCHITECTURE.md
