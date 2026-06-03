@@ -63,3 +63,5 @@ All changes follow a spec-driven workflow powered by OpenSpec (primary framework
 - Run `pre-commit run --all-files` before pushing
 - Commit messages: concise, imperative ("add route", not "added route")
 - When completing a development branch, always choose the first option: `Merge back to the base branch locally`.
+- GitHub repo is the source of truth. Gitea repos are ephemeral — they exist to showcase GitOps rendering new manifests as part of the demo.
+- On `main-openshift`: fix root manifests first, then push to the deployed Gitea mirrors to verify via GitOps on the live cluster.
