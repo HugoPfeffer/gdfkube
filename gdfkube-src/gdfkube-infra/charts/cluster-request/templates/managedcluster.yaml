@@ -2,7 +2,19 @@ apiVersion: cluster.open-cluster-management.io/v1
 kind: ManagedCluster
 metadata:
   name: {{ .Values.system.naming.hostedClusterName }}
+  annotations:
+    # This cluster is a HyperShift hosted cluster on this same hub, so the
+    # MCE hypershift-addon imports it in Hosted mode: the klusterlet runs on
+    # the management cluster (namespace klusterlet-<name>) and manages the
+    # hosted cluster via its admin kubeconfig. Without these annotations the
+    # import-controller falls back to default (in-cluster) mode and generates
+    # klusterlet ManifestWorks that can never bootstrap — there is no in-cluster
+    # work-agent to apply them — so the lease never updates and the cluster
+    # stays Unknown ("Wait for importing").
+    import.open-cluster-management.io/klusterlet-deploy-mode: Hosted
+    import.open-cluster-management.io/hosting-cluster-name: local-cluster
   labels:
     {{- toYaml .Values.system.labels | nindent 4 }}
 spec:
   hubAcceptsClient: true
+  leaseDurationSeconds: 60

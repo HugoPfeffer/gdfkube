@@ -22,9 +22,18 @@ spec:
   platform:
     type: KubeVirt
     kubevirt:
-      baseDomain: {{ .Values.system.baseDomain }}
-  dns:
-    baseDomain: {{ .Values.system.baseDomain }}
+      # baseDomainPassthrough makes the hosted-cluster-config-operator derive the
+      # guest ingress domain as a subdomain of THIS management cluster's *.apps
+      # wildcard (apps.<hostedClusterName>.<mgmt-apps-domain>) and auto-create the
+      # pass-through Service + wildcard Route on the hub. No per-cluster DNS
+      # record, LoadBalancer, or non-HyperShift ingress is needed — guest
+      # console/app routes resolve via the existing management *.apps wildcard.
+      # Requires the management default ingresscontroller to admit wildcard routes
+      # (routeAdmission.wildcardPolicy: WildcardsAllowed) — set by the platform
+      # manifest platform/manifests/cluster-ingress. Mutually exclusive with
+      # spec.dns.baseDomain, so the explicit dns block is intentionally omitted;
+      # HCCO populates spec.dns.baseDomain automatically.
+      baseDomainPassthrough: true
   networking:
     clusterNetwork:
       - cidr: {{ .Values.vars.clusterNetworkCidr | default "10.132.0.0/14" }}

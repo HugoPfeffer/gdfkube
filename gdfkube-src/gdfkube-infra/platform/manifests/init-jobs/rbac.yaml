@@ -28,3 +28,56 @@ subjects:
   - kind: ServiceAccount
     name: gitea-jobs
     namespace: gdfkube
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: base-domain-discovery
+  namespace: gdfkube
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: base-domain-ingress-reader
+rules:
+  - apiGroups: ["config.openshift.io"]
+    resources: ["ingresses"]
+    resourceNames: ["cluster"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: base-domain-discovery-ingress-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: base-domain-ingress-reader
+subjects:
+  - kind: ServiceAccount
+    name: base-domain-discovery
+    namespace: gdfkube
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: base-domain-configmap-writer
+  namespace: gdfkube
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: base-domain-discovery-configmap-writer
+  namespace: gdfkube
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: base-domain-configmap-writer
+subjects:
+  - kind: ServiceAccount
+    name: base-domain-discovery
+    namespace: gdfkube

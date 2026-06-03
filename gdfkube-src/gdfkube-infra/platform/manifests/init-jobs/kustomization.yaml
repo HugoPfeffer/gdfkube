@@ -4,6 +4,7 @@ namespace: gdfkube
 resources:
   - rbac.yaml
   - configmaps.yaml
+  - base-domain-discovery-job.yaml
   - mongo-init-job.yaml
   - mongo-seed-job.yaml
   - mongo-collections-init-job.yaml

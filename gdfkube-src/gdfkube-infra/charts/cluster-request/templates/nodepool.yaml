@@ -30,4 +30,11 @@ spec:
         type: Persistent
         persistent:
           size: 64Gi
-          storageClass: ocs-storagecluster-ceph-rbd
+          # The demo management cluster is AWS-backed and only provides the EBS
+          # CSI storage classes (gp3-csi is default, gp2-csi). ODF/Ceph is not
+          # installed, so referencing ocs-storagecluster-ceph-rbd left the CDI
+          # DataVolume in ErrClaimNotValid ("no storageClass to choose profile"),
+          # the RHCOS import never ran, and the worker VM hung in Provisioning.
+          # gp3-csi has a default CDI StorageProfile (RWO/Filesystem) and matches
+          # the class HyperShift already uses for etcd on this cluster.
+          storageClass: gp3-csi

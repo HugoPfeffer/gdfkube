@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gdfkube-cluster-ingress
+  namespace: {{ .Values.argocd.namespace }}
+  annotations:
+    # Configure the hub ingress controller early, before any hosted cluster needs
+    # its pass-through wildcard route admitted.
+    argocd.argoproj.io/sync-wave: "-20"
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    {{- include "gdfkube-platform.source" . | nindent 4 }}
+    path: gdfkube-src/gdfkube-infra/platform/manifests/cluster-ingress
+  destination:
+    server: {{ .Values.argocd.destination.server }}
+    namespace: openshift-ingress-operator
+  syncPolicy:
+    # prune:false so ArgoCD can NEVER delete the operator-managed default
+    # IngressController if this manifest is ever removed. ServerSideApply so we
+    # merge only spec.routeAdmission.wildcardPolicy and leave the rest of the
+    # IngressController spec (managed by the ingress operator) untouched.
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

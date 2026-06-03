@@ -47,6 +47,15 @@ spec:
               value: "http://gitea.gdfkube.svc:3000"
             - name: APP_SYSTEM_GITEA_OWNER
               value: gdfkube
+            - name: APP_SYSTEM_BASE_DOMAIN
+              # Discovered at bootstrap from the management cluster's ingress
+              # domain by the base-domain-discovery Job (init-jobs, sync-wave 1)
+              # and published to the gdfkube-base-domain ConfigMap. Drives
+              # system.baseDomain in every rendered HostedCluster.
+              valueFrom:
+                configMapKeyRef:
+                  name: gdfkube-base-domain
+                  key: baseDomain
           readinessProbe:
             httpGet:
               path: /q/health/ready

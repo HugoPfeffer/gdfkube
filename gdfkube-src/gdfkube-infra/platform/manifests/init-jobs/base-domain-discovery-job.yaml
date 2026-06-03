@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: base-domain-discovery
+  namespace: gdfkube
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: base-domain-discovery
+      restartPolicy: OnFailure
+      containers:
+        - name: discover-base-domain
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              DOMAIN="$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')"
+              [ -z "$DOMAIN" ] && { echo "[base-domain] FATAL: empty domain" >&2; exit 1; }
+              echo "[base-domain] discovered: $DOMAIN"
+              oc create configmap gdfkube-base-domain -n gdfkube \
+                --from-literal=baseDomain="$DOMAIN" \
+                --dry-run=client -o yaml | oc apply -f -
+              echo "[base-domain] ConfigMap gdfkube-base-domain updated"

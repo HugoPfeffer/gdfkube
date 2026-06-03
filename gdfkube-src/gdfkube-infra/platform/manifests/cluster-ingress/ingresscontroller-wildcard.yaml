@@ -1,0 +1,19 @@
+# Allow the management cluster's default ingress controller to admit wildcard
+# routes. Required for HyperShift KubeVirt hosted clusters that use
+# spec.platform.kubevirt.baseDomainPassthrough: the hosted-cluster-config-operator
+# creates a wildcard Route (*.apps.<hc>.<mgmt-apps-domain>) on this hub to pass
+# guest ingress through. Without WildcardsAllowed that Route is rejected and the
+# guest console/app routes never resolve (console ClusterOperator stays Degraded,
+# CVO never completes).
+#
+# Applied with ServerSideApply (see the parent Application) so we patch only
+# spec.routeAdmission.wildcardPolicy on the operator-managed "default"
+# IngressController without owning the rest of its spec.
+apiVersion: operator.openshift.io/v1
+kind: IngressController
+metadata:
+  name: default
+  namespace: openshift-ingress-operator
+spec:
+  routeAdmission:
+    wildcardPolicy: WildcardsAllowed
