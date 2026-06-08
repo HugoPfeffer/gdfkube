@@ -12,7 +12,7 @@ vars:
 system:
   naming:
     hostedClusterName: "hc-saude-vacinacao"
-    namespace: "hc-saude-vacinacao"
+    namespace: "clusters"
     appProject: "saude"
     clusterSet: "saude"
     policyNamespace: "gdfkube-policies"

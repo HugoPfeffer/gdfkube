@@ -85,7 +85,7 @@ public class HelmValuesBuilder {
         naming.put("appProject", groupId);
         naming.put("clusterSet", groupId);
         naming.put("hostedClusterName", groupId);
-        naming.put("namespace", groupId);
+        naming.put("namespace", "clusters");
         naming.put("policyNamespace", "gdfkube-policies");
 
         Map<String, Object> system = new LinkedHashMap<>();
@@ -139,7 +139,7 @@ public class HelmValuesBuilder {
         Map<String, Object> naming = new LinkedHashMap<>();
         String resourceName = resolveResourceName(event, org);
         naming.put("hostedClusterName", resourceName);
-        naming.put("namespace", resourceName);
+        naming.put("namespace", "namespace-request".equals(event.formId) ? resourceName : "clusters");
         naming.put("appProject", org);
         naming.put("clusterSet", org);
         naming.put("policyNamespace", "gdfkube-policies");

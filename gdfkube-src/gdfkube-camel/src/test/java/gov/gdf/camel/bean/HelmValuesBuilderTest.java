@@ -157,7 +157,7 @@ class HelmValuesBuilderTest {
 
         assertNotNull(naming, "system.naming must be present");
         assertEquals("hc-sec-educ-my-cluster", naming.get("hostedClusterName"));
-        assertEquals("hc-sec-educ-my-cluster", naming.get("namespace"));
+        assertEquals("clusters", naming.get("namespace"));
         assertEquals("sec-educ", naming.get("appProject"));
         assertEquals("sec-educ", naming.get("clusterSet"));
 
@@ -260,7 +260,7 @@ class HelmValuesBuilderTest {
             assertEquals("cultura", naming.get("appProject"));
             assertEquals("cultura", naming.get("clusterSet"));
             assertEquals("cultura", naming.get("hostedClusterName"));
-            assertEquals("cultura", naming.get("namespace"));
+            assertEquals("clusters", naming.get("namespace"));
 
             Map<String, String> labels = (Map<String, String>) system.get("labels");
             assertNotNull(labels, "system.labels must be present");
