@@ -23,9 +23,12 @@ spec:
   platform:
     type: KubeVirt
     kubevirt:
+      attachedDefaultNetwork: true
       compute:
         memory: 16Gi
         cores: 4
+      nodeSelector:
+        node-role.kubernetes.io/metal: ""
       rootVolume:
         type: Persistent
         persistent:
