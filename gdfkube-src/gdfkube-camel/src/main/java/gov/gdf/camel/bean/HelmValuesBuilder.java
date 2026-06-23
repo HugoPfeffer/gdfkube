@@ -153,10 +153,22 @@ public class HelmValuesBuilder {
                     : "default";
             return "ns-" + org + "-" + nsName;
         }
-        String clusterName = event.vars != null
+        String clusterName = (event.vars != null
                 ? String.valueOf(event.vars.getOrDefault("clusterName", "default"))
-                : "default";
-        return "hc-" + org + "-" + clusterName;
+                : "default").trim();
+        return applyPrefixOnce("hc-" + org + "-", clusterName);
+    }
+
+    /**
+     * Prepend {@code prefix} unless {@code name} already starts with it. Guards against the
+     * hc-&lt;org&gt;-hc-&lt;org&gt;-&lt;name&gt; double-prefix that occurs when a submitted
+     * clusterName already carries the org-qualified prefix (form validation permits it). The
+     * result always retains the hc-&lt;org&gt;- prefix, so it stays within the org AppProject's
+     * hc-&lt;org&gt;-* destination whitelist. Collapses a single layer only; not a recursive
+     * normalizer.
+     */
+    private static String applyPrefixOnce(String prefix, String name) {
+        return name.startsWith(prefix) ? name : prefix + name;
     }
 
     Map<String, String> buildLabels(String org, String requestId) {
