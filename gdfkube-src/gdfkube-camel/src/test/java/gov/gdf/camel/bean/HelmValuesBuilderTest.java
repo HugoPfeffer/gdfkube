@@ -237,6 +237,78 @@ class HelmValuesBuilderTest {
         assertEquals("ns-sec-educ-dev-apps", builder.getReleaseName(event));
     }
 
+    // --- hc-<org>-hc-<org>-<name> double-prefix guard (resolveResourceName) ---
+
+    @Test
+    void getReleaseName_prePrefixedClusterName_isNotDoubled() {
+        // Form validation permits a clusterName that already carries the hc-<org>- prefix;
+        // resolveResourceName must collapse it to a single prefix instead of doubling.
+        RequestEvent event = buildEvent();
+        event.vars = Map.of("clusterName", "hc-sec-educ-my-cluster");
+
+        assertEquals("hc-sec-educ-my-cluster", builder.getReleaseName(event));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void build_prePrefixedClusterName_singlePrefixNamespaceUnchanged() throws Exception {
+        RequestEvent event = buildEvent();
+        event.vars = Map.of("clusterName", "hc-sec-educ-my-cluster");
+        String path = builder.build(event);
+
+        Map<String, Object> values = parseYaml(path);
+        Map<String, Object> system = (Map<String, Object>) values.get("system");
+        Map<String, Object> naming = (Map<String, Object>) system.get("naming");
+
+        assertEquals("hc-sec-educ-my-cluster", naming.get("hostedClusterName"));
+        assertEquals("clusters", naming.get("namespace"));
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    void getReleaseName_nameStartingWithHcButNotPrefix_isNotOverMatched() {
+        // "hcfoo" merely starts with "hc" but is not the full hc-<org>- prefix, so the
+        // guard must still prepend.
+        RequestEvent event = buildEvent();
+        event.vars = Map.of("clusterName", "hcfoo");
+
+        assertEquals("hc-sec-educ-hcfoo", builder.getReleaseName(event));
+    }
+
+    @Test
+    void getReleaseName_textualDedup_collapsesPrefixedAndBareToSameName() {
+        // Documents the intended (benign, forward-only) consequence: a bare name and the same
+        // name pre-prefixed both resolve to one canonical name.
+        RequestEvent prefixed = buildEvent();
+        prefixed.vars = Map.of("clusterName", "hc-sec-educ-app");
+        RequestEvent bare = buildEvent();
+        bare.vars = Map.of("clusterName", "app");
+
+        assertEquals("hc-sec-educ-app", builder.getReleaseName(prefixed));
+        assertEquals(builder.getReleaseName(bare), builder.getReleaseName(prefixed));
+    }
+
+    @Test
+    void getReleaseName_alreadyDoubledName_collapsesOneLayerOnly() {
+        // The guard prevents *adding* a layer; it is not a recursive normalizer, so a name
+        // that already contains two prefixes is returned unchanged.
+        RequestEvent event = buildEvent();
+        event.vars = Map.of("clusterName", "hc-sec-educ-hc-sec-educ-app");
+
+        assertEquals("hc-sec-educ-hc-sec-educ-app", builder.getReleaseName(event));
+    }
+
+    @Test
+    void getReleaseName_clusterNameWithLeadingWhitespace_isTrimmedBeforeGuard() {
+        // Leading whitespace would otherwise defeat startsWith and re-add the prefix,
+        // yielding an out-of-whitelist / invalid-DNS-1123 name.
+        RequestEvent event = buildEvent();
+        event.vars = Map.of("clusterName", " hc-sec-educ-app");
+
+        assertEquals("hc-sec-educ-app", builder.getReleaseName(event));
+    }
+
     @Test
     @SuppressWarnings("unchecked")
     void buildForOrg_writesCanonicalValues() throws Exception {
