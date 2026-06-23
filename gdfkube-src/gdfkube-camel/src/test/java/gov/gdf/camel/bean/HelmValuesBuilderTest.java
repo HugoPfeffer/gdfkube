@@ -157,9 +157,53 @@ class HelmValuesBuilderTest {
 
         assertNotNull(naming, "system.naming must be present");
         assertEquals("hc-sec-educ-my-cluster", naming.get("hostedClusterName"));
-        assertEquals("clusters", naming.get("namespace"));
+        // namespace must equal the org-scoped resource name so it stays inside the
+        // org AppProject's hc-<org>-* destination whitelist (was the literal "clusters",
+        // which ArgoCD denies: "namespace clusters is not permitted in project '<org>'").
+        assertEquals("hc-sec-educ-my-cluster", naming.get("namespace"));
         assertEquals("sec-educ", naming.get("appProject"));
         assertEquals("sec-educ", naming.get("clusterSet"));
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void build_clusterRequestNamespace_matchesHostedClusterNameWithinWhitelist() throws Exception {
+        RequestEvent event = buildEvent();
+        String path = builder.build(event);
+
+        Map<String, Object> values = parseYaml(path);
+        Map<String, Object> system = (Map<String, Object>) values.get("system");
+        Map<String, Object> naming = (Map<String, Object>) system.get("naming");
+
+        String namespace = (String) naming.get("namespace");
+        // Rendered into the HostedCluster/NodePool metadata.namespace; must fall inside the
+        // org AppProject destination glob hc-<org>-* and equal the resource name.
+        assertEquals("hc-sec-educ-my-cluster", namespace);
+        assertEquals(naming.get("hostedClusterName"), namespace);
+        assertTrue(namespace.startsWith("hc-sec-educ-"),
+                "cluster-request namespace must stay within the hc-<org>-* whitelist");
+
+        Files.deleteIfExists(Path.of(path));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void build_namespaceRequestNamespace_unchangedAndWithinWhitelist() throws Exception {
+        RequestEvent event = buildEvent();
+        event.formId = "namespace-request";
+        event.vars = Map.of("namespaceName", "dev-apps");
+        String path = builder.build(event);
+
+        Map<String, Object> values = parseYaml(path);
+        Map<String, Object> system = (Map<String, Object>) values.get("system");
+        Map<String, Object> naming = (Map<String, Object>) system.get("naming");
+
+        // namespace-request behavior is unchanged: namespace == resource name == ns-<org>-<name>,
+        // inside the org AppProject ns-<org>-* whitelist.
+        assertEquals("ns-sec-educ-dev-apps", naming.get("namespace"));
+        assertEquals(naming.get("hostedClusterName"), naming.get("namespace"));
 
         Files.deleteIfExists(Path.of(path));
     }
@@ -251,7 +295,7 @@ class HelmValuesBuilderTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void build_prePrefixedClusterName_singlePrefixNamespaceUnchanged() throws Exception {
+    void build_prePrefixedClusterName_singlePrefixNamespaceMatchesResourceName() throws Exception {
         RequestEvent event = buildEvent();
         event.vars = Map.of("clusterName", "hc-sec-educ-my-cluster");
         String path = builder.build(event);
@@ -260,8 +304,10 @@ class HelmValuesBuilderTest {
         Map<String, Object> system = (Map<String, Object>) values.get("system");
         Map<String, Object> naming = (Map<String, Object>) system.get("naming");
 
+        // Pre-prefixed input collapses to a single prefix, and the namespace mirrors that
+        // single-prefixed resource name (still inside the hc-<org>-* whitelist).
         assertEquals("hc-sec-educ-my-cluster", naming.get("hostedClusterName"));
-        assertEquals("clusters", naming.get("namespace"));
+        assertEquals("hc-sec-educ-my-cluster", naming.get("namespace"));
 
         Files.deleteIfExists(Path.of(path));
     }

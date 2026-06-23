@@ -139,7 +139,11 @@ public class HelmValuesBuilder {
         Map<String, Object> naming = new LinkedHashMap<>();
         String resourceName = resolveResourceName(event, org);
         naming.put("hostedClusterName", resourceName);
-        naming.put("namespace", "namespace-request".equals(event.formId) ? resourceName : "clusters");
+        // Render the manifest namespace as the org-scoped resource name (hc-<org>-<cluster>
+        // or ns-<org>-<name>) so it falls inside the org AppProject's hc-<org>-* / ns-<org>-*
+        // destination whitelist. The previous literal "clusters" is denied by ArgoCD as
+        // "namespace clusters is not permitted in project '<org>'".
+        naming.put("namespace", resourceName);
         naming.put("appProject", org);
         naming.put("clusterSet", org);
         naming.put("policyNamespace", "gdfkube-policies");
